@@ -103,11 +103,12 @@ pnpm lint     # Run ESLint
 
 | Document | Description |
 |----------|-------------|
-| [Project README](project/README.md) | Main application documentation |
-| [Development Setup](docs/DEVELOPMENT_SETUP.md) | Setup guide and workflow |
+| [Project README](project/README.md) | Main application documentation, including Vercel deployment & GitHub Actions workflow |
+| [Development Setup](docs/DEVELOPMENT_SETUP.md) | Setup guide and git workflow |
 | [Timeline & Milestones](docs/TIMELINE_MILESTONES.md) | 12-week project timeline |
 | [Code Review Guide](docs/CODE_REVIEW_GUIDE.md) | Code review standards |
 | [Tasks Breakdown](tasks/tasks-capstone-project-management-tool.md) | Detailed task list |
+| [Individual Dev Approach](tasks/INDIVIDUAL_DEVELOPMENT_APPROACH.md) | Fork strategy, git workflow, deployment |
 
 ## 📅 12-Week Program Structure
 
@@ -141,7 +142,7 @@ By completing this capstone, interns will demonstrate:
 - ✅ Client-side state management with Zustand
 - ✅ Testing strategies (unit, integration, E2E)
 - ✅ Git workflow and collaboration
-- ✅ Production deployment and CI/CD
+- ✅ Production deployment to Vercel (manual deploy recommended; GitHub Actions workflow included but disabled by default — see [project/README.md](project/README.md#-vercel-deployment))
 
 ## 🌟 Current Status
 

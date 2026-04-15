@@ -125,7 +125,7 @@ Organize your tasks using these categories:
 
 ### Week 1-2: Foundation
 **Milestone 1: Working Development Environment**
-- [ ] Next.js 14 project initialized
+- [ ] Next.js 16 project initialized
 - [ ] TypeScript and Tailwind CSS configured
 - [ ] Development tools set up (ESLint, Prettier)
 - [ ] Basic project structure created
@@ -158,10 +158,12 @@ Organize your tasks using these categories:
 ### Week 9-10: Testing & Deployment
 **Milestone 5: Production-Ready Application**
 - [ ] Comprehensive test suite
-- [ ] Production deployment on Vercel
+- [ ] Manual production deployment on Vercel (`vercel --prod`)
+- [ ] Environment variables configured in Vercel dashboard
 - [ ] Error monitoring and logging
 - [ ] Performance optimized
 - [ ] Documentation complete
+- [ ] *(Optional)* GitHub Actions workflow enabled for automated deploys — see `project/README.md → Vercel Deployment`
 
 ## Git Workflow for Individual Forks
 
@@ -194,7 +196,7 @@ your-fork/main
    git push origin main
    ```
 
-3. **Keep your fork updated** (optional - if you want updates from the original repo)
+3. **Keep your fork updated** (optional — if you want updates from the original repo)
    ```bash
    git remote add upstream https://github.com/ORIGINAL-REPO/nextjs-internship-capstone.git
    git fetch upstream
@@ -210,6 +212,36 @@ Use conventional commits for better tracking:
 - `refactor:` - Code refactoring
 - `test:` - Adding tests
 - `chore:` - Maintenance tasks
+
+## Vercel Deployment & GitHub Actions
+
+### Default approach: manual deploy via CLI
+Automated deployments are **off by default**. Each intern deploys manually:
+
+```bash
+# Preview deploy
+vercel
+
+# Production deploy
+vercel --prod
+```
+
+Full setup steps are in `project/README.md → Vercel Deployment`.
+
+### GitHub Actions workflow (optional, disabled by default)
+The file `project/.github/workflows/deploy.yml` is included in your fork but **will not run automatically** until you enable it. The `push` and `pull_request` triggers are commented out — only the manual `workflow_dispatch` trigger is active.
+
+**To enable automated deployments:**
+1. Open `project/.github/workflows/deploy.yml`
+2. Uncomment the trigger block that fits your needs (push to main, pull requests, or both)
+3. Add three secrets to your fork: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`
+   - Settings → Secrets and variables → Actions → New repository secret
+4. Push to `main` — the workflow will run automatically
+
+**To trigger a manual deploy without enabling auto-triggers:**
+- Go to your fork → Actions → Deploy to Vercel → Run workflow → choose `preview` or `production`
+
+See `project/README.md → GitHub Actions Workflow` for the full secret setup guide.
 
 ## Showcase & Comparison
 
@@ -238,7 +270,7 @@ Each intern will demo their individual implementation:
 - ✅ **Flexibility**: Can explore different approaches
 
 ### For Team Learning
-- ✅ **Knowledge Sharing**: Learn from 7 different approaches
+- ✅ **Knowledge Sharing**: Learn from different approaches across the group
 - ✅ **Best Practices**: Identify what works across implementations
 - ✅ **Collaboration Skills**: Help each other while maintaining independence
 - ✅ **Code Review Experience**: Review different coding styles and approaches

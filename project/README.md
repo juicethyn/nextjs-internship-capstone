@@ -377,7 +377,121 @@ As you progress through development, you'll need to replace placeholder dependen
 3. **State Management**: Complete Zustand store implementations
 4. **Core Features**: Build functional CRUD operations
 5. **Testing**: Add comprehensive test suite
-6. **Deployment**: Set up CI/CD pipeline with Vercel
+6. **Deployment**: Deploy manually to Vercel (see instructions below)
+
+---
+
+## 🌐 Vercel Deployment
+
+> **The GitHub Actions workflow is disabled by default.** Use the manual steps below to deploy. Enable the workflow only when you're ready for automated deployments.
+
+### Manual Deployment (Recommended for trainees)
+
+1. **Install the Vercel CLI**
+   ```bash
+   pnpm add -g vercel
+   ```
+
+2. **Log in to Vercel**
+   ```bash
+   vercel login
+   ```
+
+3. **Link your project** (first time only)
+   ```bash
+   cd project
+   vercel link
+   # Follow the prompts — create a new project or link to existing
+   ```
+
+4. **Set environment variables on Vercel**
+
+   Go to your project on [vercel.com](https://vercel.com) → Settings → Environment Variables, then add:
+   ```
+   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
+   CLERK_SECRET_KEY=
+   NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+   NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+   DATABASE_URL=
+   ```
+   Or push them via CLI:
+   ```bash
+   vercel env add NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+   vercel env add CLERK_SECRET_KEY
+   vercel env add DATABASE_URL
+   ```
+
+5. **Deploy a preview**
+   ```bash
+   vercel
+   ```
+
+6. **Deploy to production**
+   ```bash
+   vercel --prod
+   ```
+
+---
+
+## ⚙️ GitHub Actions Workflow (Disabled by Default)
+
+The file `.github/workflows/deploy.yml` contains a Vercel deployment workflow. It is **disabled by default** — the automatic triggers are commented out so nothing runs on push or pull request until you explicitly enable them.
+
+### How to enable automatic deployments
+
+Open `.github/workflows/deploy.yml` and uncomment the trigger block you want:
+
+**Option A — Deploy on every push to `main`:**
+```yaml
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+```
+
+**Option B — Preview deploy on pull requests:**
+```yaml
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+```
+
+**Option C — Both push to main and pull requests:**
+```yaml
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+```
+
+### Required GitHub Secrets
+
+Before the workflow can run you need to add your Vercel credentials as repository secrets:
+
+1. Go to your fork on GitHub → **Settings → Secrets and variables → Actions → New repository secret**
+
+2. Add these three secrets:
+
+   | Secret name | Where to find it |
+   |---|---|
+   | `VERCEL_TOKEN` | [vercel.com/account/tokens](https://vercel.com/account/tokens) |
+   | `VERCEL_ORG_ID` | Run `vercel link` locally, then check `.vercel/project.json` → `orgId` |
+   | `VERCEL_PROJECT_ID` | Same file → `projectId` |
+
+### Run the workflow manually (without enabling auto-triggers)
+
+The `workflow_dispatch` trigger is always active. To deploy on demand without enabling push/PR triggers:
+
+1. Go to your fork on GitHub → **Actions → Deploy to Vercel → Run workflow**
+2. Choose `preview` or `production`
+3. Click **Run workflow**
 
 ---
 

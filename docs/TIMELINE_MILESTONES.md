@@ -86,15 +86,16 @@ This document outlines the detailed timeline, milestones, and deliverables for t
   - Unit tests for components and utilities
   - Integration tests for user flows
   - Test coverage reporting
-  - Automated testing in CI/CD
+  - *(Optional)* Automated testing via GitHub Actions — enable the workflow in `project/.github/workflows/deploy.yml` (disabled by default)
 
 #### Week 10: Deployment & Monitoring
 - **Goals**: Deploy to production environment
 - **Deliverables**:
-  - Production deployment on Vercel
-  - Environment variables and secrets configured
+  - Production deployment on Vercel via CLI (`vercel --prod`) — see [project/README.md](../project/README.md#-vercel-deployment) for setup steps
+  - Environment variables and secrets configured in Vercel dashboard
   - Error monitoring and logging set up
   - Performance monitoring implemented
+  - *(Optional)* GitHub Actions automated deployment enabled
 
 #### Week 11: End-to-End Testing & Documentation
 - **Goals**: Comprehensive testing and documentation

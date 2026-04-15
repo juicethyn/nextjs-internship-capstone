@@ -2,7 +2,7 @@
 
 ## Overview
 
-Each of the 7 interns will build their own complete version of the project management tool. This ensures everyone gets the full learning experience across all aspects of full-stack development.
+Each intern will build their own complete version of the project management tool. This ensures everyone gets the full learning experience across all aspects of full-stack development.
 
 ## Relevant Files (Each Intern's Project)
 
@@ -41,7 +41,7 @@ Each intern will work through all tasks below for their individual implementatio
 ### Phase 1: Foundation & Setup (Weeks 1-2)
 
 - [ ] 1.0 Project Setup & Foundation
-  - [ ] 1.1 Initialize Next.js 14 project with TypeScript and Tailwind CSS
+  - [ ] 1.1 Initialize Next.js 16 project with TypeScript and Tailwind CSS
   - [ ] 1.2 Configure ESLint, Prettier, and development tools
   - [ ] 1.3 Set up project structure and folder organization
   - [ ] 1.4 Install and configure Shadcn/UI components
@@ -111,12 +111,18 @@ Each intern will work through all tasks below for their individual implementatio
 ### Phase 8: Deployment (Weeks 8-10)
 
 - [ ] 8.0 Deployment & Production Setup
-  - [ ] 8.1 Configure Vercel deployment and environment variables
-  - [ ] 8.2 Set up automatic deployments from GitHub
-  - [ ] 8.3 Configure production database and environment
-  - [ ] 8.4 Implement error monitoring and logging
-  - [ ] 8.5 Set up performance monitoring and analytics
-  - [ ] 8.6 Create deployment documentation and runbooks
+  - [ ] 8.1 Install Vercel CLI, log in, and link your project (`vercel link`)
+  - [ ] 8.2 Add all required environment variables in the Vercel dashboard (Clerk keys, DATABASE_URL)
+  - [ ] 8.3 Deploy a preview build manually with `vercel` and verify it works end-to-end
+  - [ ] 8.4 Deploy to production with `vercel --prod`
+  - [ ] 8.5 Configure production database and run migrations against the production DATABASE_URL
+  - [ ] 8.6 Implement error monitoring and logging (e.g. Vercel error logs, Sentry)
+  - [ ] 8.7 Set up performance monitoring (Vercel Analytics or similar)
+  - [ ] 8.8 *(Optional)* Enable the GitHub Actions workflow for automated deploys
+        - Open `.github/workflows/deploy.yml` in your fork
+        - Uncomment the `push` / `pull_request` trigger block you want (see README → "Vercel Deployment")
+        - Add `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID` as GitHub repository secrets
+        - Push a commit to `main` to verify the pipeline runs correctly
 
 ## GitHub Projects Board Organization
 
@@ -126,15 +132,15 @@ Each issue will include the intern's name for clarity:
 **Format**: `[Intern Name] Task Number - Task Description`
 
 **Examples**:
-- `[Sarah Jones] 1.1 - Initialize Next.js project with TypeScript`
-- `[John Doe] 2.3 - Create sign-in and sign-up pages`
-- `[Maria Garcia] 5.2 - Implement drag-and-drop functionality`
+- `[Your Name] 1.1 - Initialize Next.js project with TypeScript`
+- `[Your Name] 2.3 - Create sign-in and sign-up pages`
+- `[Your Name] 5.2 - Implement drag-and-drop functionality`
 
 ### Labels for Organization
 - **Timeline**: `week-1`, `week-2`, `week-3`, etc.
 - **Priority**: `priority-high`, `priority-medium`, `priority-low`
 - **Category**: `frontend`, `backend`, `database`, `auth`, `testing`, `deployment`
-- **Individual**: `intern-sarah`, `intern-john`, `intern-maria`, etc.
+- **Individual**: `intern-[your-name]`
 - **Status**: `blocked`, `in-review`, `needs-help`
 
 ### Columns
@@ -192,10 +198,11 @@ Each issue will include the intern's name for clarity:
 
 ### Milestone 4: Production Ready (End of Week 10)
 **Success Criteria**:
-- [ ] Deployed and accessible online
+- [ ] Application deployed and publicly accessible on Vercel
 - [ ] Tests written and passing
 - [ ] Error monitoring in place
 - [ ] Documentation complete
+- [ ] *(Optional)* GitHub Actions workflow enabled and deploying automatically
 
 ## Final Showcase
 
@@ -221,7 +228,7 @@ Each intern will present their individual implementation:
 - ✅ Problem-solving skills across all domains
 
 ### For Collaboration
-- ✅ Learn from 7 different approaches to the same problems
+- ✅ Learn from different approaches to the same problems
 - ✅ Rich discussions comparing implementation strategies
 - ✅ Help each other without dependency bottlenecks
 - ✅ Build communication and mentoring skills
