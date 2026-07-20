@@ -50,7 +50,6 @@ export default function HomePage() {
 						Manage Projects with
 						<span className="text-blue_munsell-500"> Kanban Boards</span>
 					</h1>
-
 					<p className="text-xl text-payne's_gray-500 dark:text-french_gray-500 mb-8 max-w-2xl mx-auto">
 						Organize tasks, collaborate with teams, and track progress with our
 						intuitive drag-and-drop project management platform.
