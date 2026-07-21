@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { Geist, Inter } from "next/font/google";
 import type React from "react";
-import "./globals.css";
-// TODO: Task 2.1 - Set up Clerk authentication service
-// import { ClerkProvider } from "@clerk/nextjs"
+import "./globals.css"; // FIX #2: Creating global.d.ts to declare module for CSS imports to avoid TypeScript errors
+
+// TODO: Task 2.1 - Set up Clerk authentication service - Complete
+import { ClerkProvider } from "@clerk/nextjs";
 import { ThemeProvider } from "@/components/theme-provider";
 import { cn } from "@/lib/utils";
 
@@ -23,17 +24,17 @@ export default function RootLayout({
 	children: React.ReactNode;
 }) {
 	return (
-		// TODO: Task 2.1 - Wrap with ClerkProvider once Clerk is set up
-		// <ClerkProvider>
-		<html
-			lang="en"
-			suppressHydrationWarning
-			className={cn(geistHeading.variable)}
-		>
-			<body className={inter.className}>
-				<ThemeProvider>{children}</ThemeProvider>
-			</body>
-		</html>
-		// </ClerkProvider>
+		// TODO: Task 2.1 - Wrap with ClerkProvider once Clerk is set up - Complete
+		<ClerkProvider>
+			<html
+				lang="en"
+				suppressHydrationWarning
+				className={cn(geistHeading.variable)}
+			>
+				<body className={inter.className}>
+					<ThemeProvider>{children}</ThemeProvider>
+				</body>
+			</html>
+		</ClerkProvider>
 	);
 }

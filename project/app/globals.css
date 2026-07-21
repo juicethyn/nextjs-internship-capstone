@@ -5,7 +5,7 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-	/* Custom brand colors */
+	/* Custom brand colors THIS ONE IS REMOVABLE*/
 	--platinum: #dcdcdd;
 	--french-gray: #c5c3c6;
 	--outer-space: #46494c;

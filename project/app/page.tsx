@@ -1,10 +1,11 @@
 import { ArrowRight, CheckCircle, Kanban, Users } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Button } from "@/components/ui/button";
 
 export default function HomePage() {
 	return (
-		<div className="min-h-screen bg-gradient-to-br from-platinum-900 to-platinum-800 dark:from-outer_space-500 dark:to-payne's_gray-500">
+		<div className="min-h-screen bg-background from-platinum-900 to-platinum-800 dark:from-outer_space-500 dark:to-payne's_gray-500">
 			{/* Header */}
 			<header className="border-b border-french_gray-300 dark:border-payne's_gray-400 bg-white/80 dark:bg-outer_space-500/80 backdrop-blur-sm">
 				<div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -34,7 +35,7 @@ export default function HomePage() {
 							</Link>
 							<Link
 								href="/sign-up"
-								className="px-4 py-2 bg-blue_munsell-500 text-white rounded-lg hover:bg-blue_munsell-600"
+								className="px-4 py-2 bg-blue_munsell-500 text-foreground rounded-lg hover:bg-blue_munsell-600"
 							>
 								Get Started
 							</Link>
@@ -58,7 +59,7 @@ export default function HomePage() {
 					<div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
 						<Link
 							href="/dashboard"
-							className="inline-flex items-center px-8 py-4 bg-blue_munsell-500 text-white rounded-lg hover:bg-blue_munsell-600 text-lg font-semibold"
+							className="inline-flex items-center px-8 py-4 bg-blue_munsell-500 text-foreground rounded-lg hover:bg-blue_munsell-600 text-lg font-semibold"
 						>
 							Start Managing Projects
 							<ArrowRight className="ml-2" size={20} />
