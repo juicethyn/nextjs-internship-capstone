@@ -1,5 +1,6 @@
 "use client";
 
+import { UserButton } from "@clerk/nextjs";
 import {
 	BarChart3,
 	Bell,
@@ -121,7 +122,7 @@ export default function DashboardLayout({
 							<ThemeToggle />
 
 							<div className="w-8 h-8 bg-blue_munsell-500 rounded-full flex items-center justify-center text-white font-semibold">
-								U
+								<UserButton />
 							</div>
 						</div>
 					</div>
