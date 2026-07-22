@@ -1,3 +1,20 @@
+import { neon } from "@neondatabase/serverless";
+import { config } from "dotenv";
+import { drizzle } from "drizzle-orm/neon-http";
+import * as relations from "./relations";
+import * as schema from "./schema";
+
+config({ path: ".env.local" });
+
+const databaseUrl = process.env.DATABASE_URL;
+
+if (!databaseUrl) {
+	throw new Error("DATABASE_URL is not defined in the environment variables.");
+}
+
+const sql = neon(databaseUrl);
+export const db = drizzle(sql, { schema: { ...schema, ...relations } });
+
 // TODO: Task 3.2 - Configure PostgreSQL database (Vercel Postgres or Neon)
 // TODO: Task 3.5 - Implement database connection and query utilities
 
@@ -38,7 +55,6 @@ export const queries = {
 */
 
 // Placeholder exports to prevent import errors
-export const db = "TODO: Implement database connection";
 
 export const queries = {
 	projects: {
