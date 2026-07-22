@@ -18,6 +18,15 @@ export const jobTitleEnum = pgEnum("job_title", [
 	"devops_engineer",
 	"other",
 ]);
+
+export type JobTitle =
+	| "software_engineer"
+	| "qa_engineer"
+	| "product_manager"
+	| "designer"
+	| "devops_engineer"
+	| "other";
+
 export const priorityEnum = pgEnum("priority", ["low", "medium", "high"]);
 
 // ============================= USER TABLE SCHEMA =============================
