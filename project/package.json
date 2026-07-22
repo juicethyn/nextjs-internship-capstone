@@ -19,7 +19,9 @@
 		"dev": "next dev",
 		"build": "next build",
 		"start": "next start",
-		"lint": "next lint"
+		"lint": "next lint",
+		"check": "biome check --write",
+		"tsc": "tsc --noEmit"
 	},
 	"dependencies": {
 		"@clerk/nextjs": "^7.5.20",
