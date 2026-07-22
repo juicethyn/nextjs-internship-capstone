@@ -6,7 +6,7 @@ import type {
 import { db } from "../index";
 import { comments } from "../schema";
 
-export function getCommentsByTask(taskId: string) {
+export function getCommentsByTaskId(taskId: string) {
 	return db.query.comments.findMany({
 		where: eq(comments.taskId, taskId),
 		orderBy: (comment, { asc }) => [asc(comment.createdAt)],

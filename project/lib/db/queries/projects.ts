@@ -40,3 +40,11 @@ export async function updateProject(
 		.returning();
 	return project;
 }
+
+export async function deleteProject(ownerId: string, id: string) {
+	const [project] = await db
+		.delete(projects)
+		.where(and(eq(projects.id, id), eq(projects.ownerId, ownerId)))
+		.returning();
+	return project;
+}

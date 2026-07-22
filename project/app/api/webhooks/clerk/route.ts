@@ -7,6 +7,21 @@ export async function POST(req: NextRequest) {
 
 		// Do something with payload
 		// For this guide, log payload to console
+
+		switch (evt.type) {
+			case "user.created":
+				console.log("User created:", evt.data);
+				break;
+			case "user.updated":
+				console.log("User updated:", evt.data);
+				break;
+			case "user.deleted":
+				console.log("User deleted:", evt.data);
+				break;
+			default:
+				console.log(`Unhandled event type: ${evt.type}`);
+		}
+
 		const { id } = evt.data;
 		const eventType = evt.type;
 		console.log(
