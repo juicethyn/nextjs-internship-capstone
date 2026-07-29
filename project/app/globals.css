@@ -5,13 +5,6 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-	/* Custom brand colors THIS ONE IS REMOVABLE*/
-	--platinum: #dcdcdd;
-	--french-gray: #c5c3c6;
-	--outer-space: #46494c;
-	--paynes-gray: #4c5c68;
-	--blue-munsell: #1985a1;
-
 	/* shadcn colors */
 	--background: oklch(1 0 0);
 	--foreground: oklch(0.141 0.005 285.823);

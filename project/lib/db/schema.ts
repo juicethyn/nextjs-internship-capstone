@@ -1,16 +1,19 @@
 import {
+	boolean,
 	index,
 	integer,
+	jsonb,
 	pgEnum,
 	pgTable,
 	text,
 	timestamp,
+	unique,
 	uuid,
 } from "drizzle-orm/pg-core";
 
 // ============================= ENUMS =============================
 
-export const jobTitleEnum = pgEnum("job_title", [
+export const occupationEnum = pgEnum("occupation", [
 	"software_engineer",
 	"qa_engineer",
 	"product_manager",
@@ -19,7 +22,7 @@ export const jobTitleEnum = pgEnum("job_title", [
 	"other",
 ]);
 
-export type JobTitle =
+export type Occupation =
 	| "software_engineer"
 	| "qa_engineer"
 	| "product_manager"
@@ -27,7 +30,55 @@ export type JobTitle =
 	| "devops_engineer"
 	| "other";
 
+export const workspaceRoleEnum = pgEnum("workspace_role", [
+	"owner",
+	"admin",
+	"member",
+]);
+
+export const workspaceInvitationStatusEnum = pgEnum(
+	"workspace_invitation_status",
+	["pending", "accepted", "declined", "expired"],
+);
+
+export const projectStatusEnum = pgEnum("project_status", [
+	"active",
+	"archived",
+	"completed",
+]);
+
+export const projectMemberRoleEnum = pgEnum("project_member_role", ["member"]);
+
+export const listTypeEnum = pgEnum("list_type", [
+	"todo",
+	"in_progress",
+	"done",
+]);
+
 export const priorityEnum = pgEnum("priority", ["low", "medium", "high"]);
+
+export const activityActionEnum = pgEnum("activity_action", [
+	"created",
+	"updated",
+	"deleted",
+	"archived",
+	"restored",
+	"assigned",
+	"unassigned",
+	"completed",
+	"moved",
+	"invited",
+	"joined",
+]);
+
+export const activityEntityEnum = pgEnum("activity_entity", [
+	"workspace",
+	"project",
+	"list",
+	"task",
+	"comment",
+	"label",
+]);
 
 // ============================= USER TABLE SCHEMA =============================
 
@@ -37,10 +88,10 @@ export const users = pgTable(
 		id: uuid("id").defaultRandom().primaryKey(),
 		clerkId: text("clerk_id").notNull().unique(),
 		email: text("email").notNull().unique(),
-		imageUrl: text("image_url"),
 		firstName: text("first_name").notNull(),
 		lastName: text("last_name").notNull(),
-		jobTitle: jobTitleEnum("job_title"),
+		imageUrl: text("image_url"),
+		occupation: occupationEnum("occupation"),
 		createdAt: timestamp("created_at").notNull().defaultNow(),
 		updatedAt: timestamp("updated_at")
 			.notNull()
@@ -53,25 +104,129 @@ export const users = pgTable(
 	],
 );
 
+// ============================= WORKSPACE TABLE SCHEMA =============================
+
+export const workspaces = pgTable("workspaces", {
+	id: uuid("id").defaultRandom().primaryKey(),
+	name: text("name").notNull(),
+	slug: text("slug").notNull().unique(),
+	logoUrl: text("logo_url"),
+	createdById: uuid("created_by_id")
+		.notNull()
+		.references(() => users.id, { onDelete: "cascade" }),
+	createdAt: timestamp("created_at").notNull().defaultNow(),
+	updatedAt: timestamp("updated_at")
+		.notNull()
+		.defaultNow()
+		.$onUpdate(() => new Date()),
+});
+
+// ============================= WORKSPACE MEMBERS TABLE SCHEMA =============================
+
+export const workspaceMembers = pgTable(
+	"workspace_members",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		workspaceId: uuid("workspace_id")
+			.notNull()
+			.references(() => workspaces.id, { onDelete: "cascade" }),
+		userId: uuid("user_id")
+			.notNull()
+			.references(() => users.id, { onDelete: "cascade" }),
+		role: workspaceRoleEnum("role").notNull().default("member"),
+		joinedAt: timestamp("joined_at").notNull().defaultNow(),
+	},
+	(table) => [
+		unique().on(table.workspaceId, table.userId),
+		index("workspaceMembers_workspace_id_index").on(table.workspaceId),
+		index("workspaceMembers_user_id_index").on(table.userId),
+	],
+);
+
+// ============================= WORKSPACE INVITATIONS TABLE SCHEMA =============================
+
+export const workspaceInvitations = pgTable(
+	"workspace_invitations",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		workspaceId: uuid("workspace_id")
+			.notNull()
+			.references(() => workspaces.id, { onDelete: "cascade" }),
+		email: text("email").notNull(),
+		role: workspaceRoleEnum("role").notNull().default("member"),
+		status: workspaceInvitationStatusEnum("status")
+			.notNull()
+			.default("pending"),
+		invitedById: uuid("invited_by_id")
+			.notNull()
+			.references(() => users.id, { onDelete: "cascade" }),
+		expiresAt: timestamp("expires_at").notNull(),
+		createdAt: timestamp("created_at").notNull().defaultNow(),
+	},
+	(table) => [
+		unique().on(table.workspaceId, table.email),
+		index("workspaceInvitations_workspace_id_index").on(table.workspaceId),
+		index("workspaceInvitations_email_index").on(table.email),
+		index("workspaceInvitations_status_index").on(table.status),
+	],
+);
+
 // ============================= PROJECT TABLE SCHEMA =============================
 
 export const projects = pgTable(
 	"projects",
 	{
 		id: uuid("id").defaultRandom().primaryKey(),
-		name: text("name").notNull(),
-		description: text("description"),
-		ownerId: uuid("owner_id")
+		workspaceId: uuid("workspace_id")
 			.notNull()
-			.references(() => users.id, { onDelete: "cascade" }),
+			.references(() => workspaces.id, { onDelete: "cascade" }),
+		leadId: uuid("lead_id").references(() => users.id, {
+			onDelete: "set null",
+		}),
+		name: text("name").notNull(),
+		slug: text("slug").notNull(),
+		description: text("description"),
+		logoUrl: text("logo_url"),
+		status: projectStatusEnum("status").notNull().default("active"),
+		isArchived: boolean("is_archived").notNull().default(false),
+		startDate: timestamp("start_date"),
+		dueDate: timestamp("due_date"),
 		createdAt: timestamp("created_at").notNull().defaultNow(),
 		updatedAt: timestamp("updated_at")
 			.notNull()
 			.defaultNow()
 			.$onUpdate(() => new Date()),
-		dueDate: timestamp("due_date"),
 	},
-	(table) => [index("projects_owner_id_index").on(table.ownerId)],
+	(table) => [
+		unique().on(table.workspaceId, table.slug),
+
+		index("projects_workspace_id_index").on(table.workspaceId),
+		index("projects_lead_id_index").on(table.leadId),
+		index("projects_status_index").on(table.status),
+	],
+);
+
+// ============================= PROJECT MEMBERS TABLE SCHEMA =============================
+
+export const projectMembers = pgTable(
+	"project_members",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		projectId: uuid("project_id")
+			.notNull()
+			.references(() => projects.id, { onDelete: "cascade" }),
+		userId: uuid("user_id")
+			.notNull()
+			.references(() => users.id, { onDelete: "cascade" }),
+		role: projectMemberRoleEnum("role").notNull().default("member"),
+		joinedAt: timestamp("joined_at").notNull().defaultNow(),
+	},
+	(table) => [
+		unique().on(table.projectId, table.userId),
+
+		index("projectMembers_project_id_index").on(table.projectId),
+		index("projectMembers_user_id_index").on(table.userId),
+	],
 );
 
 // ============================= LIST TABLE SCHEMA =============================
@@ -80,11 +235,12 @@ export const lists = pgTable(
 	"lists",
 	{
 		id: uuid("id").defaultRandom().primaryKey(),
-		name: text("name").notNull(),
 		projectId: uuid("project_id")
 			.notNull()
 			.references(() => projects.id, { onDelete: "cascade" }),
+		name: text("name").notNull(),
 		position: integer("position").notNull(),
+		type: listTypeEnum("type").notNull().default("todo"),
 		createdAt: timestamp("created_at").notNull().defaultNow(),
 		updatedAt: timestamp("updated_at")
 			.notNull()
@@ -108,9 +264,14 @@ export const tasks = pgTable(
 		assigneeId: uuid("assignee_id").references(() => users.id, {
 			onDelete: "set null",
 		}),
+		createdById: uuid("created_by_id")
+			.notNull()
+			.references(() => users.id, { onDelete: "restrict" }),
 		priority: priorityEnum("priority").notNull(),
-		dueDate: timestamp("due_date"),
 		position: integer("position").notNull(),
+		startDate: timestamp("start_date"),
+		dueDate: timestamp("due_date"),
+		completedAt: timestamp("completed_at"),
 		createdAt: timestamp("created_at").notNull().defaultNow(),
 		updatedAt: timestamp("updated_at")
 			.notNull()
@@ -120,6 +281,7 @@ export const tasks = pgTable(
 	(table) => [
 		index("tasks_list_id_index").on(table.listId),
 		index("tasks_assignee_id_index").on(table.assigneeId),
+		index("tasks_created_by_id_index").on(table.createdById),
 	],
 );
 
@@ -145,6 +307,71 @@ export const comments = pgTable(
 	(table) => [
 		index("comments_task_id_index").on(table.taskId),
 		index("comments_author_id_index").on(table.authorId),
+	],
+);
+
+// ============================= LABELS TABLE SCHEMA =============================
+
+export const labels = pgTable(
+	"labels",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		projectId: uuid("project_id")
+			.notNull()
+			.references(() => projects.id, { onDelete: "cascade" }),
+		name: text("name").notNull(),
+		color: text("color").notNull(),
+		createdAt: timestamp("created_at").notNull().defaultNow(),
+		updatedAt: timestamp("updated_at")
+			.notNull()
+			.defaultNow()
+			.$onUpdate(() => new Date()),
+	},
+	(table) => [
+		unique().on(table.projectId, table.name),
+		index("labels_project_id_index").on(table.projectId),
+	],
+);
+
+export const taskLabels = pgTable(
+	"task_labels",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		taskId: uuid("task_id")
+			.notNull()
+			.references(() => tasks.id, { onDelete: "cascade" }),
+		labelId: uuid("label_id")
+			.notNull()
+			.references(() => labels.id, { onDelete: "cascade" }),
+		createdAt: timestamp("created_at").notNull().defaultNow(),
+	},
+	(table) => [
+		unique().on(table.taskId, table.labelId),
+		index("taskLabels_task_id_index").on(table.taskId),
+		index("taskLabels_label_id_index").on(table.labelId),
+	],
+);
+
+export const activityLogs = pgTable(
+	"activity_logs",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		workspaceId: uuid("workspace_id")
+			.notNull()
+			.references(() => workspaces.id, { onDelete: "cascade" }),
+		actorId: uuid("actor_id")
+			.notNull()
+			.references(() => users.id, { onDelete: "cascade" }),
+		action: activityActionEnum("action").notNull(),
+		entity: activityEntityEnum("entity").notNull(),
+		entityId: uuid("entity_id").notNull(),
+		metadata: jsonb("metadata"),
+		createdAt: timestamp("created_at").notNull().defaultNow(),
+	},
+	(table) => [
+		index("activityLogs_workspace_id_index").on(table.workspaceId),
+		index("activityLogs_actor_id_index").on(table.actorId),
+		index("activityLogs_entity_index").on(table.entity, table.entityId),
 	],
 );
 
