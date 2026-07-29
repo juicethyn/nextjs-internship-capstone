@@ -55,7 +55,12 @@ export const listTypeEnum = pgEnum("list_type", [
 	"done",
 ]);
 
-export const priorityEnum = pgEnum("priority", ["low", "medium", "high"]);
+export const priorityEnum = pgEnum("priority", [
+	"none",
+	"low",
+	"medium",
+	"high",
+]);
 
 export const activityActionEnum = pgEnum("activity_action", [
 	"created",

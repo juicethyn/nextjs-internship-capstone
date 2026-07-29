@@ -10,7 +10,7 @@ export const updateUserSchema = z.object({
 		.min(1, "Last name is required")
 		.max(50, "Last name too long"),
 	imageUrl: z.url("Invalid image URL").optional(),
-	jobTitle: z.enum([
+	occupation: z.enum([
 		"software_engineer",
 		"product_manager",
 		"designer",

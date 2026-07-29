@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import type { CreateListInput, UpdateListInput } from "@/lib/validations/list";
 import { db } from "../index";
 import { lists } from "../schema";
@@ -6,13 +6,14 @@ import { lists } from "../schema";
 export function getListsByProject(projectId: string) {
 	return db.query.lists.findMany({
 		where: eq(lists.projectId, projectId),
+		orderBy: asc(lists.position),
 		with: { tasks: true },
 	});
 }
 
-export function getListById(projectId: string) {
+export function getListById(id: string) {
 	return db.query.lists.findFirst({
-		where: eq(lists.projectId, projectId),
+		where: eq(lists.id, id),
 		with: { tasks: true },
 	});
 }
@@ -36,5 +37,14 @@ export async function updateList(id: string, data: UpdateListInput) {
 
 export async function deleteList(id: string) {
 	const [list] = await db.delete(lists).where(eq(lists.id, id)).returning();
+	return list;
+}
+
+export async function updateListPosition(id: string, position: number) {
+	const [list] = await db
+		.update(lists)
+		.set({ position })
+		.where(eq(lists.id, id))
+		.returning();
 	return list;
 }

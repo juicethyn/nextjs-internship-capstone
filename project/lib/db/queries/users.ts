@@ -1,11 +1,23 @@
 import { eq } from "drizzle-orm";
 import type { UpdateUserInput } from "@/lib/validations/user";
 import { db } from "../index";
-import { type JobTitle, users } from "../schema";
+import { type Occupation, users } from "../schema";
 
 export function getUserById(id: string) {
 	return db.query.users.findFirst({
 		where: eq(users.id, id),
+	});
+}
+
+export function getUserByClerkId(clerkId: string) {
+	return db.query.users.findFirst({
+		where: eq(users.clerkId, clerkId),
+	});
+}
+
+export async function getUserByEmail(email: string) {
+	return db.query.users.findFirst({
+		where: eq(users.email, email),
 	});
 }
 
@@ -24,7 +36,7 @@ type UpsertUserInput = {
 	firstName: string;
 	lastName: string;
 	imageUrl: string;
-	jobTitle: JobTitle;
+	occupation: Occupation;
 };
 
 export async function upsertUser(data: UpsertUserInput) {
@@ -34,12 +46,11 @@ export async function upsertUser(data: UpsertUserInput) {
 		.onConflictDoUpdate({
 			target: users.clerkId,
 			set: {
-				clerkId: data.clerkId,
+				email: data.email,
 				firstName: data.firstName,
 				lastName: data.lastName,
-				email: data.email,
 				imageUrl: data.imageUrl,
-				jobTitle: data.jobTitle,
+				occupation: data.occupation,
 			},
 		})
 		.returning();

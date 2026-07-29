@@ -1,4 +1,5 @@
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
+import { generateSlug } from "@/lib/slug";
 import type {
 	CreateProjectInput,
 	UpdateProjectInput,
@@ -6,45 +7,93 @@ import type {
 import { db } from "../index";
 import { projects } from "../schema";
 
-export function getProjectsByOwner(ownerId: string) {
+export function getProjectsByWorkspace(workspaceId: string) {
 	return db.query.projects.findMany({
-		where: eq(projects.ownerId, ownerId),
-		with: { lists: { with: { tasks: true } } },
+		where: eq(projects.workspaceId, workspaceId),
+		with: {
+			lists: { with: { tasks: true } },
+			members: {
+				with: {
+					user: true,
+				},
+			},
+		},
 	});
 }
 
-export function getProjectById(ownerId: string, id: string) {
+export function getProjectById(id: string) {
 	return db.query.projects.findFirst({
-		where: and(eq(projects.id, id), eq(projects.ownerId, ownerId)),
-		with: { lists: { with: { tasks: true } } },
+		where: eq(projects.id, id),
+		with: {
+			lists: {
+				with: {
+					tasks: true,
+				},
+			},
+			members: {
+				with: {
+					user: true,
+				},
+			},
+		},
 	});
 }
 
-export async function createProject(ownerId: string, data: CreateProjectInput) {
+export function getProjectBySlug(slug: string) {
+	return db.query.projects.findFirst({
+		where: eq(projects.slug, slug),
+	});
+}
+
+export async function createProject(
+	workspaceId: string,
+	leadId: string,
+	data: CreateProjectInput,
+) {
+	const slug = generateSlug(data.name);
+
 	const [project] = await db
 		.insert(projects)
-		.values({ ...data, ownerId })
+		.values({
+			...data,
+			slug,
+			workspaceId,
+			leadId,
+		})
 		.returning();
+
 	return project;
 }
 
-export async function updateProject(
-	ownerId: string,
-	id: string,
-	data: UpdateProjectInput,
-) {
+export async function updateProject(id: string, data: UpdateProjectInput) {
+	const slug = data.name ? generateSlug(data.name) : undefined;
+
 	const [project] = await db
 		.update(projects)
-		.set(data)
-		.where(and(eq(projects.id, id), eq(projects.ownerId, ownerId)))
+		.set({
+			...data,
+			slug,
+		})
+		.where(eq(projects.id, id))
 		.returning();
+
 	return project;
 }
 
-export async function deleteProject(ownerId: string, id: string) {
+export async function deleteProjectById(id: string) {
 	const [project] = await db
 		.delete(projects)
-		.where(and(eq(projects.id, id), eq(projects.ownerId, ownerId)))
+		.where(eq(projects.id, id))
 		.returning();
+
 	return project;
 }
+
+// Will be used for the dashboard.ts queries
+// export async function getRecentProjects(workspaceId: string, limit: number = 5) {
+// 	return db.query.projects.findMany({
+// 		where: eq(projects.workspaceId, workspaceId),
+// 		orderBy: desc(projects.updatedAt),
+// 		limit,
+// 	});
+// }
