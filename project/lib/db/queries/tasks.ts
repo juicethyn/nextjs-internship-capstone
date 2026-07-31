@@ -7,34 +7,98 @@ export function getTasksByList(listId: string) {
 	return db.query.tasks.findMany({
 		where: eq(tasks.listId, listId),
 		orderBy: (task, { asc }) => [asc(task.position)],
+		with: {
+			assignee: true,
+			taskLabels: {
+				with: {
+					taskLabel: true,
+				},
+			},
+			comments: true,
+		},
 	});
 }
 
-export function getTaskById(id: string) {
+export function getTaskById(taskId: string) {
 	return db.query.tasks.findFirst({
-		where: eq(tasks.id, id),
-		with: { comments: true },
+		where: eq(tasks.id, taskId),
+		with: {
+			comments: {
+				with: {
+					author: true,
+				},
+			},
+			taskLabels: {
+				with: {
+					taskLabel: true,
+				},
+			},
+		},
 	});
 }
 
-export async function createTask(listId: string, data: CreateTaskInput) {
+export function getTasksByAssignee(userId: string) {
+	return db.query.tasks.findMany({
+		where: eq(tasks.assigneeId, userId),
+	});
+}
+
+export async function createTask(
+	listId: string,
+	createdById: string,
+	data: CreateTaskInput,
+) {
 	const [task] = await db
 		.insert(tasks)
-		.values({ ...data, listId, position: 1000 })
+		.values({ ...data, listId, createdById, position: 1000 })
 		.returning();
 	return task;
 }
 
-export async function updateTask(id: string, data: UpdateTaskInput) {
+export async function updateTask(taskId: string, data: UpdateTaskInput) {
 	const [task] = await db
 		.update(tasks)
 		.set(data)
-		.where(eq(tasks.id, id))
+		.where(eq(tasks.id, taskId))
 		.returning();
 	return task;
 }
 
-export async function deleteTask(id: string) {
-	const [task] = await db.delete(tasks).where(eq(tasks.id, id)).returning();
+export async function deleteTask(taskId: string) {
+	const [task] = await db.delete(tasks).where(eq(tasks.id, taskId)).returning();
+	return task;
+}
+
+export async function updateTaskPosition(
+	taskId: string,
+	destinationListId: string,
+	newPosition: number,
+) {
+	const [task] = await db
+		.update(tasks)
+		.set({ listId: destinationListId, position: newPosition })
+		.where(eq(tasks.id, taskId))
+		.returning();
+	return task;
+}
+
+export async function completeTask(taskId: string) {
+	const [task] = await db
+		.update(tasks)
+		.set({ completedAt: new Date() })
+		.where(eq(tasks.id, taskId))
+		.returning();
+	return task;
+}
+
+export async function reopenTask(taskId: string) {
+	const [task] = await db
+		.update(tasks)
+		.set({
+			completedAt: null,
+		})
+		.where(eq(tasks.id, taskId))
+		.returning();
+
 	return task;
 }

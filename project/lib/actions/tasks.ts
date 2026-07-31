@@ -3,6 +3,8 @@
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/dist/server/web/spec-extension/revalidate";
 import { treeifyError } from "zod/v4/core";
+import { createActivity } from "../activity";
+import { getCurrentUser } from "../auth";
 import { getListById } from "../db/queries/lists";
 import { getProjectById } from "../db/queries/projects";
 import {
@@ -11,177 +13,266 @@ import {
 	getTaskById,
 	getTasksByList,
 	updateTask,
+	updateTaskPosition,
 } from "../db/queries/tasks";
-import { createTaskSchema, updateTaskSchema } from "../validations/task";
+import {
+	requireActiveProject,
+	requireList,
+	requireProjectMember,
+	requireTask,
+	requireWorkspaceMember,
+} from "../permission";
+import {
+	type CreateTaskInput,
+	createTaskSchema,
+	type UpdateTaskInput,
+	updateTaskSchema,
+} from "../validations/task";
 
-export async function getTasksByListAction(listId: string) {
-	const { userId } = await auth.protect();
+export async function getTasksByListAction(
+	workspaceSlug: string,
+	projectSlug: string,
+	listId: string,
+) {
+	const user = await getCurrentUser();
 
-	if (!userId) {
-		throw new Error("User not authenticated");
-	}
+	const project = await requireProjectMember(
+		workspaceSlug,
+		projectSlug,
+		user.id,
+	);
 
-	const list = await getListById(listId);
+	const list = await requireList(listId);
 
-	if (!list) {
+	if (list.projectId !== project.id) {
 		return {
 			success: false,
-			error: "List not found or you do not have access to it.",
+			error: "List does not belong to the project.",
 		};
 	}
 
-	const project = await getProjectById(userId, list.projectId);
+	const task = await getTasksByList(listId);
 
-	if (!project) {
-		return {
-			success: false,
-			error: "Project not found or you do not have access to it.",
-		};
-	}
-
-	const tasks = await getTasksByList(listId);
-
-	return { success: true, tasks };
+	return {
+		success: true,
+		data: task,
+	};
 }
 
-export async function createTaskAction(listId: string, formData: FormData) {
-	const { userId } = await auth.protect();
+export async function createTaskAction(
+	workspaceSlug: string,
+	projectSlug: string,
+	listId: string,
+	data: CreateTaskInput,
+) {
+	const user = await getCurrentUser();
 
-	if (!userId) {
-		throw new Error("User not authenticated");
+	const validatedData = createTaskSchema.safeParse(data);
+
+	if (!validatedData.success) {
+		return {
+			success: false,
+			error: "Invalid task data.",
+		};
 	}
 
-	const parsed = createTaskSchema.safeParse({
-		title: formData.get("title"),
-		description: formData.get("description"),
-		priority: formData.get("priority"),
-		assigneeId: formData.get("assigneeId") || undefined,
-		dueDate: formData.get("dueDate"),
+	const project = await requireActiveProject(
+		workspaceSlug,
+		projectSlug,
+		user.id,
+	);
+
+	const list = await requireList(listId);
+
+	if (list.projectId !== project.id) {
+		return {
+			success: false,
+			error: "List does not belong to the project.",
+		};
+	}
+
+	if (validatedData.data.assigneeId) {
+		await requireWorkspaceMember(workspaceSlug, validatedData.data.assigneeId);
+	}
+
+	const task = await createTask(listId, user.id, validatedData.data);
+
+	await createActivity({
+		workspaceId: project.workspaceId,
+		actorId: user.id,
+		action: "created",
+		entity: "task",
+		entityId: task.id,
+		metadata: {
+			title: task.title,
+			listId: list.id,
+			listName: list.name,
+		},
 	});
 
-	if (!parsed.success) {
-		return { success: false, error: treeifyError(parsed.error) };
-	}
+	revalidatePath(`/workspaces/${workspaceSlug}/projects/${project.slug}`);
 
-	const lists = await getListById(listId);
-
-	if (!lists) {
-		return {
-			success: false,
-			error: "List not found or you do not have access to it.",
-		};
-	}
-
-	const project = await getProjectById(userId, lists.projectId);
-
-	if (!project) {
-		return {
-			success: false,
-			error: "Project not found or you do not have access to it.",
-		};
-	}
-
-	const task = await createTask(listId, parsed.data);
-
-	revalidatePath(`/projects/${lists.projectId}`);
-
-	return { success: true, task };
+	return {
+		success: true,
+		data: task,
+	};
 }
 
-export async function updateTaskAction(taskId: string, formData: FormData) {
-	const { userId } = await auth.protect();
+export async function updateTaskAction(
+	workspaceSlug: string,
+	projectSlug: string,
+	taskId: string,
+	data: UpdateTaskInput,
+) {
+	const user = await getCurrentUser();
 
-	if (!userId) {
-		throw new Error("User not authenticated");
+	const validatedData = updateTaskSchema.safeParse(data);
+
+	if (!validatedData.success) {
+		return {
+			success: false,
+			error: "Invalid task data.",
+		};
 	}
 
-	const parsed = updateTaskSchema.safeParse({
-		title: formData.get("title"),
-		description: formData.get("description"),
-		priority: formData.get("priority"),
-		assigneeId: formData.get("assigneeId") || undefined,
-		dueDate: formData.get("dueDate"),
+	const project = await requireActiveProject(
+		workspaceSlug,
+		projectSlug,
+		user.id,
+	);
+
+	const task = await requireTask(taskId);
+
+	const list = await requireList(task.listId);
+
+	if (list?.projectId !== project.id) {
+		return {
+			success: false,
+			error: "Task does not belong to the project.",
+		};
+	}
+
+	const updatedTask = await updateTask(task.id, validatedData.data);
+
+	await createActivity({
+		workspaceId: project.workspaceId,
+		actorId: user.id,
+		action: "updated",
+		entity: "task",
+		entityId: task.id,
+		metadata: {
+			title: updatedTask.title,
+			listId: list.id,
+			listName: list.name,
+			previousTitle: task.title,
+			newTitle: updatedTask.title,
+		},
 	});
 
-	if (!parsed.success) {
-		return { success: false, error: treeifyError(parsed.error) };
-	}
+	revalidatePath(`/workspaces/${workspaceSlug}/projects/${project.slug}`);
 
-	const task = await getTaskById(taskId);
-
-	if (!task) {
-		return {
-			success: false,
-			error: "Task not found or you do not have access to it.",
-		};
-	}
-
-	const lists = await getListById(task.listId);
-
-	if (!lists) {
-		return {
-			success: false,
-			error: "List not found or you do not have access to it.",
-		};
-	}
-
-	const project = await getProjectById(userId, lists.projectId);
-
-	if (!project) {
-		return {
-			success: false,
-			error: "Project not found or you do not have access to it.",
-		};
-	}
-
-	const updatedTask = await updateTask(taskId, parsed.data);
-
-	revalidatePath(`/projects/${lists.projectId}`);
-
-	return { success: true, task: updatedTask };
+	return {
+		success: true,
+		data: updatedTask,
+	};
 }
 
-export async function deleteTaskAction(taskId: string) {
-	const { userId } = await auth.protect();
+export async function deleteTaskAction(
+	workspaceSlug: string,
+	projectSlug: string,
+	taskId: string,
+) {
+	const user = await getCurrentUser();
 
-	if (!userId) {
-		throw new Error("User not authenticated");
-	}
+	const project = await requireActiveProject(
+		workspaceSlug,
+		projectSlug,
+		user.id,
+	);
 
-	const task = await getTaskById(taskId);
+	const task = await requireTask(taskId);
 
-	if (!task) {
+	const list = await requireList(task.listId);
+
+	if (list?.projectId !== project.id) {
 		return {
 			success: false,
-			error: "Task not found or you do not have access to it.",
-		};
-	}
-
-	const list = await getListById(task.listId);
-
-	if (!list) {
-		return {
-			success: false,
-			error: "List not found or you do not have access to it.",
-		};
-	}
-
-	const project = await getProjectById(userId, list.projectId);
-
-	if (!project) {
-		return {
-			success: false,
-			error: "Project not found or you do not have access to it.",
+			error: "Task does not belong to the project.",
 		};
 	}
 
 	const deletedTask = await deleteTask(taskId);
 
-	revalidatePath(`/projects/${list.projectId}`);
+	await createActivity({
+		workspaceId: project.workspaceId,
+		actorId: user.id,
+		action: "deleted",
+		entity: "task",
+		entityId: task.id,
+		metadata: {
+			title: task.title,
+			listId: list.id,
+			listName: list.name,
+		},
+	});
 
-	return { success: true, task: deletedTask };
+	revalidatePath(`/workspaces/${workspaceSlug}/projects/${project.slug}`);
+
+	return {
+		success: true,
+		data: deletedTask,
+	};
 }
 
-export async function moveTaskAction() {
-	// TO DO FOR DRAG AND DROP FEATURE
+export async function moveTaskAction(
+	workspaceSlug: string,
+	projectSlug: string,
+	taskId: string,
+	destinationListId: string,
+	newPosition: number,
+) {
+	const user = await getCurrentUser();
+
+	const project = await requireActiveProject(
+		workspaceSlug,
+		projectSlug,
+		user.id,
+	);
+
+	const task = await requireTask(taskId);
+
+	const currentList = await requireList(task.listId);
+
+	const destinationList = await requireList(destinationListId);
+
+	if (
+		currentList.projectId !== project.id ||
+		destinationList.projectId !== project.id
+	) {
+		return {
+			success: false,
+			error: "Task does not belong to the project.",
+		};
+	}
+
+	const moveTask = await updateTaskPosition(
+		task.id,
+		destinationListId,
+		newPosition,
+	);
+
+	await createActivity({
+		workspaceId: project.workspaceId,
+		actorId: user.id,
+		action: "deleted",
+		entity: "task",
+		entityId: task.id,
+		metadata: {
+			title: task.title,
+			fromList: currentList.name,
+			toList: destinationList.name,
+		},
+	});
+
+	revalidatePath(`/workspaces/${workspaceSlug}/projects/${project.slug}`);
 }

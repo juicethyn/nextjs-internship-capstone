@@ -3,250 +3,219 @@
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/dist/server/web/spec-extension/revalidate";
 import { treeifyError } from "zod/v4/core";
+import { createActivity } from "../activity";
+import { getCurrentUser } from "../auth";
 import {
 	createComment,
 	deleteComment,
 	getCommentById,
-	getCommentsByTaskId,
+	getCommentsByTask,
 	updateComment,
 } from "../db/queries/comments";
 import { getListById } from "../db/queries/lists";
 import { getProjectById } from "../db/queries/projects";
 import { getTaskById } from "../db/queries/tasks";
 import {
+	requireActiveProject,
+	requireComment,
+	requireList,
+	requireProjectMember,
+	requireTask,
+} from "../permission";
+import {
+	type CreateCommentInput,
 	createCommentSchema,
+	type UpdateCommentInput,
 	updateCommentSchema,
 } from "../validations/comment";
 
-export async function createCommentAction(taskId: string, formData: FormData) {
-	const { userId } = await auth.protect();
+export async function getCommentsByTaskAction(
+	workspaceSlug: string,
+	projectSlug: string,
+	taskId: string,
+) {
+	const user = await getCurrentUser();
 
-	if (!userId) {
-		throw new Error("User not authenticated");
-	}
+	const project = await requireProjectMember(
+		workspaceSlug,
+		projectSlug,
+		user.id,
+	);
 
-	const parsed = createCommentSchema.safeParse({
-		content: formData.get("content"),
-	});
-
-	if (!parsed.success) {
-		return {
-			success: false,
-			error: treeifyError(parsed.error),
-		};
-	}
-
-	const task = await getTaskById(taskId);
-
-	if (!task) {
-		return {
-			success: false,
-			error: "Task not found or you do not have access to it.",
-		};
-	}
+	const task = await requireTask(taskId);
 
 	const list = await getListById(task.listId);
 
-	if (!list) {
+	if (list?.projectId !== project.id) {
 		return {
 			success: false,
-			error: "List not found or you do not have access to it.",
+			error: "Task does not belong to the project.",
 		};
 	}
 
-	const project = await getProjectById(userId, list.projectId);
+	const comments = await getCommentsByTask(taskId);
 
-	if (!project) {
+	return {
+		success: true,
+		data: comments,
+	};
+}
+
+export async function createCommentAction(
+	workspaceSlug: string,
+	projectSlug: string,
+	taskId: string,
+	data: CreateCommentInput,
+) {
+	const user = await getCurrentUser();
+
+	const validatedData = createCommentSchema.safeParse(data);
+
+	if (!validatedData.success) {
 		return {
 			success: false,
-			error: "Project not found or you do not have access to it.",
+			error: "Invalid comment data.",
 		};
 	}
 
-	const comment = await createComment(taskId, userId, parsed.data);
+	const project = await requireActiveProject(
+		workspaceSlug,
+		projectSlug,
+		user.id,
+	);
 
-	if (!comment) {
+	const task = await requireTask(taskId);
+
+	const list = await getListById(task.listId);
+
+	if (list?.projectId !== project.id) {
 		return {
 			success: false,
-			error: "Failed to create comment.",
+			error: "Task does not belong to the project.",
 		};
 	}
 
-	revalidatePath(`/projects/${project.id}`);
+	const comment = await createComment(taskId, user.id, validatedData.data);
 
-	return { success: true, comment };
+	revalidatePath(`/workspaces/${workspaceSlug}/projects/${projectSlug}`);
+
+	await createActivity({
+		workspaceId: project.workspaceId,
+		actorId: user.id,
+		action: "created",
+		entity: "comment",
+		entityId: comment.id,
+		metadata: {
+			taskTitle: task.title,
+		},
+	});
+
+	return {
+		success: true,
+		data: comment,
+	};
 }
 
 export async function updateCommentAction(
+	workspaceSlug: string,
+	projectSlug: string,
 	commentId: string,
-	formData: FormData,
+	data: UpdateCommentInput,
 ) {
-	const { userId } = await auth.protect();
+	const user = await getCurrentUser();
 
-	if (!userId) {
-		throw new Error("User not authenticated");
+	const validatedData = updateCommentSchema.safeParse(data);
+
+	if (!validatedData.success) {
+		return {
+			success: false,
+			error: "Invalid comment data.",
+		};
 	}
 
-	const parsed = updateCommentSchema.safeParse({
-		content: formData.get("content"),
+	const project = await requireActiveProject(
+		workspaceSlug,
+		projectSlug,
+		user.id,
+	);
+
+	const comment = await requireComment(commentId);
+
+	const task = await requireTask(comment.taskId);
+
+	const list = await requireList(task.listId);
+
+	if (list?.projectId !== project.id) {
+		return {
+			success: false,
+			error: "Comment does not belong to the project.",
+		};
+	}
+
+	const updatedComment = await updateComment(commentId, validatedData.data);
+
+	await createActivity({
+		workspaceId: project.workspaceId,
+		actorId: user.id,
+		action: "updated",
+		entity: "comment",
+		entityId: comment.id,
+		metadata: {
+			taskTitle: task.title,
+		},
 	});
 
-	if (!parsed.success) {
-		return {
-			success: false,
-			error: treeifyError(parsed.error),
-		};
-	}
+	revalidatePath(`/workspaces/${workspaceSlug}/projects/${projectSlug}`);
 
-	const comment = await getCommentById(commentId);
-
-	if (!comment) {
-		return {
-			success: false,
-			error: "Comment not found or you do not have access to it.",
-		};
-	}
-
-	const task = await getTaskById(comment.taskId);
-
-	if (!task) {
-		return {
-			success: false,
-			error: "Task not found or you do not have access to it.",
-		};
-	}
-
-	const list = await getListById(task.listId);
-
-	if (!list) {
-		return {
-			success: false,
-			error: "List not found or you do not have access to it.",
-		};
-	}
-
-	const project = await getProjectById(userId, list.projectId);
-
-	if (!project) {
-		return {
-			success: false,
-			error: "Project not found or you do not have access to it.",
-		};
-	}
-
-	const updatedComment = await updateComment(commentId, parsed.data);
-
-	if (!updatedComment) {
-		return {
-			success: false,
-			error: "Failed to update comment.",
-		};
-	}
-
-	revalidatePath(`/projects/${project.id}`);
-
-	return { success: true, comment: updatedComment };
+	return {
+		success: true,
+		data: updatedComment,
+	};
 }
 
-export async function deleteCommentAction(commentId: string) {
-	const { userId } = await auth.protect();
+export async function deleteCommentAction(
+	workspaceSlug: string,
+	projectSlug: string,
+	commentId: string,
+) {
+	const user = await getCurrentUser();
 
-	if (!userId) {
-		throw new Error("User not authenticated");
-	}
+	const project = await requireActiveProject(
+		workspaceSlug,
+		projectSlug,
+		user.id,
+	);
 
-	const comment = await getCommentById(commentId);
+	const comment = await requireComment(commentId);
 
-	if (!comment) {
+	const task = await requireTask(comment.taskId);
+
+	const list = await requireList(task.listId);
+
+	if (list?.projectId !== project.id) {
 		return {
 			success: false,
-			error: "Comment not found or you do not have access to it.",
-		};
-	}
-
-	const task = await getTaskById(comment.taskId);
-
-	if (!task) {
-		return {
-			success: false,
-			error: "Task not found or you do not have access to it.",
-		};
-	}
-
-	const list = await getListById(task.listId);
-
-	if (!list) {
-		return {
-			success: false,
-			error: "List not found or you do not have access to it.",
-		};
-	}
-
-	const project = await getProjectById(userId, list.projectId);
-
-	if (!project) {
-		return {
-			success: false,
-			error: "Project not found or you do not have access to it.",
+			error: "Comment does not belong to the project.",
 		};
 	}
 
 	const deletedComment = await deleteComment(commentId);
 
-	if (!deletedComment) {
-		return {
-			success: false,
-			error: "Failed to delete comment.",
-		};
-	}
+	await createActivity({
+		workspaceId: project.workspaceId,
+		actorId: user.id,
+		action: "deleted",
+		entity: "comment",
+		entityId: comment.id,
+		metadata: {
+			taskTitle: task.title,
+		},
+	});
 
-	revalidatePath(`/projects/${project.id}`);
+	revalidatePath(`/workspaces/${workspaceSlug}/projects/${projectSlug}`);
 
-	return { success: true, comment: deletedComment };
-}
-
-export async function getCommentsByTaskAction(taskId: string) {
-	const { userId } = await auth.protect();
-
-	if (!userId) {
-		throw new Error("User not authenticated");
-	}
-
-	const task = await getTaskById(taskId);
-
-	if (!task) {
-		return {
-			success: false,
-			error: "Task not found or you do not have access to it.",
-		};
-	}
-
-	const list = await getListById(task.listId);
-
-	if (!list) {
-		return {
-			success: false,
-			error: "List not found or you do not have access to it.",
-		};
-	}
-
-	const project = await getProjectById(userId, list.projectId);
-
-	if (!project) {
-		return {
-			success: false,
-			error: "Project not found or you do not have access to it.",
-		};
-	}
-
-	const comments = await getCommentsByTaskId(taskId);
-
-	if (!comments) {
-		return {
-			success: false,
-			error: "Failed to retrieve comments.",
-		};
-	}
-
-	return { success: true, comments };
+	return {
+		success: true,
+		data: deletedComment,
+	};
 }

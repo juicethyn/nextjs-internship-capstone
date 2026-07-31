@@ -1,4 +1,5 @@
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
+import { generateProjectSlug } from "@/lib/slug";
 import type {
 	CreateProjectInput,
 	UpdateProjectInput,
@@ -6,45 +7,136 @@ import type {
 import { db } from "../index";
 import { projects } from "../schema";
 
-export function getProjectsByOwner(ownerId: string) {
+// CRUD Operations
+
+export function getProjectsByWorkspace(workspaceId: string) {
 	return db.query.projects.findMany({
-		where: eq(projects.ownerId, ownerId),
-		with: { lists: { with: { tasks: true } } },
+		where: eq(projects.workspaceId, workspaceId),
+		with: {
+			lists: { with: { tasks: true } },
+			members: {
+				with: {
+					user: true,
+				},
+			},
+		},
 	});
 }
 
-export function getProjectById(ownerId: string, id: string) {
+export function getProjectById(id: string) {
 	return db.query.projects.findFirst({
-		where: and(eq(projects.id, id), eq(projects.ownerId, ownerId)),
-		with: { lists: { with: { tasks: true } } },
+		where: eq(projects.id, id),
+		with: {
+			lists: {
+				with: {
+					tasks: true,
+				},
+			},
+			members: {
+				with: {
+					user: true,
+				},
+			},
+		},
 	});
 }
 
-export async function createProject(ownerId: string, data: CreateProjectInput) {
+export function getProjectBySlug(workspaceId: string, slug: string) {
+	return db.query.projects.findFirst({
+		where: and(eq(projects.workspaceId, workspaceId), eq(projects.slug, slug)),
+	});
+}
+
+export async function createProject(
+	workspaceId: string,
+	leadId: string,
+	data: CreateProjectInput,
+) {
+	const slug = generateProjectSlug(data.name);
+
 	const [project] = await db
 		.insert(projects)
-		.values({ ...data, ownerId })
+		.values({
+			...data,
+			slug,
+			workspaceId,
+			leadId,
+		})
 		.returning();
+
 	return project;
 }
 
-export async function updateProject(
-	ownerId: string,
-	id: string,
-	data: UpdateProjectInput,
+export async function updateProject(id: string, data: UpdateProjectInput) {
+	const slug = data.name ? generateProjectSlug(data.name) : undefined;
+
+	const [project] = await db
+		.update(projects)
+		.set({
+			...data,
+			slug,
+		})
+		.where(eq(projects.id, id))
+		.returning();
+
+	return project;
+}
+
+export async function deleteProject(id: string) {
+	const [project] = await db
+		.delete(projects)
+		.where(eq(projects.id, id))
+		.returning();
+
+	return project;
+}
+
+// Business Operations
+
+export async function transferProjectLead(
+	projectId: string,
+	newLeadId: string,
 ) {
 	const [project] = await db
 		.update(projects)
-		.set(data)
-		.where(and(eq(projects.id, id), eq(projects.ownerId, ownerId)))
+		.set({
+			leadId: newLeadId,
+		})
+		.where(eq(projects.id, projectId))
 		.returning();
+
 	return project;
 }
 
-export async function deleteProject(ownerId: string, id: string) {
+export async function archiveProject(projectId: string) {
 	const [project] = await db
-		.delete(projects)
-		.where(and(eq(projects.id, id), eq(projects.ownerId, ownerId)))
+		.update(projects)
+		.set({
+			isArchived: true,
+		})
+		.where(eq(projects.id, projectId))
 		.returning();
+
 	return project;
 }
+
+export async function restoreProject(projectId: string) {
+	const [project] = await db
+		.update(projects)
+		.set({
+			isArchived: false,
+		})
+		.where(eq(projects.id, projectId))
+		.returning();
+
+	return project;
+}
+
+// Will be used for the dashboard.ts queries
+// export async function getRecentProjects(workspaceId: string, limit: number = 5) {
+// 	return db.query.projects.findMany({
+// 		where: eq(projects.workspaceId, workspaceId),
+// 		orderBy: desc(projects.updatedAt),
+// 		limit,
+// 	});
+// }
