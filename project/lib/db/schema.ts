@@ -1,4 +1,5 @@
 import {
+	type AnyPgColumn,
 	boolean,
 	index,
 	integer,
@@ -69,6 +70,7 @@ export const activityActionEnum = pgEnum("activity_action", [
 	"archived",
 	"restored",
 	"assigned",
+	"transferred",
 	"unassigned",
 	"completed",
 	"moved",
@@ -102,6 +104,10 @@ export const users = pgTable(
 			.notNull()
 			.defaultNow()
 			.$onUpdate(() => new Date()),
+		lastWorkspaceId: uuid("last_workspace_id").references(
+			(): AnyPgColumn => workspaces.id,
+			{ onDelete: "set null" },
+		),
 	},
 	(table) => [
 		index("users_clerk_id_index").on(table.clerkId),
@@ -317,13 +323,13 @@ export const comments = pgTable(
 
 // ============================= LABELS TABLE SCHEMA =============================
 
-export const labels = pgTable(
-	"labels",
+export const workspaceLabels = pgTable(
+	"workspace_labels",
 	{
 		id: uuid("id").defaultRandom().primaryKey(),
-		projectId: uuid("project_id")
+		workspaceId: uuid("workspace_id")
 			.notNull()
-			.references(() => projects.id, { onDelete: "cascade" }),
+			.references(() => workspaces.id, { onDelete: "cascade" }),
 		name: text("name").notNull(),
 		color: text("color").notNull(),
 		createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -333,8 +339,38 @@ export const labels = pgTable(
 			.$onUpdate(() => new Date()),
 	},
 	(table) => [
-		unique().on(table.projectId, table.name),
-		index("labels_project_id_index").on(table.projectId),
+		unique().on(table.workspaceId, table.name),
+		index("workspaceLabels_workspace_id_index").on(table.workspaceId),
+	],
+);
+
+export const projectWorkspaceLabels = pgTable(
+	"project_workspace_labels",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+
+		projectId: uuid("project_id")
+			.notNull()
+			.references(() => projects.id, {
+				onDelete: "cascade",
+			}),
+
+		workspaceLabelId: uuid("workspace_label_id")
+			.notNull()
+			.references(() => workspaceLabels.id, {
+				onDelete: "cascade",
+			}),
+
+		createdAt: timestamp("created_at").notNull().defaultNow(),
+	},
+	(table) => [
+		unique().on(table.projectId, table.workspaceLabelId),
+
+		index("projectWorkspaceLabels_project_id_index").on(table.projectId),
+
+		index("projectWorkspaceLabels_workspace_label_id_index").on(
+			table.workspaceLabelId,
+		),
 	],
 );
 
@@ -342,18 +378,56 @@ export const taskLabels = pgTable(
 	"task_labels",
 	{
 		id: uuid("id").defaultRandom().primaryKey(),
+
+		projectId: uuid("project_id")
+			.notNull()
+			.references(() => projects.id, {
+				onDelete: "cascade",
+			}),
+
+		name: text("name").notNull(),
+
+		color: text("color").notNull(),
+
+		createdAt: timestamp("created_at").notNull().defaultNow(),
+
+		updatedAt: timestamp("updated_at")
+			.notNull()
+			.defaultNow()
+			.$onUpdate(() => new Date()),
+	},
+	(table) => [
+		unique().on(table.projectId, table.name),
+
+		index("taskLabels_project_id_index").on(table.projectId),
+	],
+);
+
+export const taskLabelAssignments = pgTable(
+	"task_label_assignments",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+
 		taskId: uuid("task_id")
 			.notNull()
-			.references(() => tasks.id, { onDelete: "cascade" }),
-		labelId: uuid("label_id")
+			.references(() => tasks.id, {
+				onDelete: "cascade",
+			}),
+
+		taskLabelId: uuid("task_label_id")
 			.notNull()
-			.references(() => labels.id, { onDelete: "cascade" }),
+			.references(() => taskLabels.id, {
+				onDelete: "cascade",
+			}),
+
 		createdAt: timestamp("created_at").notNull().defaultNow(),
 	},
 	(table) => [
-		unique().on(table.taskId, table.labelId),
-		index("taskLabels_task_id_index").on(table.taskId),
-		index("taskLabels_label_id_index").on(table.labelId),
+		unique().on(table.taskId, table.taskLabelId),
+
+		index("taskLabelAssignments_task_id_index").on(table.taskId),
+
+		index("taskLabelAssignments_task_label_id_index").on(table.taskLabelId),
 	],
 );
 

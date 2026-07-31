@@ -1,24 +1,57 @@
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
+import type {
+	CreateTaskLabelInput,
+	UpdateTaskLabelInput,
+} from "@/lib/validations/label";
 import { db } from "../index";
 import { taskLabels } from "../schema";
 
-export async function addLabelToTask(taskId: string, labelId: string) {
-	const [taskLabel] = await db
+export async function getTaskLabelsByProject(projectId: string) {
+	return db.query.taskLabels.findMany({
+		where: eq(taskLabels.projectId, projectId),
+		orderBy: (label, { asc }) => asc(label.name),
+	});
+}
+
+export async function getTaskLabelById(labelId: string) {
+	return db.query.taskLabels.findFirst({
+		where: eq(taskLabels.id, labelId),
+	});
+}
+
+export async function createTaskLabel(
+	projectId: string,
+	data: CreateTaskLabelInput,
+) {
+	const [label] = await db
 		.insert(taskLabels)
 		.values({
-			taskId,
-			labelId,
+			...data,
+			projectId,
 		})
 		.returning();
 
-	return taskLabel;
+	return label;
 }
 
-export async function removeLabelFromTask(taskId: string, labelId: string) {
-	const [taskLabel] = await db
-		.delete(taskLabels)
-		.where(and(eq(taskLabels.taskId, taskId), eq(taskLabels.labelId, labelId)))
+export async function updateTaskLabel(
+	labelId: string,
+	data: UpdateTaskLabelInput,
+) {
+	const [label] = await db
+		.update(taskLabels)
+		.set(data)
+		.where(eq(taskLabels.id, labelId))
 		.returning();
 
-	return taskLabel;
+	return label;
+}
+
+export async function deleteTaskLabel(labelId: string) {
+	const [label] = await db
+		.delete(taskLabels)
+		.where(eq(taskLabels.id, labelId))
+		.returning();
+
+	return label;
 }

@@ -1,5 +1,5 @@
 import { and, eq, exists } from "drizzle-orm";
-import { generateSlug } from "@/lib/slug";
+import { generateWorkspaceSlug } from "@/lib/slug";
 import type {
 	CreateWorkspaceInput,
 	UpdateWorkspaceInput,
@@ -33,11 +33,53 @@ export async function getWorkspaceById(workspaceId: string) {
 	});
 }
 
+export async function getWorkspaceBySlug(slug: string) {
+	return db.query.workspaces.findFirst({
+		where: eq(workspaces.slug, slug),
+		with: {
+			members: true,
+			projects: true,
+		},
+	});
+}
+
+export async function getUserWorkspaces(userId: string) {
+	return db.query.workspaces.findMany({
+		where: exists(
+			db
+				.select()
+				.from(workspaceMembers)
+				.where(
+					and(
+						eq(workspaceMembers.userId, userId),
+						eq(workspaceMembers.workspaceId, workspaces.id),
+					),
+				),
+		),
+		with: {
+			members: true,
+			projects: true,
+		},
+	});
+}
+
+export function getUserWorkspaceById(workspaceId: string, userId: string) {
+	return db.query.workspaceMembers.findFirst({
+		where: and(
+			eq(workspaceMembers.userId, userId),
+			eq(workspaceMembers.workspaceId, workspaceId),
+		),
+		with: {
+			workspace: true,
+		},
+	});
+}
+
 export async function createWorkspace(
 	userId: string,
 	data: CreateWorkspaceInput,
 ) {
-	const slug = generateSlug(data.name);
+	const slug = generateWorkspaceSlug();
 
 	return db.transaction(async (tx) => {
 		const [workspace] = await tx
@@ -63,14 +105,9 @@ export async function updateWorkspace(
 	workspaceId: string,
 	data: UpdateWorkspaceInput,
 ) {
-	const slug = data.name ? generateSlug(data.name) : undefined;
-
 	const [workspace] = await db
 		.update(workspaces)
-		.set({
-			...data,
-			...(slug && { slug }),
-		})
+		.set(data)
 		.where(eq(workspaces.id, workspaceId))
 		.returning();
 

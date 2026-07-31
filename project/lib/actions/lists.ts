@@ -3,6 +3,8 @@
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/dist/server/web/spec-extension/revalidate";
 import { treeifyError } from "zod/v4/core";
+import { createActivity } from "../activity";
+import { getCurrentUser } from "../auth";
 import {
 	createList,
 	deleteList,
@@ -11,147 +13,174 @@ import {
 	updateList,
 } from "../db/queries/lists";
 import { getProjectById } from "../db/queries/projects";
-import { createListSchema } from "../validations/list";
+import { requireActiveProject, requireList } from "../permission";
+import {
+	type CreateListInput,
+	createListSchema,
+	type UpdateListInput,
+} from "../validations/list";
 
-export async function createListAction(projectId: string, formData: FormData) {
-	const { userId } = await auth.protect();
+export async function createListAction(
+	workspaceSlug: string,
+	projectSlug: string,
+	data: CreateListInput,
+) {
+	const user = await getCurrentUser();
 
-	if (!userId) {
-		throw new Error("User not authenticated");
-	}
+	const validatedDate = createListSchema.safeParse(data);
 
-	const parsed = createListSchema.safeParse({
-		name: formData.get("name"),
-	});
-
-	if (!parsed.success) {
-		return { success: false, error: treeifyError(parsed.error) };
-	}
-
-	const project = await getProjectById(userId, projectId);
-
-	if (!project) {
+	if (!validatedDate.success) {
 		return {
 			success: false,
-			error: "Project not found or you do not have access to it.",
+			message: treeifyError(validatedDate.error),
 		};
 	}
 
-	const list = await createList(projectId, parsed.data);
+	const project = await requireActiveProject(
+		workspaceSlug,
+		projectSlug,
+		user.id,
+	);
 
-	revalidatePath("/projects");
-	revalidatePath(`/projects/${projectId}`);
+	const list = await createList(project.id, validatedDate.data);
 
-	return { success: true, list };
+	await createActivity({
+		workspaceId: project.workspaceId,
+		actorId: user.id,
+		action: "created",
+		entity: "list",
+		entityId: list.id,
+		metadata: {
+			name: list.name,
+		},
+	});
+
+	revalidatePath(`/workspaces/${workspaceSlug}/projects/${project.slug}`);
+
+	return { success: true, data: list };
 }
 
-export async function updateListAction(listId: string, formData: FormData) {
-	const { userId } = await auth.protect();
+export async function updateListAction(
+	workspaceSlug: string,
+	projectSlug: string,
+	listId: string,
+	data: UpdateListInput,
+) {
+	const user = await getCurrentUser();
 
-	if (!userId) {
-		throw new Error("User not authenticated");
-	}
+	const validatedData = createListSchema.safeParse(data);
 
-	const parsed = createListSchema.safeParse({
-		name: formData.get("name"),
-	});
-
-	if (!parsed.success) {
-		return { success: false, error: treeifyError(parsed.error) };
-	}
-
-	const list = await getListById(listId);
-
-	if (!list) {
+	if (!validatedData.success) {
 		return {
 			success: false,
-			error: "List not found.",
+			message: treeifyError(validatedData.error),
 		};
 	}
 
-	const project = await getProjectById(userId, list.projectId);
+	const project = await requireActiveProject(
+		workspaceSlug,
+		projectSlug,
+		user.id,
+	);
 
-	if (!project) {
+	const list = await requireList(listId);
+
+	if (list.projectId !== project.id) {
 		return {
 			success: false,
-			error: "Project not found or you do not have access to it.",
+			error: "Invalid list.",
 		};
 	}
 
-	const updated = await updateList(listId, parsed.data);
+	const updatedList = await updateList(listId, validatedData.data);
 
-	if (!updated) {
+	if (!updatedList) {
 		return {
 			success: false,
 			error: "Failed to update list.",
 		};
 	}
 
-	revalidatePath("/projects");
-	revalidatePath(`/projects/${list.projectId}`);
+	await createActivity({
+		workspaceId: project.workspaceId,
+		actorId: user.id,
+		action: "updated",
+		entity: "list",
+		entityId: list.id,
+		metadata: {
+			name: updatedList.name,
+		},
+	});
 
-	return { success: true, list: updated };
+	revalidatePath(`/workspaces/${workspaceSlug}/projects/${project.slug}`);
+
+	return {
+		success: true,
+		data: updatedList,
+	};
 }
 
-export async function deleteListAction(listId: string) {
-	const { userId } = await auth.protect();
+export async function deleteListAction(
+	workspaceSlug: string,
+	projectSlug: string,
+	listId: string,
+) {
+	const user = await getCurrentUser();
 
-	if (!userId) {
-		throw new Error("User not authenticated");
-	}
+	const project = await requireActiveProject(
+		workspaceSlug,
+		projectSlug,
+		user.id,
+	);
 
-	const list = await getListById(listId);
+	const list = await requireList(listId);
 
-	if (!list) {
+	if (list.projectId !== project.id) {
 		return {
 			success: false,
-			error: "List not found.",
+			error: "Invalid list.",
 		};
 	}
 
-	const project = await getProjectById(userId, list.projectId);
+	const deletedList = await deleteList(listId);
 
-	if (!project) {
-		return {
-			success: false,
-			error: "Project not found or you do not have access to it.",
-		};
-	}
+	await createActivity({
+		workspaceId: project.workspaceId,
+		actorId: user.id,
+		action: "deleted",
+		entity: "list",
+		entityId: list.id,
+		metadata: {
+			name: list.name,
+		},
+	});
 
-	const deleted = await deleteList(listId);
+	revalidatePath(`/workspaces/${workspaceSlug}/projects/${project.slug}`);
 
-	if (!deleted) {
-		return {
-			success: false,
-			error: "Failed to delete list.",
-		};
-	}
-
-	revalidatePath("/projects");
-	revalidatePath(`/projects/${list.projectId}`);
-
-	return { success: true, list: deleted };
+	return {
+		success: true,
+		data: deletedList,
+	};
 }
 
-export async function getListsByProjectAction(projectId: string) {
-	const { userId } = await auth.protect();
+export async function getListsByProjectAction(
+	workspaceSlug: string,
+	projectSlug: string,
+) {
+	const user = await getCurrentUser();
 
-	if (!userId) {
-		throw new Error("User not authenticated");
-	}
+	const project = await requireActiveProject(
+		workspaceSlug,
+		projectSlug,
+		user.id,
+	);
 
-	const project = await getProjectById(userId, projectId);
+	const lists = await getListsByProject(project.id);
 
-	if (!project) {
-		return {
-			success: false,
-			error: "Project not found or you do not have access to it.",
-		};
-	}
-
-	const lists = await getListsByProject(projectId);
-
-	return { success: true, lists };
+	return {
+		success: true,
+		data: lists,
+	};
 }
 
 // export async function getListByIdAction(listId: string) {

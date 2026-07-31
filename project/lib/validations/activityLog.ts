@@ -6,5 +6,5 @@ export type CreateActivityInput = {
 	action: ActivityAction;
 	entity: EntityType;
 	entityId: string;
-	metadata?: Record<string, unknown>;
+	metadata?: unknown;
 };

@@ -1,7 +1,11 @@
 import { nanoid } from "nanoid";
 import slugify from "slugify";
 
-export function generateSlug(name: string) {
+export function generateWorkspaceSlug() {
+	return nanoid(8);
+}
+
+export function generateProjectSlug(name: string) {
 	const baseSlug = slugify(name, {
 		lower: true,
 		strict: true,

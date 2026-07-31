@@ -24,6 +24,7 @@ export const workspacesRelations = relations(
 		members: many(schema.workspaceMembers),
 		invitations: many(schema.workspaceInvitations),
 		projects: many(schema.projects),
+		labels: many(schema.workspaceLabels),
 		activityLogs: many(schema.activityLogs),
 	}),
 );
@@ -56,7 +57,8 @@ export const projectsRelations = relations(
 		}),
 		members: many(schema.projectMembers),
 		lists: many(schema.lists),
-		labels: many(schema.labels),
+		projectLabels: many(schema.projectWorkspaceLabels),
+		taskLabels: many(schema.taskLabels),
 	}),
 );
 
@@ -98,7 +100,7 @@ export const tasksRelations = relations(schema.tasks, ({ one, many }) => ({
 		relationName: "createdTasks",
 	}),
 	comments: many(schema.comments),
-	labels: many(schema.taskLabels),
+	taskLabels: many(schema.taskLabelAssignments),
 }));
 
 export const commentsRelations = relations(schema.comments, ({ one }) => ({
@@ -112,13 +114,59 @@ export const commentsRelations = relations(schema.comments, ({ one }) => ({
 	}),
 }));
 
-export const labelsRelations = relations(schema.labels, ({ one, many }) => ({
-	project: one(schema.projects, {
-		fields: [schema.labels.projectId],
-		references: [schema.projects.id],
+export const workspaceLabelsRelations = relations(
+	schema.workspaceLabels,
+	({ one, many }) => ({
+		workspace: one(schema.workspaces, {
+			fields: [schema.workspaceLabels.workspaceId],
+			references: [schema.workspaces.id],
+		}),
+
+		projects: many(schema.projectWorkspaceLabels),
 	}),
-	tasks: many(schema.taskLabels),
-}));
+);
+
+export const projectWorkspaceLabelsRelations = relations(
+	schema.projectWorkspaceLabels,
+	({ one }) => ({
+		project: one(schema.projects, {
+			fields: [schema.projectWorkspaceLabels.projectId],
+			references: [schema.projects.id],
+		}),
+
+		workspaceLabel: one(schema.workspaceLabels, {
+			fields: [schema.projectWorkspaceLabels.workspaceLabelId],
+			references: [schema.workspaceLabels.id],
+		}),
+	}),
+);
+
+export const taskLabelsRelations = relations(
+	schema.taskLabels,
+	({ one, many }) => ({
+		project: one(schema.projects, {
+			fields: [schema.taskLabels.projectId],
+			references: [schema.projects.id],
+		}),
+
+		tasks: many(schema.taskLabelAssignments),
+	}),
+);
+
+export const taskLabelAssignmentsRelations = relations(
+	schema.taskLabelAssignments,
+	({ one }) => ({
+		task: one(schema.tasks, {
+			fields: [schema.taskLabelAssignments.taskId],
+			references: [schema.tasks.id],
+		}),
+
+		taskLabel: one(schema.taskLabels, {
+			fields: [schema.taskLabelAssignments.taskLabelId],
+			references: [schema.taskLabels.id],
+		}),
+	}),
+);
 
 export const activityLogsRelations = relations(
 	schema.activityLogs,

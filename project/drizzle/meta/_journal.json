@@ -15,6 +15,20 @@
 			"when": 1785293661994,
 			"tag": "0001_absent_purifiers",
 			"breakpoints": true
+		},
+		{
+			"idx": 2,
+			"version": "7",
+			"when": 1785375124111,
+			"tag": "0002_spicy_jigsaw",
+			"breakpoints": true
+		},
+		{
+			"idx": 3,
+			"version": "7",
+			"when": 1785465078347,
+			"tag": "0003_charming_blazing_skull",
+			"breakpoints": true
 		}
 	]
 }

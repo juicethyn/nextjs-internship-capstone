@@ -1,11 +1,13 @@
 import { and, desc, eq } from "drizzle-orm";
-import { generateSlug } from "@/lib/slug";
+import { generateProjectSlug } from "@/lib/slug";
 import type {
 	CreateProjectInput,
 	UpdateProjectInput,
 } from "@/lib/validations/project";
 import { db } from "../index";
 import { projects } from "../schema";
+
+// CRUD Operations
 
 export function getProjectsByWorkspace(workspaceId: string) {
 	return db.query.projects.findMany({
@@ -39,9 +41,9 @@ export function getProjectById(id: string) {
 	});
 }
 
-export function getProjectBySlug(slug: string) {
+export function getProjectBySlug(workspaceId: string, slug: string) {
 	return db.query.projects.findFirst({
-		where: eq(projects.slug, slug),
+		where: and(eq(projects.workspaceId, workspaceId), eq(projects.slug, slug)),
 	});
 }
 
@@ -50,7 +52,7 @@ export async function createProject(
 	leadId: string,
 	data: CreateProjectInput,
 ) {
-	const slug = generateSlug(data.name);
+	const slug = generateProjectSlug(data.name);
 
 	const [project] = await db
 		.insert(projects)
@@ -66,7 +68,7 @@ export async function createProject(
 }
 
 export async function updateProject(id: string, data: UpdateProjectInput) {
-	const slug = data.name ? generateSlug(data.name) : undefined;
+	const slug = data.name ? generateProjectSlug(data.name) : undefined;
 
 	const [project] = await db
 		.update(projects)
@@ -80,10 +82,51 @@ export async function updateProject(id: string, data: UpdateProjectInput) {
 	return project;
 }
 
-export async function deleteProjectById(id: string) {
+export async function deleteProject(id: string) {
 	const [project] = await db
 		.delete(projects)
 		.where(eq(projects.id, id))
+		.returning();
+
+	return project;
+}
+
+// Business Operations
+
+export async function transferProjectLead(
+	projectId: string,
+	newLeadId: string,
+) {
+	const [project] = await db
+		.update(projects)
+		.set({
+			leadId: newLeadId,
+		})
+		.where(eq(projects.id, projectId))
+		.returning();
+
+	return project;
+}
+
+export async function archiveProject(projectId: string) {
+	const [project] = await db
+		.update(projects)
+		.set({
+			isArchived: true,
+		})
+		.where(eq(projects.id, projectId))
+		.returning();
+
+	return project;
+}
+
+export async function restoreProject(projectId: string) {
+	const [project] = await db
+		.update(projects)
+		.set({
+			isArchived: false,
+		})
+		.where(eq(projects.id, projectId))
 		.returning();
 
 	return project;

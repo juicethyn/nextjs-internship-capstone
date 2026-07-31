@@ -4,6 +4,7 @@ export const activityActionEnum = [
 	"deleted",
 	"archived",
 	"restored",
+	"transferred",
 	"assigned",
 	"unassigned",
 	"completed",

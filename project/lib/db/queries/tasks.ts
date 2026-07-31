@@ -9,9 +9,9 @@ export function getTasksByList(listId: string) {
 		orderBy: (task, { asc }) => [asc(task.position)],
 		with: {
 			assignee: true,
-			labels: {
+			taskLabels: {
 				with: {
-					label: true,
+					taskLabel: true,
 				},
 			},
 			comments: true,
@@ -19,18 +19,18 @@ export function getTasksByList(listId: string) {
 	});
 }
 
-export function getTaskById(id: string) {
+export function getTaskById(taskId: string) {
 	return db.query.tasks.findFirst({
-		where: eq(tasks.id, id),
+		where: eq(tasks.id, taskId),
 		with: {
 			comments: {
 				with: {
 					author: true,
 				},
 			},
-			labels: {
+			taskLabels: {
 				with: {
-					label: true,
+					taskLabel: true,
 				},
 			},
 		},
@@ -55,49 +55,49 @@ export async function createTask(
 	return task;
 }
 
-export async function updateTask(id: string, data: UpdateTaskInput) {
+export async function updateTask(taskId: string, data: UpdateTaskInput) {
 	const [task] = await db
 		.update(tasks)
 		.set(data)
-		.where(eq(tasks.id, id))
+		.where(eq(tasks.id, taskId))
 		.returning();
 	return task;
 }
 
-export async function deleteTask(id: string) {
-	const [task] = await db.delete(tasks).where(eq(tasks.id, id)).returning();
+export async function deleteTask(taskId: string) {
+	const [task] = await db.delete(tasks).where(eq(tasks.id, taskId)).returning();
 	return task;
 }
 
 export async function updateTaskPosition(
-	id: string,
-	listId: string,
-	position: number,
+	taskId: string,
+	destinationListId: string,
+	newPosition: number,
 ) {
 	const [task] = await db
 		.update(tasks)
-		.set({ listId, position })
-		.where(eq(tasks.id, id))
+		.set({ listId: destinationListId, position: newPosition })
+		.where(eq(tasks.id, taskId))
 		.returning();
 	return task;
 }
 
-export async function completeTask(id: string) {
+export async function completeTask(taskId: string) {
 	const [task] = await db
 		.update(tasks)
 		.set({ completedAt: new Date() })
-		.where(eq(tasks.id, id))
+		.where(eq(tasks.id, taskId))
 		.returning();
 	return task;
 }
 
-export async function reopenTask(id: string) {
+export async function reopenTask(taskId: string) {
 	const [task] = await db
 		.update(tasks)
 		.set({
 			completedAt: null,
 		})
-		.where(eq(tasks.id, id))
+		.where(eq(tasks.id, taskId))
 		.returning();
 
 	return task;
