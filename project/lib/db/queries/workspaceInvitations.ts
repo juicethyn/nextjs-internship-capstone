@@ -6,6 +6,13 @@ import type {
 import { db } from "../index";
 import { workspaceInvitations } from "../schema";
 
+export function getWorkspaceInvitations(workspaceId: string) {
+	return db.query.workspaceInvitations.findMany({
+		where: eq(workspaceInvitations.workspaceId, workspaceId),
+		orderBy: (invitation, { desc }) => desc(invitation.createdAt),
+	});
+}
+
 export function getWorkspaceInvitationById(id: string) {
 	return db.query.workspaceInvitations.findFirst({
 		where: eq(workspaceInvitations.id, id),
@@ -13,7 +20,7 @@ export function getWorkspaceInvitationById(id: string) {
 }
 
 // Prevents Duplicate Invitations
-export function getPendingWorkspaceInvitation(
+export function getWorkspaceInvitationByEmail(
 	workspaceId: string,
 	email: string,
 ) {
@@ -26,9 +33,9 @@ export function getPendingWorkspaceInvitation(
 	});
 }
 
-export function getWorkspaceInvitations(workspaceId: string) {
-	return db.query.workspaceInvitations.findMany({
-		where: eq(workspaceInvitations.workspaceId, workspaceId),
+export function getWorkspaceInvitationByToken(token: string) {
+	return db.query.workspaceInvitations.findFirst({
+		where: eq(workspaceInvitations.token, token),
 	});
 }
 
@@ -36,6 +43,7 @@ export async function createWorkspaceInvitation(
 	data: CreateWorkspaceInvitationInput & {
 		workspaceId: string;
 		invitedById: string;
+		token: string;
 		expiresAt: Date;
 	},
 ) {
@@ -57,15 +65,6 @@ export async function updateWorkspaceInvitation(
 	const [invitation] = await db
 		.update(workspaceInvitations)
 		.set(data)
-		.where(eq(workspaceInvitations.id, id))
-		.returning();
-
-	return invitation;
-}
-
-export async function deleteWorkspaceInvitation(id: string) {
-	const [invitation] = await db
-		.delete(workspaceInvitations)
 		.where(eq(workspaceInvitations.id, id))
 		.returning();
 

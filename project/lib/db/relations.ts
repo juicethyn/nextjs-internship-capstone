@@ -50,7 +50,6 @@ export const projectsRelations = relations(
 			fields: [schema.projects.workspaceId],
 			references: [schema.workspaces.id],
 		}),
-
 		lead: one(schema.users, {
 			fields: [schema.projects.leadId],
 			references: [schema.users.id],
@@ -133,7 +132,6 @@ export const projectWorkspaceLabelsRelations = relations(
 			fields: [schema.projectWorkspaceLabels.projectId],
 			references: [schema.projects.id],
 		}),
-
 		workspaceLabel: one(schema.workspaceLabels, {
 			fields: [schema.projectWorkspaceLabels.workspaceLabelId],
 			references: [schema.workspaceLabels.id],
@@ -148,7 +146,6 @@ export const taskLabelsRelations = relations(
 			fields: [schema.taskLabels.projectId],
 			references: [schema.projects.id],
 		}),
-
 		tasks: many(schema.taskLabelAssignments),
 	}),
 );
@@ -160,7 +157,6 @@ export const taskLabelAssignmentsRelations = relations(
 			fields: [schema.taskLabelAssignments.taskId],
 			references: [schema.tasks.id],
 		}),
-
 		taskLabel: one(schema.taskLabels, {
 			fields: [schema.taskLabelAssignments.taskLabelId],
 			references: [schema.taskLabels.id],

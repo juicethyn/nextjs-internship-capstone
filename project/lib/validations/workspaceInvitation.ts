@@ -12,7 +12,8 @@ export type CreateWorkspaceInvitationInput = z.infer<
 >;
 
 export const updateWorkspaceInvitationSchema = z.object({
-	status: z.enum(invitationStatus),
+	status: z.enum(invitationStatus).optional(),
+	expiresAt: z.date().optional(),
 });
 
 export type UpdateWorkspaceInvitationInput = z.infer<

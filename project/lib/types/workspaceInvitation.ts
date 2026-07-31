@@ -2,6 +2,7 @@ export const invitationStatus = [
 	"pending",
 	"accepted",
 	"declined",
+	"revoked",
 	"expired",
 ] as const;
 

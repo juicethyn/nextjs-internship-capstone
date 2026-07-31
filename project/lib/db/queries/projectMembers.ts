@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import { db } from "../index";
-import { projectMembers } from "../schema";
+import { projectMembers, projects } from "../schema";
 
 export async function getProjectMembers(projectId: string) {
 	return db.query.projectMembers.findMany({
@@ -11,10 +11,7 @@ export async function getProjectMembers(projectId: string) {
 	});
 }
 
-export async function getProjectMemberByUserId(
-	projectId: string,
-	userId: string,
-) {
+export async function getProjectMember(projectId: string, userId: string) {
 	return db.query.projectMembers.findFirst({
 		where: and(
 			eq(projectMembers.projectId, projectId),
@@ -47,4 +44,16 @@ export async function removeProjectMember(projectId: string, userId: string) {
 		.returning();
 
 	return projectMember;
+}
+
+export async function updateProjectLead(projectId: string, userId: string) {
+	const [project] = await db
+		.update(projects)
+		.set({
+			leadId: userId,
+		})
+		.where(eq(projects.id, projectId))
+		.returning();
+
+	return project;
 }

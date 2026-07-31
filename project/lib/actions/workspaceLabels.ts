@@ -1,8 +1,23 @@
+import { revalidatePath } from "next/cache";
+import { createActivity } from "../activity";
 import { getCurrentUser } from "../auth";
-import { getLabelsByWorkspace } from "../db/queries/workspaceLabels";
-import { requireWorkspaceMember } from "../permission";
+import {
+	createWorkspaceLabel,
+	deleteWorkspaceLabel,
+	getLabelsByWorkspace,
+	getWorkspaceLabelById,
+	updateWorkspaceLabel,
+} from "../db/queries/workspaceLabels";
+import { requireWorkspaceMember, requireWorkspaceOwner } from "../permission";
+import {
+	type CreateWorkspaceLabelInput,
+	createWorkspaceLabelSchema,
+	updateWorkspaceLabelSchema,
+} from "../validations/label";
 
-export async function getLabelsByWorkspaceAction(workspaceSlug: string) {
+export async function getWorkspaceLabelByWorkspaceAction(
+	workspaceSlug: string,
+) {
 	const user = await getCurrentUser();
 
 	const workspace = await requireWorkspaceMember(workspaceSlug, user.id);
@@ -12,8 +27,126 @@ export async function getLabelsByWorkspaceAction(workspaceSlug: string) {
 	return labels;
 }
 
-export async function createLabelAction() {}
+export async function createWorkspaceLabelAction(
+	workspaceSlug: string,
+	data: CreateWorkspaceLabelInput,
+) {
+	const user = await getCurrentUser();
 
-export async function updateLabelAction() {}
+	const validatedData = createWorkspaceLabelSchema.safeParse(data);
 
-export async function deleteLabelAction() {}
+	if (!validatedData.success) {
+		return {
+			success: false,
+			error: "Invalid label data.",
+		};
+	}
+
+	const workspace = await requireWorkspaceOwner(workspaceSlug, user.id);
+
+	const label = await createWorkspaceLabel(workspace.id, validatedData.data);
+
+	await createActivity({
+		workspaceId: workspace.id,
+		actorId: user.id,
+		action: "created",
+		entity: "label",
+		entityId: label.id,
+		metadata: {
+			name: label.name,
+		},
+	});
+
+	revalidatePath(`/workspaces/${workspace.slug}`);
+
+	return {
+		success: true,
+		data: label,
+	};
+}
+
+export async function updateWorkspaceLabelAction(
+	workspaceSlug: string,
+	labelId: string,
+	data: CreateWorkspaceLabelInput,
+) {
+	const user = await getCurrentUser();
+
+	const validatedData = updateWorkspaceLabelSchema.safeParse(data);
+
+	if (!validatedData.success) {
+		return {
+			success: false,
+			error: "Invalid label data.",
+		};
+	}
+
+	const workspace = await requireWorkspaceOwner(workspaceSlug, user.id);
+
+	const label = await getWorkspaceLabelById(labelId);
+
+	if (!label || label.workspaceId !== workspace.id) {
+		return {
+			success: false,
+			error: "Label not found.",
+		};
+	}
+
+	const updatedLabel = await updateWorkspaceLabel(labelId, validatedData.data);
+
+	await createActivity({
+		workspaceId: workspace.id,
+		actorId: user.id,
+		action: "updated",
+		entity: "label",
+		entityId: label.id,
+		metadata: {
+			name: updatedLabel.name,
+		},
+	});
+
+	revalidatePath(`/workspaces/${workspace.slug}`);
+
+	return {
+		success: true,
+		data: updatedLabel,
+	};
+}
+
+export async function deleteWorkspaceLabelAction(
+	workspaceSlug: string,
+	labelId: string,
+) {
+	const user = await getCurrentUser();
+
+	const workspace = await requireWorkspaceOwner(workspaceSlug, user.id);
+
+	const label = await getWorkspaceLabelById(labelId);
+
+	if (!label || label.workspaceId !== workspace.id) {
+		return {
+			success: false,
+			error: "Label not found.",
+		};
+	}
+
+	const deletedLabel = await deleteWorkspaceLabel(labelId);
+
+	await createActivity({
+		workspaceId: workspace.id,
+		actorId: user.id,
+		action: "deleted",
+		entity: "label",
+		entityId: label.id,
+		metadata: {
+			name: label.name,
+		},
+	});
+
+	revalidatePath(`/workspaces/${workspace.slug}`);
+
+	return {
+		success: true,
+		data: deletedLabel,
+	};
+}

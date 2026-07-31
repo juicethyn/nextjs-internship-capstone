@@ -1,13 +1,12 @@
 "use server";
 
-import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/dist/server/web/spec-extension/revalidate";
 import { treeifyError } from "zod/v4/core";
 import { createActivity } from "../activity";
 import { getCurrentUser } from "../auth";
 import {
 	addProjectMember,
-	getProjectMemberByUserId,
+	getProjectMember,
 } from "../db/queries/projectMembers";
 import {
 	archiveProject,
@@ -143,7 +142,7 @@ export async function transferProjectLeadAction(
 
 	const project = await requireProjectLead(workspaceSlug, projectSlug, user.id);
 
-	const newLead = await getProjectMemberByUserId(project.id, newLeadId);
+	const newLead = await getProjectMember(project.id, newLeadId);
 
 	if (!newLead) {
 		return {

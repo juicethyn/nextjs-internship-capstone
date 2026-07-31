@@ -39,7 +39,7 @@ export const workspaceRoleEnum = pgEnum("workspace_role", [
 
 export const workspaceInvitationStatusEnum = pgEnum(
 	"workspace_invitation_status",
-	["pending", "accepted", "declined", "expired"],
+	["pending", "accepted", "declined", "revoked", "expired"],
 );
 
 export const projectStatusEnum = pgEnum("project_status", [
@@ -47,8 +47,6 @@ export const projectStatusEnum = pgEnum("project_status", [
 	"archived",
 	"completed",
 ]);
-
-export const projectMemberRoleEnum = pgEnum("project_member_role", ["member"]);
 
 export const listTypeEnum = pgEnum("list_type", [
 	"todo",
@@ -76,15 +74,20 @@ export const activityActionEnum = pgEnum("activity_action", [
 	"moved",
 	"invited",
 	"joined",
+	"accepted",
 ]);
 
 export const activityEntityEnum = pgEnum("activity_entity", [
 	"workspace",
+	"workspace_member",
+	"workspace_invitation",
 	"project",
+	"project_member",
 	"list",
 	"task",
 	"comment",
 	"label",
+	"task_label",
 ]);
 
 // ============================= USER TABLE SCHEMA =============================
@@ -149,6 +152,7 @@ export const workspaceMembers = pgTable(
 	},
 	(table) => [
 		unique().on(table.workspaceId, table.userId),
+
 		index("workspaceMembers_workspace_id_index").on(table.workspaceId),
 		index("workspaceMembers_user_id_index").on(table.userId),
 	],
@@ -165,6 +169,7 @@ export const workspaceInvitations = pgTable(
 			.references(() => workspaces.id, { onDelete: "cascade" }),
 		email: text("email").notNull(),
 		role: workspaceRoleEnum("role").notNull().default("member"),
+		token: text("token").notNull().unique(),
 		status: workspaceInvitationStatusEnum("status")
 			.notNull()
 			.default("pending"),
@@ -229,7 +234,6 @@ export const projectMembers = pgTable(
 		userId: uuid("user_id")
 			.notNull()
 			.references(() => users.id, { onDelete: "cascade" }),
-		role: projectMemberRoleEnum("role").notNull().default("member"),
 		joinedAt: timestamp("joined_at").notNull().defaultNow(),
 	},
 	(table) => [
@@ -348,26 +352,22 @@ export const projectWorkspaceLabels = pgTable(
 	"project_workspace_labels",
 	{
 		id: uuid("id").defaultRandom().primaryKey(),
-
 		projectId: uuid("project_id")
 			.notNull()
 			.references(() => projects.id, {
 				onDelete: "cascade",
 			}),
-
 		workspaceLabelId: uuid("workspace_label_id")
 			.notNull()
 			.references(() => workspaceLabels.id, {
 				onDelete: "cascade",
 			}),
-
 		createdAt: timestamp("created_at").notNull().defaultNow(),
 	},
 	(table) => [
 		unique().on(table.projectId, table.workspaceLabelId),
 
 		index("projectWorkspaceLabels_project_id_index").on(table.projectId),
-
 		index("projectWorkspaceLabels_workspace_label_id_index").on(
 			table.workspaceLabelId,
 		),
@@ -378,19 +378,14 @@ export const taskLabels = pgTable(
 	"task_labels",
 	{
 		id: uuid("id").defaultRandom().primaryKey(),
-
 		projectId: uuid("project_id")
 			.notNull()
 			.references(() => projects.id, {
 				onDelete: "cascade",
 			}),
-
 		name: text("name").notNull(),
-
 		color: text("color").notNull(),
-
 		createdAt: timestamp("created_at").notNull().defaultNow(),
-
 		updatedAt: timestamp("updated_at")
 			.notNull()
 			.defaultNow()
@@ -407,26 +402,22 @@ export const taskLabelAssignments = pgTable(
 	"task_label_assignments",
 	{
 		id: uuid("id").defaultRandom().primaryKey(),
-
 		taskId: uuid("task_id")
 			.notNull()
 			.references(() => tasks.id, {
 				onDelete: "cascade",
 			}),
-
 		taskLabelId: uuid("task_label_id")
 			.notNull()
 			.references(() => taskLabels.id, {
 				onDelete: "cascade",
 			}),
-
 		createdAt: timestamp("created_at").notNull().defaultNow(),
 	},
 	(table) => [
 		unique().on(table.taskId, table.taskLabelId),
 
 		index("taskLabelAssignments_task_id_index").on(table.taskId),
-
 		index("taskLabelAssignments_task_label_id_index").on(table.taskLabelId),
 	],
 );

@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCommentById } from "./db/queries/comments";
 import { getListById } from "./db/queries/lists";
-import { getProjectMemberByUserId } from "./db/queries/projectMembers";
+import { getProjectMember } from "./db/queries/projectMembers";
 import { getProjectById, getProjectBySlug } from "./db/queries/projects";
 import { getTaskById } from "./db/queries/tasks";
 import { getWorkspaceInvitationById } from "./db/queries/workspaceInvitations";
@@ -30,6 +30,21 @@ export async function requireWorkspaceMember(
 
 	if (!member) {
 		redirect("/workspaces");
+	}
+
+	return workspace;
+}
+
+export async function requireWorkspaceAdmin(
+	workspaceSlug: string,
+	userId: string,
+) {
+	const workspace = await requireWorkspaceBySlug(workspaceSlug);
+
+	const member = await getWorkspaceMember(workspace.id, userId);
+
+	if (!member || (member.role !== "owner" && member.role !== "admin")) {
+		redirect(`/workspaces/${workspace.slug}`);
 	}
 
 	return workspace;
@@ -74,7 +89,7 @@ export async function requireProjectMember(
 ) {
 	const project = await requireProjectBySlug(workspaceSlug, projectSlug);
 
-	const member = await getProjectMemberByUserId(project.id, userId);
+	const member = await getProjectMember(project.id, userId);
 
 	if (!member) {
 		redirect(`/workspaces/${workspaceSlug}`);
@@ -173,4 +188,8 @@ export async function requireWorkspaceInvitation(inviteId: string) {
 	}
 
 	return invitation;
+}
+
+export function isInvitationExpired(expiresAt: Date) {
+	return expiresAt < new Date();
 }
