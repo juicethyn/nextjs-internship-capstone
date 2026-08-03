@@ -15,7 +15,6 @@ if (!databaseUrl) {
 
 const sql = neon(databaseUrl);
 export const db = drizzle(sql, { schema: { ...schema, ...relations } });
-
 // Note: moved queries to a separate file for better organization
 
 // TODO: Task 3.2 - Configure PostgreSQL database (Vercel Postgres or Neon)

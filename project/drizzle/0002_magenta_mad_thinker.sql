@@ -1,0 +1,1 @@
+ALTER TYPE "public"."occupation" ADD VALUE 'student' BEFORE 'other';

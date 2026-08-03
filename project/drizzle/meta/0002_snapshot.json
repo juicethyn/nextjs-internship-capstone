@@ -1,6 +1,6 @@
 {
-	"id": "37c23fb4-39a6-4fd0-b3de-66b909a1f360",
-	"prevId": "56c35fa9-f0a2-4ca8-93b3-3342593ec744",
+	"id": "097fe26d-4beb-4ee0-9452-7d6a93cafa6f",
+	"prevId": "bb84e3c9-65f6-47d1-8110-5e28ace84cde",
 	"version": "7",
 	"dialect": "postgresql",
 	"tables": {
@@ -242,90 +242,6 @@
 			"checkConstraints": {},
 			"isRLSEnabled": false
 		},
-		"public.labels": {
-			"name": "labels",
-			"schema": "",
-			"columns": {
-				"id": {
-					"name": "id",
-					"type": "uuid",
-					"primaryKey": true,
-					"notNull": true,
-					"default": "gen_random_uuid()"
-				},
-				"project_id": {
-					"name": "project_id",
-					"type": "uuid",
-					"primaryKey": false,
-					"notNull": true
-				},
-				"name": {
-					"name": "name",
-					"type": "text",
-					"primaryKey": false,
-					"notNull": true
-				},
-				"color": {
-					"name": "color",
-					"type": "text",
-					"primaryKey": false,
-					"notNull": true
-				},
-				"created_at": {
-					"name": "created_at",
-					"type": "timestamp",
-					"primaryKey": false,
-					"notNull": true,
-					"default": "now()"
-				},
-				"updated_at": {
-					"name": "updated_at",
-					"type": "timestamp",
-					"primaryKey": false,
-					"notNull": true,
-					"default": "now()"
-				}
-			},
-			"indexes": {
-				"labels_project_id_index": {
-					"name": "labels_project_id_index",
-					"columns": [
-						{
-							"expression": "project_id",
-							"isExpression": false,
-							"asc": true,
-							"nulls": "last"
-						}
-					],
-					"isUnique": false,
-					"concurrently": false,
-					"method": "btree",
-					"with": {}
-				}
-			},
-			"foreignKeys": {
-				"labels_project_id_projects_id_fk": {
-					"name": "labels_project_id_projects_id_fk",
-					"tableFrom": "labels",
-					"tableTo": "projects",
-					"columnsFrom": ["project_id"],
-					"columnsTo": ["id"],
-					"onDelete": "cascade",
-					"onUpdate": "no action"
-				}
-			},
-			"compositePrimaryKeys": {},
-			"uniqueConstraints": {
-				"labels_project_id_name_unique": {
-					"name": "labels_project_id_name_unique",
-					"nullsNotDistinct": false,
-					"columns": ["project_id", "name"]
-				}
-			},
-			"policies": {},
-			"checkConstraints": {},
-			"isRLSEnabled": false
-		},
 		"public.lists": {
 			"name": "lists",
 			"schema": "",
@@ -435,14 +351,6 @@
 					"primaryKey": false,
 					"notNull": true
 				},
-				"role": {
-					"name": "role",
-					"type": "project_member_role",
-					"typeSchema": "public",
-					"primaryKey": false,
-					"notNull": true,
-					"default": "'member'"
-				},
 				"joined_at": {
 					"name": "joined_at",
 					"type": "timestamp",
@@ -509,6 +417,101 @@
 					"name": "project_members_project_id_user_id_unique",
 					"nullsNotDistinct": false,
 					"columns": ["project_id", "user_id"]
+				}
+			},
+			"policies": {},
+			"checkConstraints": {},
+			"isRLSEnabled": false
+		},
+		"public.project_workspace_labels": {
+			"name": "project_workspace_labels",
+			"schema": "",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "uuid",
+					"primaryKey": true,
+					"notNull": true,
+					"default": "gen_random_uuid()"
+				},
+				"project_id": {
+					"name": "project_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"workspace_label_id": {
+					"name": "workspace_label_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				}
+			},
+			"indexes": {
+				"projectWorkspaceLabels_project_id_index": {
+					"name": "projectWorkspaceLabels_project_id_index",
+					"columns": [
+						{
+							"expression": "project_id",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": false,
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				},
+				"projectWorkspaceLabels_workspace_label_id_index": {
+					"name": "projectWorkspaceLabels_workspace_label_id_index",
+					"columns": [
+						{
+							"expression": "workspace_label_id",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": false,
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				}
+			},
+			"foreignKeys": {
+				"project_workspace_labels_project_id_projects_id_fk": {
+					"name": "project_workspace_labels_project_id_projects_id_fk",
+					"tableFrom": "project_workspace_labels",
+					"tableTo": "projects",
+					"columnsFrom": ["project_id"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				},
+				"project_workspace_labels_workspace_label_id_workspace_labels_id_fk": {
+					"name": "project_workspace_labels_workspace_label_id_workspace_labels_id_fk",
+					"tableFrom": "project_workspace_labels",
+					"tableTo": "workspace_labels",
+					"columnsFrom": ["workspace_label_id"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {
+				"project_workspace_labels_project_id_workspace_label_id_unique": {
+					"name": "project_workspace_labels_project_id_workspace_label_id_unique",
+					"nullsNotDistinct": false,
+					"columns": ["project_id", "workspace_label_id"]
 				}
 			},
 			"policies": {},
@@ -683,8 +686,8 @@
 			"checkConstraints": {},
 			"isRLSEnabled": false
 		},
-		"public.task_labels": {
-			"name": "task_labels",
+		"public.task_label_assignments": {
+			"name": "task_label_assignments",
 			"schema": "",
 			"columns": {
 				"id": {
@@ -700,8 +703,8 @@
 					"primaryKey": false,
 					"notNull": true
 				},
-				"label_id": {
-					"name": "label_id",
+				"task_label_id": {
+					"name": "task_label_id",
 					"type": "uuid",
 					"primaryKey": false,
 					"notNull": true
@@ -715,8 +718,8 @@
 				}
 			},
 			"indexes": {
-				"taskLabels_task_id_index": {
-					"name": "taskLabels_task_id_index",
+				"taskLabelAssignments_task_id_index": {
+					"name": "taskLabelAssignments_task_id_index",
 					"columns": [
 						{
 							"expression": "task_id",
@@ -730,11 +733,11 @@
 					"method": "btree",
 					"with": {}
 				},
-				"taskLabels_label_id_index": {
-					"name": "taskLabels_label_id_index",
+				"taskLabelAssignments_task_label_id_index": {
+					"name": "taskLabelAssignments_task_label_id_index",
 					"columns": [
 						{
-							"expression": "label_id",
+							"expression": "task_label_id",
 							"isExpression": false,
 							"asc": true,
 							"nulls": "last"
@@ -747,20 +750,20 @@
 				}
 			},
 			"foreignKeys": {
-				"task_labels_task_id_tasks_id_fk": {
-					"name": "task_labels_task_id_tasks_id_fk",
-					"tableFrom": "task_labels",
+				"task_label_assignments_task_id_tasks_id_fk": {
+					"name": "task_label_assignments_task_id_tasks_id_fk",
+					"tableFrom": "task_label_assignments",
 					"tableTo": "tasks",
 					"columnsFrom": ["task_id"],
 					"columnsTo": ["id"],
 					"onDelete": "cascade",
 					"onUpdate": "no action"
 				},
-				"task_labels_label_id_labels_id_fk": {
-					"name": "task_labels_label_id_labels_id_fk",
-					"tableFrom": "task_labels",
-					"tableTo": "labels",
-					"columnsFrom": ["label_id"],
+				"task_label_assignments_task_label_id_task_labels_id_fk": {
+					"name": "task_label_assignments_task_label_id_task_labels_id_fk",
+					"tableFrom": "task_label_assignments",
+					"tableTo": "task_labels",
+					"columnsFrom": ["task_label_id"],
 					"columnsTo": ["id"],
 					"onDelete": "cascade",
 					"onUpdate": "no action"
@@ -768,10 +771,94 @@
 			},
 			"compositePrimaryKeys": {},
 			"uniqueConstraints": {
-				"task_labels_task_id_label_id_unique": {
-					"name": "task_labels_task_id_label_id_unique",
+				"task_label_assignments_task_id_task_label_id_unique": {
+					"name": "task_label_assignments_task_id_task_label_id_unique",
 					"nullsNotDistinct": false,
-					"columns": ["task_id", "label_id"]
+					"columns": ["task_id", "task_label_id"]
+				}
+			},
+			"policies": {},
+			"checkConstraints": {},
+			"isRLSEnabled": false
+		},
+		"public.task_labels": {
+			"name": "task_labels",
+			"schema": "",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "uuid",
+					"primaryKey": true,
+					"notNull": true,
+					"default": "gen_random_uuid()"
+				},
+				"project_id": {
+					"name": "project_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"name": {
+					"name": "name",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"color": {
+					"name": "color",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				},
+				"updated_at": {
+					"name": "updated_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				}
+			},
+			"indexes": {
+				"taskLabels_project_id_index": {
+					"name": "taskLabels_project_id_index",
+					"columns": [
+						{
+							"expression": "project_id",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": false,
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				}
+			},
+			"foreignKeys": {
+				"task_labels_project_id_projects_id_fk": {
+					"name": "task_labels_project_id_projects_id_fk",
+					"tableFrom": "task_labels",
+					"tableTo": "projects",
+					"columnsFrom": ["project_id"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {
+				"task_labels_project_id_name_unique": {
+					"name": "task_labels_project_id_name_unique",
+					"nullsNotDistinct": false,
+					"columns": ["project_id", "name"]
 				}
 			},
 			"policies": {},
@@ -1107,6 +1194,12 @@
 					"notNull": true,
 					"default": "'member'"
 				},
+				"token": {
+					"name": "token",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
 				"status": {
 					"name": "status",
 					"type": "workspace_invitation_status",
@@ -1204,10 +1297,99 @@
 			},
 			"compositePrimaryKeys": {},
 			"uniqueConstraints": {
+				"workspace_invitations_token_unique": {
+					"name": "workspace_invitations_token_unique",
+					"nullsNotDistinct": false,
+					"columns": ["token"]
+				},
 				"workspace_invitations_workspace_id_email_unique": {
 					"name": "workspace_invitations_workspace_id_email_unique",
 					"nullsNotDistinct": false,
 					"columns": ["workspace_id", "email"]
+				}
+			},
+			"policies": {},
+			"checkConstraints": {},
+			"isRLSEnabled": false
+		},
+		"public.workspace_labels": {
+			"name": "workspace_labels",
+			"schema": "",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "uuid",
+					"primaryKey": true,
+					"notNull": true,
+					"default": "gen_random_uuid()"
+				},
+				"workspace_id": {
+					"name": "workspace_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"name": {
+					"name": "name",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"color": {
+					"name": "color",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				},
+				"updated_at": {
+					"name": "updated_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				}
+			},
+			"indexes": {
+				"workspaceLabels_workspace_id_index": {
+					"name": "workspaceLabels_workspace_id_index",
+					"columns": [
+						{
+							"expression": "workspace_id",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": false,
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				}
+			},
+			"foreignKeys": {
+				"workspace_labels_workspace_id_workspaces_id_fk": {
+					"name": "workspace_labels_workspace_id_workspaces_id_fk",
+					"tableFrom": "workspace_labels",
+					"tableTo": "workspaces",
+					"columnsFrom": ["workspace_id"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {
+				"workspace_labels_workspace_id_name_unique": {
+					"name": "workspace_labels_workspace_id_name_unique",
+					"nullsNotDistinct": false,
+					"columns": ["workspace_id", "name"]
 				}
 			},
 			"policies": {},
@@ -1340,6 +1522,12 @@
 					"primaryKey": false,
 					"notNull": true
 				},
+				"color": {
+					"name": "color",
+					"type": "varchar(7)",
+					"primaryKey": false,
+					"notNull": true
+				},
 				"logo_url": {
 					"name": "logo_url",
 					"type": "text",
@@ -1351,6 +1539,13 @@
 					"type": "uuid",
 					"primaryKey": false,
 					"notNull": true
+				},
+				"setup_completed": {
+					"name": "setup_completed",
+					"type": "boolean",
+					"primaryKey": false,
+					"notNull": true,
+					"default": false
 				},
 				"created_at": {
 					"name": "created_at",
@@ -1403,17 +1598,30 @@
 				"archived",
 				"restored",
 				"assigned",
+				"transferred",
 				"unassigned",
 				"completed",
 				"moved",
 				"invited",
-				"joined"
+				"joined",
+				"accepted"
 			]
 		},
 		"public.activity_entity": {
 			"name": "activity_entity",
 			"schema": "public",
-			"values": ["workspace", "project", "list", "task", "comment", "label"]
+			"values": [
+				"workspace",
+				"workspace_member",
+				"workspace_invitation",
+				"project",
+				"project_member",
+				"list",
+				"task",
+				"comment",
+				"label",
+				"task_label"
+			]
 		},
 		"public.list_type": {
 			"name": "list_type",
@@ -1429,6 +1637,7 @@
 				"product_manager",
 				"designer",
 				"devops_engineer",
+				"student",
 				"other"
 			]
 		},
@@ -1436,11 +1645,6 @@
 			"name": "priority",
 			"schema": "public",
 			"values": ["none", "low", "medium", "high"]
-		},
-		"public.project_member_role": {
-			"name": "project_member_role",
-			"schema": "public",
-			"values": ["member"]
 		},
 		"public.project_status": {
 			"name": "project_status",
@@ -1450,7 +1654,7 @@
 		"public.workspace_invitation_status": {
 			"name": "workspace_invitation_status",
 			"schema": "public",
-			"values": ["pending", "accepted", "declined", "expired"]
+			"values": ["pending", "accepted", "declined", "revoked", "expired"]
 		},
 		"public.workspace_role": {
 			"name": "workspace_role",

@@ -9,6 +9,7 @@ export function CreateProjectButton() {
 	return (
 		<>
 			<button
+				type="button"
 				onClick={() => setIsOpen(true)}
 				className="inline-flex items-center px-4 py-2 bg-blue_munsell-500 text-white rounded-lg hover:bg-blue_munsell-600 transition-colors"
 			>
@@ -24,6 +25,7 @@ export function CreateProjectButton() {
 								Create New Project
 							</h3>
 							<button
+								type="button"
 								onClick={() => setIsOpen(false)}
 								className="p-1 hover:bg-platinum-500 dark:hover:bg-payne's_gray-400 rounded"
 							>
