@@ -18,14 +18,7 @@ import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 // }
 
 // Add more protected route prefixes as needed
-const protectedPrefixes = [
-	"/dashboard",
-	"/projects",
-	"/team",
-	"/analytics",
-	"/calendar",
-	"/settings",
-];
+const protectedPrefixes = ["/w", "/settings"];
 
 export default clerkMiddleware(async (auth, req) => {
 	const pathname = req.nextUrl.pathname;

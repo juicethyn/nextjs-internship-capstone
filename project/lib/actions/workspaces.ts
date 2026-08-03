@@ -10,7 +10,6 @@ import {
 	deleteWorkspace,
 	getUserWorkspaceById,
 	getUserWorkspaces,
-	getWorkspaceById,
 	updateWorkspace,
 } from "../db/queries/workspaces";
 import { requireWorkspaceMember, requireWorkspaceOwner } from "../permission";

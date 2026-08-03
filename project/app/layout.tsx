@@ -31,7 +31,9 @@ export default function RootLayout({
 				suppressHydrationWarning
 				className={cn(geistHeading.variable)}
 			>
-				<body className={inter.className}>
+				<body
+					className={`${inter.className} min-h-screen overflow-hidden bg-background text-foreground antialiased`}
+				>
 					<ThemeProvider>{children}</ThemeProvider>
 				</body>
 			</html>
