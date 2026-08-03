@@ -1,41 +1,36 @@
 import { verifyWebhook } from "@clerk/nextjs/webhooks";
 import type { NextRequest } from "next/server";
+import { deleteUserByClerkId, upsertUser } from "@/lib/db/queries/users";
 
 export async function POST(req: NextRequest) {
 	try {
 		const evt = await verifyWebhook(req);
 
-		// Do something with payload
-		// For this guide, log payload to console
-
 		switch (evt.type) {
 			case "user.created":
-				console.log("User created:", evt.data);
-				break;
 			case "user.updated":
-				console.log("User updated:", evt.data);
+				await upsertUser({
+					clerkId: evt.data.id,
+					email: evt.data.email_addresses[0].email_address,
+					firstName: evt.data.first_name ?? "",
+					lastName: evt.data.last_name ?? "",
+					imageUrl: evt.data.image_url ?? "",
+					occupation: "other",
+				});
+
 				break;
 			case "user.deleted":
-				console.log("User deleted:", evt.data);
+				await deleteUserByClerkId(evt.data.id ?? "");
+
 				break;
 			default:
 				console.log(`Unhandled event type: ${evt.type}`);
 		}
 
-		const { id } = evt.data;
-		const eventType = evt.type;
-		console.log(
-			`Received webhook with ID ${id} and event type of ${eventType}`,
-		);
-		console.log("Webhook payload:", evt.data);
-
-		if (evt.type === "user.created") {
-			console.log("userId:", evt.data.id);
-		}
-
 		return new Response("Webhook received", { status: 200 });
 	} catch (err) {
 		console.error("Error verifying webhook:", err);
+
 		return new Response("Error verifying webhook", { status: 400 });
 	}
 }

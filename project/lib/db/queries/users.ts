@@ -21,15 +21,6 @@ export async function getUserByEmail(email: string) {
 	});
 }
 
-export async function updateUser(id: string, data: UpdateUserInput) {
-	const [user] = await db
-		.update(users)
-		.set(data)
-		.where(eq(users.id, id))
-		.returning();
-	return user;
-}
-
 type UpsertUserInput = {
 	clerkId: string;
 	email: string;
@@ -39,6 +30,16 @@ type UpsertUserInput = {
 	occupation: Occupation;
 };
 
+export async function updateUser(id: string, data: UpdateUserInput) {
+	const [user] = await db
+		.update(users)
+		.set(data)
+		.where(eq(users.id, id))
+		.returning();
+	return user;
+}
+
+// Update and Create user function
 export async function upsertUser(data: UpsertUserInput) {
 	const [user] = await db
 		.insert(users)
@@ -53,6 +54,15 @@ export async function upsertUser(data: UpsertUserInput) {
 				occupation: data.occupation,
 			},
 		})
+		.returning();
+
+	return user;
+}
+
+export async function deleteUserByClerkId(clerkId: string) {
+	const [user] = await db
+		.delete(users)
+		.where(eq(users.clerkId, clerkId))
 		.returning();
 
 	return user;
