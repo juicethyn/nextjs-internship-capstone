@@ -8,7 +8,6 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { OCCUPATIONS } from "@/constants/workspace";
-import { useProfileSetup } from "@/hooks/use-profile-setup";
 import type { Occupation } from "@/lib/db/schema";
 
 type ProfileFormProps = {

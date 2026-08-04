@@ -1,6 +1,6 @@
 "use server";
 
-import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import type { OnboardingPayload } from "@/types/onboarding";
 import { createActivity } from "../activity";
 import { getCurrentUser } from "../auth";
@@ -38,5 +38,10 @@ export async function completeOnboardingAction(data: OnboardingPayload) {
 		entityId: workspace.id,
 	});
 
-	redirect(`/w/${workspace.slug}/dashboard`);
+	revalidatePath(`/w/${workspace.slug}/dashboard`);
+
+	return {
+		success: true,
+		data: workspace,
+	};
 }
