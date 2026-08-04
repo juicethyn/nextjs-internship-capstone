@@ -1,3 +1,5 @@
+"use server";
+
 import { nanoid } from "nanoid";
 import { revalidatePath } from "next/cache";
 import { createActivity } from "../activity";
@@ -15,6 +17,8 @@ import {
 	addWorkspaceMember,
 	getWorkspaceMember,
 } from "../db/queries/workspaceMembers";
+import { getWorkspaceById } from "../db/queries/workspaces";
+import { sendWorkspaceInvitationEmail } from "../email/send-workspace-invitation";
 import { isInvitationExpired, requireWorkspaceAdmin } from "../permission";
 import {
 	type CreateWorkspaceInvitationInput,
@@ -86,8 +90,11 @@ export async function createWorkspaceInvitationAction(
 		expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
 	});
 
-	// TODO:
-	// await sendWorkspaceInvitationEmail(...)
+	await sendWorkspaceInvitationEmail({
+		email: invitation.email,
+		workspaceName: workspace.name,
+		token: invitation.token,
+	});
 
 	await createActivity({
 		workspaceId: workspace.id,
@@ -201,8 +208,11 @@ export async function resendWorkspaceInvitationAction(
 		expiresAt: newExpiration,
 	});
 
-	// TODO:
-	// await sendWorkspaceInvitationEmail()
+	await sendWorkspaceInvitationEmail({
+		email: invitation.email,
+		workspaceName: workspace.name,
+		token: invitation.token,
+	});
 
 	await createActivity({
 		workspaceId: workspace.id,
@@ -231,27 +241,27 @@ export async function getWorkspaceInvitationByTokenAction(token: string) {
 
 	if (!invitation) {
 		return {
-			success: false,
+			success: false as const,
 			error: "Invitation not found.",
 		};
 	}
 
 	if (invitation.status !== "pending") {
 		return {
-			success: false,
+			success: false as const,
 			error: "Invitation is no longer active.",
 		};
 	}
 
 	if (isInvitationExpired(invitation.expiresAt)) {
 		return {
-			success: false,
+			success: false as const,
 			error: "Invitation has expired.",
 		};
 	}
 
 	return {
-		success: true,
+		success: true as const,
 		data: invitation,
 	};
 }
@@ -307,6 +317,8 @@ export async function acceptWorkspaceInvitationAction(token: string) {
 		role: invitation.role,
 	});
 
+	const workspace = await getWorkspaceById(invitation.workspaceId);
+
 	const updatedInvitation = await updateWorkspaceInvitation(invitation.id, {
 		status: "accepted",
 	});
@@ -328,10 +340,7 @@ export async function acceptWorkspaceInvitationAction(token: string) {
 		data: {
 			member,
 			invitation: updatedInvitation,
+			workspaceSlug: workspace?.slug,
 		},
 	};
-}
-
-export async function sendWorkspaceInvitationEmail() {
-	// TODO
 }

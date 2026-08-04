@@ -1,6 +1,7 @@
 "use client";
 
 import { X } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { completeOnboardingAction } from "@/lib/actions/onboarding";
@@ -22,6 +23,7 @@ export function OnboardingContainer({
 	onClose,
 	onComplete,
 }: OnboardingContainerProps) {
+	const router = useRouter();
 	const steps = ONBOARDING_FLOWS[mode];
 
 	const [currentStep, setCurrentStep] = useState(steps[0]);
@@ -67,6 +69,7 @@ export function OnboardingContainer({
 		reset();
 
 		toast.success("Welcome to Fora!");
+		router.push(`/w/${result.data?.slug}/dashboard`);
 	};
 
 	return (

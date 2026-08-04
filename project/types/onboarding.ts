@@ -7,6 +7,16 @@ export interface OnboardingPayload {
 	occupation: Occupation;
 }
 
+export interface OnboardingWorkspace {
+	name: string;
+	color: string;
+}
+
+export interface OnboardingInvite {
+	email: string;
+	role: WorkspaceMemberRole;
+}
+
 export enum OnboardingStep {
 	Workspace = "workspace",
 	InviteMembers = "invite-members",
@@ -46,13 +56,3 @@ export const ONBOARDING_FLOWS = {
 
 	createWorkspace: [ONBOARDING_STEPS[0], ONBOARDING_STEPS[1]],
 } satisfies Record<string, OnboardingStepConfig[]>;
-
-export interface OnboardingWorkspace {
-	name: string;
-	color: string;
-}
-
-export interface OnboardingInvite {
-	email: string;
-	role: WorkspaceMemberRole;
-}

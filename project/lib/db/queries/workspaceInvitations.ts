@@ -36,6 +36,10 @@ export function getWorkspaceInvitationByEmail(
 export function getWorkspaceInvitationByToken(token: string) {
 	return db.query.workspaceInvitations.findFirst({
 		where: eq(workspaceInvitations.token, token),
+		with: {
+			workspace: true,
+			invitedBy: true,
+		},
 	});
 }
 

@@ -17,11 +17,9 @@ export function InviteMembersForm() {
 		email,
 		role,
 		error,
-
-		updateEmail: setEmail,
-		updateRole: setRole,
-
-		AddInvite,
+		addInvitation,
+		updateEmail,
+		updateRole,
 		handleEmailKeyDown,
 	} = useInviteMembers();
 
@@ -34,10 +32,10 @@ export function InviteMembersForm() {
 
 				<Input
 					value={email}
-					onChange={(e) => setEmail(e.target.value)}
-					onKeyDown={handleEmailKeyDown}
+					onChange={(e) => updateEmail(e.target.value)}
 					placeholder="member@example.com"
 					id="invite-email"
+					onKeyDown={(e) => handleEmailKeyDown(e, addInvitation)}
 				/>
 			</div>
 
@@ -48,7 +46,7 @@ export function InviteMembersForm() {
 
 				<Select
 					value={role}
-					onValueChange={(value) => setRole(value as WorkspaceMemberRole)}
+					onValueChange={(value) => updateRole(value as WorkspaceMemberRole)}
 				>
 					<SelectTrigger>
 						<SelectValue />
@@ -65,7 +63,7 @@ export function InviteMembersForm() {
 			<Button
 				type="button"
 				variant="secondary"
-				onClick={AddInvite}
+				onClick={addInvitation}
 				className="w-full"
 			>
 				Add Invite

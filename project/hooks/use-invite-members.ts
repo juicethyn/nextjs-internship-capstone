@@ -1,76 +1,37 @@
-import { useState } from "react";
-import { createWorkspaceInvitationSchema } from "@/lib/validations/workspaceInvitation";
 import { useOnboardingStore } from "@/stores/onboarding-store";
-import type { WorkspaceMemberRole } from "@/types/workspace";
+import { useInvitationForm } from "./use-invitation-form";
 
 export function useInviteMembers() {
-	const [email, setEmail] = useState("");
-	const [role, setRole] = useState<WorkspaceMemberRole>("member");
-	const [error, setError] = useState<string | null>(null);
+	const form = useInvitationForm();
 
-	const { invites, addInvite } = useOnboardingStore();
+	const { invites, addInvite, removeInvite } = useOnboardingStore();
 
-	const updateEmail = (value: string) => {
-		setEmail(value);
+	const addInvitation = () => {
+		const invite = form.validate();
 
-		if (error) {
-			setError(null);
-		}
-	};
+		if (!invite) return;
 
-	const updateRole = (value: WorkspaceMemberRole) => {
-		setRole(value);
-
-		if (error) {
-			setError(null);
-		}
-	};
-
-	const AddInvite = () => {
-		const normalizedEmail = email.trim().toLowerCase();
-
-		const result = createWorkspaceInvitationSchema.safeParse({
-			email: normalizedEmail,
-			role,
-		});
-
-		if (!result.success) {
-			setError(result.error.issues[0].message);
-			return;
-		}
-
-		const alreadyExists = invites.some(
-			(invite) => invite.email.toLowerCase() === normalizedEmail,
+		const exists = invites.some(
+			(item) => item.email.toLowerCase() === invite.email.toLowerCase(),
 		);
 
-		if (alreadyExists) {
-			setError("This email has already been invited.");
+		if (exists) {
+			form.setError("This email has already been invited.");
+
 			return;
 		}
 
-		addInvite(result.data);
+		addInvite(invite);
 
-		updateEmail(result.data.email);
-		updateRole("member");
-		setError(null);
-	};
-
-	const handleEmailKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-		if (event.key !== "Enter") return;
-
-		event.preventDefault();
-		AddInvite();
+		form.reset();
 	};
 
 	return {
-		email,
-		role,
-		error,
+		...form,
 
-		updateEmail: setEmail,
-		updateRole: setRole,
+		invites,
+		removeInvite,
 
-		AddInvite,
-		handleEmailKeyDown,
+		addInvitation,
 	};
 }
