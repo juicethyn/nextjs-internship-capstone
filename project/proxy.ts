@@ -1,5 +1,5 @@
 // TODO: Task 2.2 - Configure authentication middleware for route protection
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { clerkMiddleware } from "@clerk/nextjs/server";
 
 // NOTE: Next.js 16+ - The "middleware" file convention is deprecated.
 // When implementing authentication, consider using the new "proxy" pattern.
@@ -18,7 +18,7 @@ import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 // }
 
 // Add more protected route prefixes as needed
-const protectedPrefixes = ["/w", "/settings"];
+const protectedPrefixes = ["/sync", "/w", "/onboarding", "/settings"];
 
 export default clerkMiddleware(async (auth, req) => {
 	const pathname = req.nextUrl.pathname;

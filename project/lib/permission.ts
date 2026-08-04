@@ -2,8 +2,9 @@ import { redirect } from "next/navigation";
 import { getCommentById } from "./db/queries/comments";
 import { getListById } from "./db/queries/lists";
 import { getProjectMember } from "./db/queries/projectMembers";
-import { getProjectById, getProjectBySlug } from "./db/queries/projects";
+import { getProjectBySlug } from "./db/queries/projects";
 import { getTaskById } from "./db/queries/tasks";
+import { getUserById } from "./db/queries/users";
 import { getWorkspaceInvitationById } from "./db/queries/workspaceInvitations";
 import { getWorkspaceMember } from "./db/queries/workspaceMembers";
 import { getWorkspaceById, getWorkspaceBySlug } from "./db/queries/workspaces";
@@ -14,10 +15,27 @@ export async function requireWorkspaceBySlug(workspaceSlug: string) {
 	const workspace = await getWorkspaceBySlug(workspaceSlug);
 
 	if (!workspace) {
-		redirect("/workspaces");
+		redirect(`/onboarding`);
 	}
 
 	return workspace;
+}
+
+async function redirectToOwnWorkspace(userId: string): Promise<never> {
+	const user = await getUserById(userId);
+
+	if (!user?.lastWorkspaceId) {
+		redirect("/onboarding");
+	}
+
+	const ownWorkspace = await getWorkspaceById(user.lastWorkspaceId);
+
+	// lastWorkspaceId pointing at something deleted/nonexistent — don't trust it blindly
+	if (!ownWorkspace) {
+		redirect("/onboarding");
+	}
+
+	redirect(`/w/${ownWorkspace.slug}/dashboard`);
 }
 
 export async function requireWorkspaceMember(
@@ -29,7 +47,7 @@ export async function requireWorkspaceMember(
 	const member = await getWorkspaceMember(workspace.id, userId);
 
 	if (!member) {
-		redirect("/workspaces");
+		await redirectToOwnWorkspace(userId);
 	}
 
 	return workspace;
@@ -44,7 +62,7 @@ export async function requireWorkspaceAdmin(
 	const member = await getWorkspaceMember(workspace.id, userId);
 
 	if (!member || (member.role !== "owner" && member.role !== "admin")) {
-		redirect(`/workspaces/${workspace.slug}`);
+		redirect(`/w/${workspace.slug}/dashboard`);
 	}
 
 	return workspace;
@@ -58,8 +76,8 @@ export async function requireWorkspaceOwner(
 
 	const member = await getWorkspaceMember(workspace.id, userId);
 
-	if (!member || member.role !== "owner") {
-		redirect(`/workspaces/${workspace.slug}`);
+	if (member?.role !== "owner") {
+		redirect(`/w/${workspace.slug}/dashboard`);
 	}
 
 	return workspace;
@@ -76,7 +94,7 @@ export async function requireProjectBySlug(
 	const project = await getProjectBySlug(workspace.id, projectSlug);
 
 	if (!project) {
-		redirect(`/workspaces/${workspace.slug}`);
+		redirect(`/w/${workspace.slug}/dashboard`);
 	}
 
 	return project;
@@ -92,7 +110,7 @@ export async function requireProjectMember(
 	const member = await getProjectMember(project.id, userId);
 
 	if (!member) {
-		redirect(`/workspaces/${workspaceSlug}`);
+		redirect(`/w/${workspaceSlug}/dashboard`);
 	}
 
 	return project;
@@ -106,7 +124,7 @@ export async function requireProjectLead(
 	const project = await requireProjectBySlug(workspaceSlug, projectSlug);
 
 	if (project.leadId !== userId) {
-		redirect(`/workspaces/${workspaceSlug}`);
+		redirect(`/w/${workspaceSlug}/dashboard`);
 	}
 
 	return project;
@@ -124,7 +142,7 @@ export async function requireActiveProject(
 	);
 
 	if (project.isArchived) {
-		redirect(`/workspaces/${workspaceSlug}/projects/${projectSlug}`);
+		redirect(`/w/${workspaceSlug}/dashboard`);
 	}
 
 	return project;
@@ -136,7 +154,7 @@ export async function requireList(listId: string) {
 	const list = await getListById(listId);
 
 	if (!list) {
-		redirect("/workspaces");
+		redirect("/onboarding");
 	}
 
 	return list;
@@ -148,7 +166,7 @@ export async function requireTask(taskId: string) {
 	const task = await getTaskById(taskId);
 
 	if (!task) {
-		redirect("/workspaces");
+		redirect("/onboarding");
 	}
 
 	return task;
@@ -172,7 +190,7 @@ export async function requireComment(commentId: string) {
 	const comment = await getCommentById(commentId);
 
 	if (!comment) {
-		redirect("/workspaces");
+		redirect("/onboarding");
 	}
 
 	return comment;
@@ -184,7 +202,7 @@ export async function requireWorkspaceInvitation(inviteId: string) {
 	const invitation = await getWorkspaceInvitationById(inviteId);
 
 	if (!invitation) {
-		throw new Error("Invitation not found");
+		redirect("/onboarding");
 	}
 
 	return invitation;

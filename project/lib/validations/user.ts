@@ -17,6 +17,7 @@ export const updateUserSchema = z
 			"designer",
 			"qa_engineer",
 			"devops_engineer",
+			"student",
 			"other",
 		]),
 		lastWorkspaceId: z.uuid("Invalid workspace ID").nullable().optional(),

@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import { createActivity } from "../activity";
 import { getCurrentUser } from "../auth";
 import { updateUser } from "../db/queries/users";
-import { addWorkspaceMember } from "../db/queries/workspaceMembers";
 import {
 	createWorkspace,
 	deleteWorkspace,
@@ -33,12 +32,6 @@ export async function createWorkspaceAction(data: CreateWorkspaceInput) {
 	}
 
 	const workspace = await createWorkspace(user.id, validatedData.data);
-
-	await addWorkspaceMember({
-		workspaceId: workspace.id,
-		userId: user.id,
-		role: "owner",
-	});
 
 	await updateUser(user.id, {
 		lastWorkspaceId: workspace.id,
@@ -152,7 +145,7 @@ export async function switchWorkspaceAction(workspaceSlug: string) {
 		lastWorkspaceId: workspace.id,
 	});
 
-	revalidatePath(`/workspaces/${workspace.id}`);
+	revalidatePath(`/w/${workspace.slug}/dashboard`);
 
 	return {
 		success: true,

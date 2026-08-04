@@ -81,24 +81,22 @@ export async function createWorkspace(
 ) {
 	const slug = generateWorkspaceSlug();
 
-	return db.transaction(async (tx) => {
-		const [workspace] = await tx
-			.insert(workspaces)
-			.values({
-				...data,
-				slug,
-				createdById: userId,
-			})
-			.returning();
+	const [workspace] = await db
+		.insert(workspaces)
+		.values({
+			...data,
+			slug,
+			createdById: userId,
+		})
+		.returning();
 
-		await tx.insert(workspaceMembers).values({
-			workspaceId: workspace.id,
-			userId,
-			role: "owner",
-		});
-
-		return workspace;
+	await db.insert(workspaceMembers).values({
+		workspaceId: workspace.id,
+		userId,
+		role: "owner",
 	});
+
+	return workspace;
 }
 
 export async function updateWorkspace(

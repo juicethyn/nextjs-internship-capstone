@@ -1,7 +1,6 @@
 import { ArrowRight, CheckCircle, Kanban, Users } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Button } from "@/components/ui/button";
 
 export default function HomePage() {
 	return (

@@ -5,6 +5,7 @@ import "./globals.css"; // FIX #2: Creating global.d.ts to declare module for CS
 
 // TODO: Task 2.1 - Set up Clerk authentication service - Complete
 import { ClerkProvider } from "@clerk/nextjs";
+import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { cn } from "@/lib/utils";
 
@@ -34,7 +35,10 @@ export default function RootLayout({
 				<body
 					className={`${inter.className} min-h-screen overflow-hidden bg-background text-foreground antialiased`}
 				>
-					<ThemeProvider>{children}</ThemeProvider>
+					<ThemeProvider>
+						{children}
+						<Toaster richColors position="bottom-center" />
+					</ThemeProvider>
 				</body>
 			</html>
 		</ClerkProvider>

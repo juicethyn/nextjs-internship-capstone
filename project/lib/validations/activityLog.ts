@@ -1,4 +1,4 @@
-import type { ActivityAction, EntityType } from "../types/activityLog";
+import type { ActivityAction, EntityType } from "../../types/activityLog";
 
 export type CreateActivityInput = {
 	workspaceId: string;

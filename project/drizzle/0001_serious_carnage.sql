@@ -1,0 +1,1 @@
+ALTER TABLE "workspaces" ADD COLUMN "color" varchar(7) NOT NULL;

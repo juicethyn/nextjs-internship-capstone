@@ -1,5 +1,5 @@
 import z from "zod";
-import { taskPriorities } from "../types/task";
+import { taskPriorities } from "../../types/task";
 
 export const createTaskSchema = z.object({
 	title: z.string().min(1, "Title is required").max(200, "Title too long"),

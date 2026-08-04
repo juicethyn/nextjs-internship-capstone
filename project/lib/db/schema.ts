@@ -10,6 +10,7 @@ import {
 	timestamp,
 	unique,
 	uuid,
+	varchar,
 } from "drizzle-orm/pg-core";
 
 // ============================= ENUMS =============================
@@ -20,6 +21,7 @@ export const occupationEnum = pgEnum("occupation", [
 	"product_manager",
 	"designer",
 	"devops_engineer",
+	"student",
 	"other",
 ]);
 
@@ -29,6 +31,7 @@ export type Occupation =
 	| "product_manager"
 	| "designer"
 	| "devops_engineer"
+	| "student"
 	| "other";
 
 export const workspaceRoleEnum = pgEnum("workspace_role", [
@@ -124,10 +127,14 @@ export const workspaces = pgTable("workspaces", {
 	id: uuid("id").defaultRandom().primaryKey(),
 	name: text("name").notNull(),
 	slug: text("slug").notNull().unique(),
+	color: varchar({
+		length: 7,
+	}).notNull(),
 	logoUrl: text("logo_url"),
 	createdById: uuid("created_by_id")
 		.notNull()
 		.references(() => users.id, { onDelete: "cascade" }),
+	setupCompleted: boolean("setup_completed").notNull().default(false),
 	createdAt: timestamp("created_at").notNull().defaultNow(),
 	updatedAt: timestamp("updated_at")
 		.notNull()
