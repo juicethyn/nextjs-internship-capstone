@@ -16,6 +16,12 @@ type OnboardingStore = {
 	reset: () => void;
 };
 
+const initialState = {
+	workspace: null,
+	invites: [],
+	occupation: null,
+};
+
 export const useOnboardingStore = create<OnboardingStore>((set) => ({
 	workspace: null as OnboardingWorkspace | null,
 
@@ -43,10 +49,5 @@ export const useOnboardingStore = create<OnboardingStore>((set) => ({
 			occupation,
 		}),
 
-	reset: () =>
-		set({
-			workspace: null,
-			invites: [],
-			occupation: null,
-		}),
+	reset: () => set(initialState),
 }));

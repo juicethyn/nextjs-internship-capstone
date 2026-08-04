@@ -1,67 +1,74 @@
 "use client";
 
+import { X } from "lucide-react";
 import { useState } from "react";
-import { OnboardingStep } from "@/types/onboarding";
-import { InviteMembersStep } from "./invite-members-step";
+import { ONBOARDING_FLOWS } from "@/types/onboarding";
+import { Button } from "../ui/button";
 import { OnboardingSidebar } from "./onboarding-sidebar";
-import { ProfileStep } from "./profile-step";
-import { WorkspaceStep } from "./workspace-step";
+import { StepRenderer } from "./step-renderer";
 
-const STEPS_ORDER = [
-	OnboardingStep.Workspace,
-	OnboardingStep.InviteMembers,
-	OnboardingStep.Profile,
-];
+type OnboardingContainerProps = {
+	mode: keyof typeof ONBOARDING_FLOWS;
+	onClose?: () => void;
+	onComplete?: () => void;
+};
 
-export function OnboardingContainer() {
-	const [currentStep, setStep] = useState(OnboardingStep.Workspace);
+export function OnboardingContainer({
+	mode,
+	onClose,
+	onComplete,
+}: OnboardingContainerProps) {
+	const steps = ONBOARDING_FLOWS[mode];
 
-	const currentStepIndex = STEPS_ORDER.indexOf(currentStep);
+	const [currentStep, setCurrentStep] = useState(steps[0]);
+	const currentIndex = steps.findIndex((step) => step.id === currentStep.id);
 
-	const displayStepIndex = currentStepIndex + 1;
+	const next = () => {
+		const nextStep = steps[currentIndex + 1];
 
-	const canGoBack = currentStepIndex > 0;
-	const canGoNext = currentStepIndex < STEPS_ORDER.length - 1;
+		if (nextStep) {
+			setCurrentStep(nextStep);
+			return;
+		}
 
-	const goNext = () => {
-		if (!canGoNext) return;
-
-		setStep(STEPS_ORDER[currentStepIndex + 1]);
+		onComplete?.();
 	};
 
-	const goBack = () => {
-		if (!canGoBack) return;
+	const back = () => {
+		const previousStep = steps[currentIndex - 1];
 
-		setStep(STEPS_ORDER[currentStepIndex - 1]);
-	};
-
-	const renderStep = () => {
-		switch (currentStep) {
-			case OnboardingStep.Workspace:
-				return <WorkspaceStep onNext={goNext} currentStep={displayStepIndex} />;
-
-			case OnboardingStep.InviteMembers:
-				return (
-					<InviteMembersStep
-						onBack={goBack}
-						onNext={goNext}
-						currentStep={displayStepIndex}
-					/>
-				);
-
-			case OnboardingStep.Profile:
-				return <ProfileStep onBack={goBack} currentStep={displayStepIndex} />;
-			default:
-				return null;
+		if (previousStep) {
+			setCurrentStep(previousStep);
 		}
 	};
 
+	const isLastStep = currentIndex === steps.length - 1;
+	const nextLabel = isLastStep ? "Finish Setup" : "Continue";
+
 	return (
-		<div className="flex min-h-dvh">
-			<OnboardingSidebar currentStep={displayStepIndex} />
-			<div className="flex flex-1 items-center justify-center p-10">
-				<div className="w-full max-w-2xl">{renderStep()}</div>
+		<div className="relative flex h-screen w-screen bg-background">
+			<OnboardingSidebar steps={steps} currentStep={currentStep} />
+
+			<div className="flex flex-1 items-center justify-center">
+				<div className="w-full max-w-2xl px-10">
+					<StepRenderer
+						step={currentStep.step}
+						onNext={next}
+						onBack={back}
+						nextLabel={nextLabel}
+					/>
+				</div>
 			</div>
+
+			{onClose && (
+				<Button
+					onClick={onClose}
+					variant="ghost"
+					className="absolute right-6 top-6"
+				>
+					<X />
+				</Button>
+			)}
 		</div>
 	);
 }

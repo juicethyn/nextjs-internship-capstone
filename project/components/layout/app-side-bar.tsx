@@ -1,9 +1,10 @@
 "use client";
 
-import { ChevronDown, ChevronsUpDown, Plus } from "lucide-react";
+import { Check, ChevronDown, ChevronsUpDown, Plus } from "lucide-react";
 import Link from "next/link";
-import { useParams, usePathname } from "next/navigation";
-import { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
+import { toast } from "sonner";
 import {
 	Collapsible,
 	CollapsibleContent,
@@ -33,156 +34,193 @@ import {
 	useSidebar,
 } from "@/components/ui/sidebar";
 import { NAV_LINKS } from "@/constants/navigation";
+import { switchWorkspaceAction } from "@/lib/actions/workspaces";
 import { cn } from "@/lib/utils";
+import type { WorkspaceItem } from "@/types/workspace";
+import { CreateWorkspaceModal } from "../modals/create-workspace-modal";
+import { WorkspaceAvatar } from "../workspace-avatar";
 
-// TODO: replace with real data from your API / store
-const WORKSPACES = [
-	{ id: "1", slug: "fora", name: "Fora Workspace", plan: "Free Plan" },
-	{ id: "2", slug: "acme", name: "Acme Inc", plan: "Pro Plan" },
-];
+type AppSidebarProps = {
+	currentWorkspace: WorkspaceItem;
+	workspaces: WorkspaceItem[];
+};
 
-export function AppSidebar() {
+export function AppSidebar({ currentWorkspace, workspaces }: AppSidebarProps) {
 	const pathname = usePathname();
-	const params = useParams();
 	const { isMobile } = useSidebar();
+	const workspaceSlug = currentWorkspace.slug;
+	const router = useRouter();
+	const [isPending, startTransition] = useTransition();
+	const handleSwitchWorkspace = (workspace: WorkspaceItem) => {
+		startTransition(async () => {
+			await switchWorkspaceAction(workspace.slug);
 
-	const workspaceSlug = params.workspaceSlug as string;
-
-	const [workspaces] = useState(WORKSPACES);
-	const [activeWorkspace, setActiveWorkspace] = useState(
-		workspaces.find((w) => w.slug === workspaceSlug) ?? workspaces[0],
-	);
-
+			toast.success(`Switched to workspace ${workspace.name}`);
+			router.push(`/w/${workspace.slug}/dashboard`);
+			router.refresh();
+		});
+	};
+	const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
 	return (
-		<Sidebar collapsible="icon">
-			<SidebarHeader className="border-b">
-				<SidebarMenu>
-					{/* Workspace switcher + collapse trigger sit side by side */}
-					<SidebarMenuItem className="flex items-center gap-1">
-						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
-								<SidebarMenuButton
-									size="lg"
-									className="flex-1 data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-								>
-									<div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-										{activeWorkspace.name.charAt(0)}
-									</div>
-
-									<div className="grid flex-1 text-left text-sm leading-tight">
-										<span className="truncate font-semibold">
-											{activeWorkspace.name}
-										</span>
-										<span className="truncate text-xs text-muted-foreground">
-											{activeWorkspace.plan}
-										</span>
-									</div>
-
-									<ChevronsUpDown className="ml-auto size-4 group-data-[collapsible=icon]:hidden" />
-								</SidebarMenuButton>
-							</DropdownMenuTrigger>
-
-							<DropdownMenuContent
-								className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
-								align="start"
-								side={isMobile ? "bottom" : "right"}
-								sideOffset={4}
-							>
-								<DropdownMenuLabel className="text-xs text-muted-foreground">
-									Workspaces
-								</DropdownMenuLabel>
-
-								{workspaces.map((workspace) => (
-									<DropdownMenuItem
-										key={workspace.id}
-										className="gap-2 p-2"
-										onClick={() => setActiveWorkspace(workspace)}
+		<>
+			<Sidebar collapsible="icon">
+				<SidebarHeader className="border-b">
+					{/* Workspace Switcher */}
+					<SidebarMenu>
+						<SidebarMenuItem
+							className={cn(
+								"flex items-center gap-1",
+								"group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:gap-1",
+							)}
+						>
+							<DropdownMenu>
+								<DropdownMenuTrigger asChild>
+									<SidebarMenuButton
+										size="lg"
+										className="flex-1 data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
 									>
-										<div className="flex size-6 items-center justify-center rounded-md border">
-											{workspace.name.charAt(0)}
+										<WorkspaceAvatar
+											name={currentWorkspace.name}
+											color={currentWorkspace.color}
+											size="xs"
+										/>
+
+										<div className="grid flex-1 text-left text-sm leading-tight">
+											<span className="truncate font-semibold">
+												{currentWorkspace.name}
+											</span>
 										</div>
-										{workspace.name}
-									</DropdownMenuItem>
-								))}
 
-								<DropdownMenuSeparator />
+										<ChevronsUpDown className="ml-auto size-4 group-data-[collapsible=icon]:hidden" />
+									</SidebarMenuButton>
+								</DropdownMenuTrigger>
 
-								<DropdownMenuItem className="gap-2 p-2" asChild>
-									<Link href="/workspaces/new">
+								<DropdownMenuContent
+									className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
+									align="start"
+									side={isMobile ? "bottom" : "right"}
+									sideOffset={4}
+								>
+									<DropdownMenuLabel className="text-xs text-muted-foreground">
+										Workspaces
+									</DropdownMenuLabel>
+
+									{workspaces.map((workspace) => (
+										<DropdownMenuItem
+											disabled={
+												isPending || workspace.id === currentWorkspace.id
+											}
+											key={workspace.id}
+											className="gap-2 p-2"
+											onClick={() => handleSwitchWorkspace(workspace)}
+										>
+											<WorkspaceAvatar
+												name={workspace.name}
+												color={workspace.color}
+												size="xs"
+											/>
+											<span>{workspace.name}</span>
+
+											{workspace.id === currentWorkspace.id && (
+												<Check className="ml-auto h-4 w-4 text-primary" />
+											)}
+										</DropdownMenuItem>
+									))}
+
+									<DropdownMenuSeparator />
+
+									<DropdownMenuItem
+										className="gap-2 p-2"
+										onSelect={(e) => {
+											e.preventDefault();
+											setCreateWorkspaceOpen(true);
+										}}
+									>
 										<div className="flex size-6 items-center justify-center rounded-md border bg-background">
 											<Plus className="size-4" />
 										</div>
+
 										<span className="font-medium text-muted-foreground">
-											New workspace
+											Create workspace
 										</span>
-									</Link>
-								</DropdownMenuItem>
-							</DropdownMenuContent>
-						</DropdownMenu>
+									</DropdownMenuItem>
+								</DropdownMenuContent>
+							</DropdownMenu>
 
-						<SidebarTrigger className="shrink-0 group-data-[collapsible=icon]:hidden" />
-					</SidebarMenuItem>
-				</SidebarMenu>
-			</SidebarHeader>
+							{/* No longer hides itself away when collapsed — just recenters under the avatar */}
+							<SidebarTrigger className="shrink-0 group-data-[collapsible=icon]:mx-auto" />
+						</SidebarMenuItem>
+					</SidebarMenu>
+				</SidebarHeader>
 
-			<SidebarContent>
-				{/* Collapsible "Workspace" nav group */}
-				<Collapsible defaultOpen className="group/collapsible">
-					<SidebarGroup>
-						<SidebarGroupLabel asChild>
-							<CollapsibleTrigger className="flex w-full cursor-pointer items-center text-[10px] font-semibold uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground">
-								Workspace
-								<ChevronDown className="ml-auto size-3.5 transition-transform group-data-[state=open]/collapsible:rotate-180" />
-							</CollapsibleTrigger>
-						</SidebarGroupLabel>
+				{/* Navigations */}
+				<SidebarContent>
+					<Collapsible defaultOpen className="group/collapsible">
+						<SidebarGroup>
+							<SidebarGroupLabel asChild>
+								<CollapsibleTrigger className="flex w-full cursor-pointer items-center text-[10px] font-semibold uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground">
+									Workspace
+									<ChevronDown className="ml-auto size-3.5 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+								</CollapsibleTrigger>
+							</SidebarGroupLabel>
 
-						<CollapsibleContent>
-							<SidebarGroupContent>
-								<SidebarMenu>
-									{NAV_LINKS.map((item) => {
-										const href = `/w/${workspaceSlug}${item.href ? `/${item.href}` : ""}`;
-										const isActive = pathname === href;
+							<CollapsibleContent>
+								<SidebarGroupContent>
+									<SidebarMenu>
+										{NAV_LINKS.map((item) => {
+											const href = `/w/${workspaceSlug}${item.href ? `/${item.href}` : ""}`;
+											const isActive =
+												pathname === href || pathname.startsWith(`${href}/`);
 
-										return (
-											<SidebarMenuItem key={item.id}>
-												<SidebarMenuButton
-													asChild
-													className={cn(
-														"h-9 rounded-md px-2 transition-colors",
-														isActive ? "bg-primary/10" : "hover:bg-zinc-800",
-													)}
-												>
-													<Link
-														href={href}
+											return (
+												<SidebarMenuItem key={item.id}>
+													<SidebarMenuButton
+														asChild
 														className={cn(
-															"flex w-full items-center gap-3",
-															isActive
-																? "text-primary"
-																: "text-muted-foreground hover:text-white",
+															"h-9 rounded-md px-2 transition-colors",
+															isActive ? "bg-primary/10" : "",
 														)}
 													>
-														<item.icon className="h-4 w-4 shrink-0" />
-														<span>{item.name}</span>
-														{isActive && (
-															<div className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" />
-														)}
-													</Link>
-												</SidebarMenuButton>
-											</SidebarMenuItem>
-										);
-									})}
-								</SidebarMenu>
-							</SidebarGroupContent>
-						</CollapsibleContent>
-					</SidebarGroup>
-				</Collapsible>
-			</SidebarContent>
+														<Link
+															href={href}
+															className={cn(
+																"flex w-full items-center gap-3",
+																isActive
+																	? "text-primary"
+																	: "text-muted-foreground hover:text-white",
+															)}
+														>
+															<item.icon className="h-4 w-4 shrink-0" />
+															<span>{item.name}</span>
+															{isActive && (
+																<div className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" />
+															)}
+														</Link>
+													</SidebarMenuButton>
+												</SidebarMenuItem>
+											);
+										})}
+									</SidebarMenu>
+								</SidebarGroupContent>
+							</CollapsibleContent>
+						</SidebarGroup>
+					</Collapsible>
+				</SidebarContent>
 
-			<SidebarFooter className="border-t">
-				<div className="px-2 py-2 text-xs text-muted-foreground">Fora v1.0</div>
-			</SidebarFooter>
+				{/* Footer */}
+				<SidebarFooter className="border-t">
+					<div className="px-2 py-2 text-xs text-muted-foreground">
+						Fora v1.0
+					</div>
+				</SidebarFooter>
 
-			<SidebarRail />
-		</Sidebar>
+				<SidebarRail />
+			</Sidebar>
+
+			<CreateWorkspaceModal
+				open={createWorkspaceOpen}
+				onOpenChange={setCreateWorkspaceOpen}
+			/>
+		</>
 	);
 }

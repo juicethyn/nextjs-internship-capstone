@@ -5,19 +5,18 @@ import { Button } from "@/components/ui/button";
 import { WORKSPACE_COLORS } from "@/constants/workspace";
 import { createWorkspaceSchema } from "@/lib/validations/workspace";
 import { useOnboardingStore } from "@/stores/onboarding-store";
-import { ONBOARDING_STEPS } from "@/types/onboarding";
 import { Input } from "../ui/input";
 import { WorkspaceAvatar } from "../workspace-avatar";
 
-type Props = {
+type WorkspaceStepProps = {
 	onNext: () => void;
-	currentStep: number;
 };
 
-export function WorkspaceStep({ onNext, currentStep }: Props) {
-	const setWorkspace = useOnboardingStore((state) => state.setWorkspace);
-	const [name, setName] = useState("");
-	const [color, setColor] = useState(WORKSPACE_COLORS[0]);
+export function WorkspaceStep({ onNext }: WorkspaceStepProps) {
+	const { workspace, setWorkspace } = useOnboardingStore();
+
+	const [name, setName] = useState(workspace?.name ?? "");
+	const [color, setColor] = useState(workspace?.color ?? WORKSPACE_COLORS[0]);
 	const [error, setError] = useState<string | null>(null);
 
 	const handleSubmit = () => {
@@ -37,9 +36,6 @@ export function WorkspaceStep({ onNext, currentStep }: Props) {
 	return (
 		<div className="space-y-6">
 			<div>
-				<p>
-					STEP {currentStep} of {ONBOARDING_STEPS.length}
-				</p>
 				<h2 className="text-3xl font-bold">Name your workspace</h2>
 
 				<p className="text-muted-foreground mt-2">

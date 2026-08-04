@@ -1,5 +1,5 @@
 import type { Occupation } from "@/lib/db/schema";
-import type { WorkspaceMemberRole } from "../lib/types/workspace";
+import type { WorkspaceMemberRole } from "../types/workspace";
 
 export interface OnboardingPayload {
 	workspace: OnboardingWorkspace;
@@ -8,28 +8,44 @@ export interface OnboardingPayload {
 }
 
 export enum OnboardingStep {
-	Workspace = 1,
-	InviteMembers = 2,
-	Profile = 3,
+	Workspace = "workspace",
+	InviteMembers = "invite-members",
+	Profile = "profile",
 }
 
-export const ONBOARDING_STEPS = [
+export type OnboardingStepConfig = {
+	id: number;
+	step: OnboardingStep;
+	title: string;
+	description: string;
+};
+
+export const ONBOARDING_STEPS: OnboardingStepConfig[] = [
 	{
-		id: OnboardingStep.Workspace,
+		id: 1,
+		step: OnboardingStep.Workspace,
 		title: "Workspace",
 		description: "Create your workspace",
 	},
 	{
-		id: OnboardingStep.InviteMembers,
+		id: 2,
+		step: OnboardingStep.InviteMembers,
 		title: "Invite Members",
 		description: "Collaborate with your team",
 	},
 	{
-		id: OnboardingStep.Profile,
+		id: 3,
+		step: OnboardingStep.Profile,
 		title: "Profile",
 		description: "Complete your profile",
 	},
-] as const;
+];
+
+export const ONBOARDING_FLOWS = {
+	onboarding: ONBOARDING_STEPS,
+
+	createWorkspace: [ONBOARDING_STEPS[0], ONBOARDING_STEPS[1]],
+} satisfies Record<string, OnboardingStepConfig[]>;
 
 export interface OnboardingWorkspace {
 	name: string;

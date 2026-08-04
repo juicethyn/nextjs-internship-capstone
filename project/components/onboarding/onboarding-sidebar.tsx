@@ -1,11 +1,15 @@
 import { cn } from "@/lib/utils";
-import { ONBOARDING_STEPS, type OnboardingStep } from "@/types/onboarding";
+import type { OnboardingStepConfig } from "@/types/onboarding";
 
-type Props = {
-	currentStep: OnboardingStep;
+type OnboardingSidebarProps = {
+	steps: OnboardingStepConfig[];
+	currentStep: OnboardingStepConfig;
 };
 
-export function OnboardingSidebar({ currentStep }: Props) {
+export function OnboardingSidebar({
+	steps,
+	currentStep,
+}: OnboardingSidebarProps) {
 	return (
 		<aside className="hidden w-80 flex-col border-r bg-muted/30 p-8 lg:flex">
 			{/* Header */}
@@ -17,15 +21,15 @@ export function OnboardingSidebar({ currentStep }: Props) {
 				</p>
 
 				<p className="mt-6 text-xs font-medium uppercase tracking-widest text-muted-foreground">
-					Step {currentStep} of {ONBOARDING_STEPS.length}
+					Step {currentStep.id} of {steps.length}
 				</p>
 			</div>
 
 			{/* Steps */}
 			<div className="mt-10 space-y-8">
-				{ONBOARDING_STEPS.map((step, index) => {
-					const active = currentStep === step.id;
-					const completed = currentStep > step.id;
+				{steps.map((step, index) => {
+					const active = currentStep.id === step.id;
+					const completed = currentStep.id > step.id;
 
 					return (
 						<div key={step.id} className="flex gap-4">
@@ -42,7 +46,7 @@ export function OnboardingSidebar({ currentStep }: Props) {
 									{completed ? "✓" : step.id}
 								</div>
 
-								{index !== ONBOARDING_STEPS.length - 1 && (
+								{index !== steps.length - 1 && (
 									<div
 										className={cn(
 											"absolute top-9 h-8 w-px",
