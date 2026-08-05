@@ -1,4 +1,4 @@
-import { UserPlus } from "lucide-react";
+import { useOnboardingStore } from "@/stores/onboarding-store";
 import { InviteMembersForm } from "./invite-members-form";
 import { InviteMembersHeader } from "./invite-members-header";
 import { InviteMembersLists } from "./invite-members-list";
@@ -7,19 +7,22 @@ import { InviteMembersNavigation } from "./invite-members-navigation";
 type InviteMembersStepProps = {
 	onBack: () => void;
 	onNext: () => void;
-	onComplete?: () => void;
+	onSkip: () => void;
 	nextLabel: string;
 };
 
 export function InviteMembersStep({
 	onBack,
 	onNext,
+	onSkip,
 	nextLabel,
 }: InviteMembersStepProps) {
+	const { invites } = useOnboardingStore();
+
 	return (
-		<div className="space-y-8">
+		<div className="mx-auto w-full max-w-xl space-y-4 lg:space-y-5">
 			{/* Header */}
-			<InviteMembersHeader />
+			<InviteMembersHeader onBack={onBack} />
 
 			{/* Invite Form */}
 			<InviteMembersForm />
@@ -29,9 +32,10 @@ export function InviteMembersStep({
 
 			{/* Navigation */}
 			<InviteMembersNavigation
-				onBack={onBack}
-				onNext={onNext}
+				onContinue={onNext}
+				onSkip={onSkip}
 				nextLabel={nextLabel}
+				isContinueDisabled={invites.length === 0}
 			/>
 		</div>
 	);

@@ -14,7 +14,7 @@ const geistHeading = Geist({ subsets: ["latin"], variable: "--font-heading" });
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-	title: "Project Management Tool",
+	title: "Fora",
 	description: "Team collaboration and project management platform",
 	generator: "v0.dev",
 };

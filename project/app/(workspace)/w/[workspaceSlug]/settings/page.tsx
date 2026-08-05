@@ -41,6 +41,7 @@ export default function SettingsPage() {
 							{ name: "Appearance", icon: Palette, active: false },
 						].map((item) => (
 							<button
+								type="button"
 								key={item.name}
 								className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
 									item.active
@@ -63,32 +64,46 @@ export default function SettingsPage() {
 
 					<div className="space-y-6">
 						<div>
-							<label className="block text-sm font-medium text-outer_space-500 dark:text-platinum-500 mb-2">
+							<label
+								className="block text-sm font-medium text-outer_space-500 dark:text-platinum-500 mb-2"
+								htmlFor="full-name"
+							>
 								Full Name
 							</label>
 							<input
 								type="text"
+								id="full-name"
 								defaultValue="John Doe"
 								className="w-full px-3 py-2 border border-french_gray-300 dark:border-payne's_gray-400 rounded-lg bg-white dark:bg-outer_space-400 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-blue_munsell-500"
 							/>
 						</div>
 
 						<div>
-							<label className="block text-sm font-medium text-outer_space-500 dark:text-platinum-500 mb-2">
+							<label
+								className="block text-sm font-medium text-outer_space-500 dark:text-platinum-500 mb-2"
+								htmlFor="email"
+							>
 								Email Address
 							</label>
 							<input
 								type="email"
+								id="email"
 								defaultValue="john@example.com"
 								className="w-full px-3 py-2 border border-french_gray-300 dark:border-payne's_gray-400 rounded-lg bg-white dark:bg-outer_space-400 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-blue_munsell-500"
 							/>
 						</div>
 
 						<div>
-							<label className="block text-sm font-medium text-outer_space-500 dark:text-platinum-500 mb-2">
+							<label
+								className="block text-sm font-medium text-outer_space-500 dark:text-platinum-500 mb-2"
+								htmlFor="role"
+							>
 								Role
 							</label>
-							<select className="w-full px-3 py-2 border border-french_gray-300 dark:border-payne's_gray-400 rounded-lg bg-white dark:bg-outer_space-400 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-blue_munsell-500">
+							<select
+								id="role"
+								className="w-full px-3 py-2 border border-french_gray-300 dark:border-payne's_gray-400 rounded-lg bg-white dark:bg-outer_space-400 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-blue_munsell-500"
+							>
 								<option>Project Manager</option>
 								<option>Developer</option>
 								<option>Designer</option>
@@ -97,10 +112,16 @@ export default function SettingsPage() {
 						</div>
 
 						<div className="flex justify-end space-x-3 pt-4">
-							<button className="px-4 py-2 text-payne's_gray-500 dark:text-french_gray-400 hover:bg-platinum-500 dark:hover:bg-payne's_gray-400 rounded-lg transition-colors">
+							<button
+								type="button"
+								className="px-4 py-2 text-payne's_gray-500 dark:text-french_gray-400 hover:bg-platinum-500 dark:hover:bg-payne's_gray-400 rounded-lg transition-colors"
+							>
 								Cancel
 							</button>
-							<button className="px-4 py-2 bg-blue_munsell-500 text-white rounded-lg hover:bg-blue_munsell-600 transition-colors">
+							<button
+								type="button"
+								className="px-4 py-2 bg-blue_munsell-500 text-white rounded-lg hover:bg-blue_munsell-600 transition-colors"
+							>
 								Save Changes
 							</button>
 						</div>

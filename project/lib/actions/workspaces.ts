@@ -7,6 +7,7 @@ import { updateUser } from "../db/queries/users";
 import {
 	createWorkspace,
 	deleteWorkspace,
+	getUserOwnedWorkspaces,
 	getUserWorkspaceById,
 	getUserWorkspaces,
 	updateWorkspace,
@@ -188,5 +189,16 @@ export async function getCurrentWorkspaceAction() {
 	return {
 		success: true,
 		data: workspace,
+	};
+}
+
+export async function getCurrentUserOwnedWorkspaces() {
+	const user = await getCurrentUser();
+
+	const workspaces = await getUserOwnedWorkspaces(user.id);
+
+	return {
+		success: true,
+		data: workspaces,
 	};
 }

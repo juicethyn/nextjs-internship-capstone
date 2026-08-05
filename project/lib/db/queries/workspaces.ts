@@ -63,6 +63,23 @@ export async function getUserWorkspaces(userId: string) {
 	});
 }
 
+export async function getUserOwnedWorkspaces(userId: string) {
+	return db.query.workspaces.findMany({
+		where: exists(
+			db
+				.select()
+				.from(workspaceMembers)
+				.where(
+					and(
+						eq(workspaceMembers.workspaceId, workspaces.id),
+						eq(workspaceMembers.userId, userId),
+						eq(workspaceMembers.role, "owner"),
+					),
+				),
+		),
+	});
+}
+
 export function getUserWorkspaceById(workspaceId: string, userId: string) {
 	return db.query.workspaceMembers.findFirst({
 		where: and(

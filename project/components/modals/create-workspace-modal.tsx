@@ -1,3 +1,5 @@
+"use client";
+
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { OnboardingContainer } from "@/components/onboarding/onboarding-container";
@@ -8,12 +10,15 @@ import {
 import { useOnboardingStore } from "@/stores/onboarding-store";
 import { Dialog, DialogContent } from "../ui/dialog";
 
-type Props = {
+type CreateWorkspaceModalProps = {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 };
 
-export function CreateWorkspaceModal({ open, onOpenChange }: Props) {
+export function CreateWorkspaceModal({
+	open,
+	onOpenChange,
+}: CreateWorkspaceModalProps) {
 	const router = useRouter();
 
 	const handleComplete = async () => {

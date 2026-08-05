@@ -1,5 +1,6 @@
 import { relations } from "drizzle-orm";
 import * as schema from "./schema";
+import { users, workspaceInvitations, workspaces } from "./schema";
 
 export const usersRelations = relations(schema.users, ({ many }) => ({
 	workspaceMembership: many(schema.workspaceMembers),
@@ -26,6 +27,21 @@ export const workspacesRelations = relations(
 		projects: many(schema.projects),
 		labels: many(schema.workspaceLabels),
 		activityLogs: many(schema.activityLogs),
+	}),
+);
+
+export const workspaceInvitationsRelations = relations(
+	workspaceInvitations,
+	({ one }) => ({
+		workspace: one(workspaces, {
+			fields: [workspaceInvitations.workspaceId],
+			references: [workspaces.id],
+			relationName: "workspaceInvitations",
+		}),
+		invitedBy: one(users, {
+			fields: [workspaceInvitations.invitedById],
+			references: [users.id],
+		}),
 	}),
 );
 

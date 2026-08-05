@@ -1,29 +1,45 @@
+import { useState } from "react";
 import { useProfileSetup } from "@/hooks/use-profile-setup";
+import type { Occupation } from "@/lib/db/schema";
 import { ProfileForm } from "./profile-form";
 import { ProfileHeader } from "./profile-header";
 import { ProfileNavigation } from "./profile-navigation";
 
-type Props = {
+type ProfileStepProps = {
 	onBack: () => void;
+	onComplete: (occupation: Occupation) => Promise<void>;
 };
 
-export function ProfileStep({ onBack }: Props) {
-	const profile = useProfileSetup();
+export function ProfileStep({ onBack, onComplete }: ProfileStepProps) {
+	const { selectedOccupation, updateOccupation } = useProfileSetup();
+
+	const [isSubmitting, setIsSubmitting] = useState(false);
+
+	const handleFinish = async () => {
+		if (!selectedOccupation) return;
+
+		setIsSubmitting(true);
+
+		try {
+			await onComplete(selectedOccupation);
+		} finally {
+			setIsSubmitting(false);
+		}
+	};
 
 	return (
-		<div className="space-y-8">
-			<ProfileHeader />
+		<div className="mx-auto w-full max-w-xl space-y-4 lg:space-y-5">
+			<ProfileHeader onBack={onBack} />
 
 			<ProfileForm
-				selectedOccupation={profile.selectedOccupation}
-				updateOccupation={profile.updateOccupation}
+				selectedOccupation={selectedOccupation}
+				updateOccupation={updateOccupation}
 			/>
 
 			<ProfileNavigation
-				onBack={onBack}
-				selectedOccupation={profile.selectedOccupation}
-				isSubmitting={profile.isSubmitting}
-				finishSetup={profile.finishSetup}
+				selectedOccupation={selectedOccupation}
+				isSubmitting={isSubmitting}
+				finishSetup={handleFinish}
 			/>
 		</div>
 	);

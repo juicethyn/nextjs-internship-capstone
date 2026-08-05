@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm";
-import type { WorkspaceMemberRole } from "@/types/workspace";
 import type { CreateWorkspaceMemberInput } from "@/lib/validations/workspaceMember";
+import type { WorkspaceMemberRole } from "@/types/workspace";
 import { db } from "../index";
 import { workspaceMembers } from "../schema";
 

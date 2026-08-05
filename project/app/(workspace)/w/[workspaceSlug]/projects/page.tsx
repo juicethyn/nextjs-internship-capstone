@@ -1,23 +1,11 @@
-import { Filter, Plus, Search } from "lucide-react";
+import { Filter, Search } from "lucide-react";
+import { ProjectsHeader } from "@/components/projects/projects-header";
 
 export default function ProjectsPage() {
 	return (
 		// <DashboardLayout>
 		<div className="space-y-6">
-			<div className="flex justify-between items-center">
-				<div>
-					<h1 className="text-3xl font-bold text-outer_space-500 dark:text-platinum-500">
-						Projects
-					</h1>
-					<p className="text-payne's_gray-500 dark:text-french_gray-500 mt-2">
-						Manage and organize your team projects
-					</p>
-				</div>
-				<button className="inline-flex items-center px-4 py-2 bg-blue_munsell-500 text-white rounded-lg hover:bg-blue_munsell-600 transition-colors">
-					<Plus size={20} className="mr-2" />
-					New Project
-				</button>
-			</div>
+			<ProjectsHeader />
 
 			{/* Implementation Tasks Banner */}
 			<div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
@@ -47,7 +35,10 @@ export default function ProjectsPage() {
 						className="w-full pl-10 pr-4 py-2 bg-white dark:bg-outer_space-500 border border-french_gray-300 dark:border-payne's_gray-400 rounded-lg text-outer_space-500 dark:text-platinum-500 placeholder-payne's_gray-500 dark:placeholder-french_gray-400 focus:outline-none focus:ring-2 focus:ring-blue_munsell-500"
 					/>
 				</div>
-				<button className="inline-flex items-center px-4 py-2 border border-french_gray-300 dark:border-payne's_gray-400 text-outer_space-500 dark:text-platinum-500 rounded-lg hover:bg-platinum-500 dark:hover:bg-payne's_gray-400 transition-colors">
+				<button
+					type="button"
+					className="inline-flex items-center px-4 py-2 border border-french_gray-300 dark:border-payne's_gray-400 text-outer_space-500 dark:text-platinum-500 rounded-lg hover:bg-platinum-500 dark:hover:bg-payne's_gray-400 transition-colors"
+				>
 					<Filter size={16} className="mr-2" />
 					Filter
 				</button>

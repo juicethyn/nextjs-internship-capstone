@@ -1,27 +1,39 @@
 import { Button } from "@/components/ui/button";
-import { useOnboardingStore } from "@/stores/onboarding-store";
 
 type InviteMembersNavigationProps = {
-	onNext: () => void;
-	onBack: () => void;
+	onContinue: () => void;
+	onSkip: () => void;
 	nextLabel: string;
+	skipLabel?: string;
+	isContinueDisabled?: boolean;
 };
 
 export function InviteMembersNavigation({
-	onNext,
-	onBack,
+	onContinue,
+	onSkip,
 	nextLabel,
+	skipLabel = "Skip for now",
+	isContinueDisabled = false,
 }: InviteMembersNavigationProps) {
-	const { invites } = useOnboardingStore();
-
-	const buttonLabel = invites.length === 0 ? `Skip & ${nextLabel}` : nextLabel;
 	return (
-		<div className="flex justify-between pt-4">
-			<Button variant="ghost" onClick={onBack}>
-				Back
+		<div className="flex flex-col gap-2 pt-4">
+			<Button
+				type="button"
+				onClick={onContinue}
+				disabled={isContinueDisabled}
+				className="h-11 w-full sm:h-12"
+			>
+				{nextLabel}
 			</Button>
 
-			<Button onClick={onNext}>{buttonLabel}</Button>
+			<Button
+				type="button"
+				variant="outline"
+				onClick={onSkip}
+				className="h-11 w-full sm:h-12"
+			>
+				{skipLabel}
+			</Button>
 		</div>
 	);
 }
