@@ -1,17 +1,29 @@
-import { Briefcase } from "lucide-react";
+import { ArrowLeft, Briefcase } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-export function ProfileHeader() {
+type ProfileHeaderProps = {
+	onBack: () => void;
+};
+
+export function ProfileHeader({ onBack }: ProfileHeaderProps) {
 	return (
 		<div>
-			<div className="mb-3 flex size-12 items-center justify-center rounded-xl bg-primary/10">
-				<Briefcase className="size-6 text-primary" />
+			<Button
+				onClick={onBack}
+				variant="ghost"
+				className="mb-2 p-0 text-muted-foreground"
+			>
+				<ArrowLeft className="size-4" />
+				Back
+			</Button>
+			<div>
+				<h2 className="text-xl lg:text-3xl font-bold">
+					Tell us about yourself
+				</h2>
+				<p className="mt-1 text-sm text-muted-foreground lg:mt-2 lg:text-sm">
+					This helps personalize your workspace experience.
+				</p>
 			</div>
-
-			<h2 className="text-3xl font-bold">Tell us about yourself</h2>
-
-			<p className="mt-2 text-sm text-muted-foreground">
-				This helps personalize your workspace experience.
-			</p>
 		</div>
 	);
 }

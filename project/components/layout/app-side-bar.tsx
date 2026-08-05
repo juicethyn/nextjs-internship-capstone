@@ -77,7 +77,13 @@ export function AppSidebar({ currentWorkspace, workspaces }: AppSidebarProps) {
 								<DropdownMenuTrigger asChild>
 									<SidebarMenuButton
 										size="lg"
-										className="flex-1 data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+										className="
+										flex-1
+										group-data-[collapsible=icon]:justify-center
+										group-data-[collapsible=icon]:px-0
+										data-[state=open]:bg-sidebar-accent
+										data-[state=open]:text-sidebar-accent-foreground
+									"
 									>
 										<WorkspaceAvatar
 											name={currentWorkspace.name}
@@ -85,13 +91,18 @@ export function AppSidebar({ currentWorkspace, workspaces }: AppSidebarProps) {
 											size="xs"
 										/>
 
-										<div className="grid flex-1 text-left text-sm leading-tight">
+										<div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
 											<span className="truncate font-semibold">
 												{currentWorkspace.name}
 											</span>
 										</div>
 
-										<ChevronsUpDown className="ml-auto size-4 group-data-[collapsible=icon]:hidden" />
+										<ChevronsUpDown
+											className="
+												ml-auto size-4
+												group-data-[collapsible=icon]:hidden
+											"
+										/>
 									</SidebarMenuButton>
 								</DropdownMenuTrigger>
 
@@ -148,7 +159,7 @@ export function AppSidebar({ currentWorkspace, workspaces }: AppSidebarProps) {
 							</DropdownMenu>
 
 							{/* No longer hides itself away when collapsed — just recenters under the avatar */}
-							<SidebarTrigger className="shrink-0 group-data-[collapsible=icon]:mx-auto" />
+							<SidebarTrigger className="shrink-0 group-data-[collapsible=icon]:mx-auto hidden lg:block" />
 						</SidebarMenuItem>
 					</SidebarMenu>
 				</SidebarHeader>
@@ -187,7 +198,7 @@ export function AppSidebar({ currentWorkspace, workspaces }: AppSidebarProps) {
 																"flex w-full items-center gap-3",
 																isActive
 																	? "text-primary"
-																	: "text-muted-foreground hover:text-white",
+																	: "text-muted-foreground hover:text-foreground",
 															)}
 														>
 															<item.icon className="h-4 w-4 shrink-0" />

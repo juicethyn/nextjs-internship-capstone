@@ -90,11 +90,15 @@ export async function createWorkspaceInvitationAction(
 		expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
 	});
 
-	await sendWorkspaceInvitationEmail({
+	const emailResult = await sendWorkspaceInvitationEmail({
 		email: invitation.email,
 		workspaceName: workspace.name,
 		token: invitation.token,
 	});
+
+	if (!emailResult.success) {
+		console.warn(`Failed to send invitation email to ${invitation.email}`);
+	}
 
 	await createActivity({
 		workspaceId: workspace.id,

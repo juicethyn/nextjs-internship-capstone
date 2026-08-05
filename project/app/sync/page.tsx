@@ -15,11 +15,6 @@ export default async function SyncPage() {
 
 	const ownedWorkspaces = await getCurrentUserOwnedWorkspaces();
 
-	console.log(
-		"Owned:",
-		ownedWorkspaces.data.map((w) => w.name),
-	);
-
 	if (ownedWorkspaces.data.length === 0) {
 		redirect("/onboarding");
 	}

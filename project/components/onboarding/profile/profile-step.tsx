@@ -28,8 +28,8 @@ export function ProfileStep({ onBack, onComplete }: ProfileStepProps) {
 	};
 
 	return (
-		<div className="space-y-8">
-			<ProfileHeader />
+		<div className="mx-auto w-full max-w-xl space-y-4 lg:space-y-5">
+			<ProfileHeader onBack={onBack} />
 
 			<ProfileForm
 				selectedOccupation={selectedOccupation}
@@ -37,7 +37,6 @@ export function ProfileStep({ onBack, onComplete }: ProfileStepProps) {
 			/>
 
 			<ProfileNavigation
-				onBack={onBack}
 				selectedOccupation={selectedOccupation}
 				isSubmitting={isSubmitting}
 				finishSetup={handleFinish}

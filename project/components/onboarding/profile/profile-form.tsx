@@ -20,8 +20,11 @@ export function ProfileForm({
 	updateOccupation,
 }: ProfileFormProps) {
 	return (
-		<div className="space-y-2">
-			<label className="text-sm font-medium" htmlFor="your-role">
+		<div>
+			<label
+				className="text-xs font-medium uppercase tracking-wider text-muted-foreground"
+				htmlFor="occupation-select"
+			>
 				Your Role
 			</label>
 
@@ -29,13 +32,20 @@ export function ProfileForm({
 				value={selectedOccupation ?? ""}
 				onValueChange={(value) => updateOccupation(value as Occupation)}
 			>
-				<SelectTrigger>
-					<SelectValue placeholder="Select your role" />
+				<SelectTrigger className="w-full h-10! bg-muted/40">
+					<SelectValue placeholder="Select your role" className="" />
 				</SelectTrigger>
 
-				<SelectContent>
+				<SelectContent
+					sideOffset={6}
+					className="w-(--radix-select-trigger-width)"
+				>
 					{OCCUPATIONS.map((item) => (
-						<SelectItem key={item.value} value={item.value}>
+						<SelectItem
+							key={item.value}
+							value={item.value}
+							className="h-9 text-sm"
+						>
 							{item.label}
 						</SelectItem>
 					))}

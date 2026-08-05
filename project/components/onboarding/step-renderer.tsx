@@ -28,6 +28,7 @@ export function StepRenderer({
 				<InviteMembersStep
 					onBack={onBack}
 					onNext={onNext}
+					onSkip={onNext}
 					nextLabel={nextLabel}
 				/>
 			);

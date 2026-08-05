@@ -49,7 +49,7 @@ export function OnboardingContainer({
 	};
 
 	const isLastStep = currentIndex === steps.length - 1;
-	const nextLabel = isLastStep ? "Finish Setup" : "Continue";
+	const nextLabel = isLastStep ? "Create workspace" : "Continue";
 
 	const handleOnboardingComplete = async (occupation: Occupation) => {
 		const { workspace, invites, reset } = useOnboardingStore.getState();
@@ -77,7 +77,7 @@ export function OnboardingContainer({
 			<OnboardingSidebar steps={steps} currentStep={currentStep} />
 
 			<div className="flex flex-1 items-center justify-center">
-				<div className="w-full max-w-2xl px-10">
+				<div className="w-full max-w-2xl px-3 sm:px-6 lg:px-8">
 					<StepRenderer
 						step={currentStep.step}
 						onNext={next}

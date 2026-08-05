@@ -15,7 +15,7 @@ export async function sendWorkspaceInvitationEmail({
 	const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL}/invite/${token}`;
 
 	try {
-		await resend.emails.send({
+		const { error } = await resend.emails.send({
 			from: "Fora <onboarding@resend.dev>",
 			to: email,
 			subject: `You've been invited to ${workspaceName}`,
@@ -25,14 +25,14 @@ export async function sendWorkspaceInvitationEmail({
 			}),
 		});
 
-		return {
-			success: true,
-		};
-	} catch (error) {
-		console.error("Failed to send invitation email:", error);
+		if (error) {
+			console.error("Resend rejected the invitation email:", error);
+			return { success: false };
+		}
 
-		return {
-			success: false,
-		};
+		return { success: true };
+	} catch (error) {
+		console.error("Unexpected error sending invitation email:", error);
+		return { success: false };
 	}
 }
