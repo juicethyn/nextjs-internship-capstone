@@ -5,14 +5,14 @@ import { getCurrentUser } from "@/lib/auth";
 import { getUserWorkspaces } from "@/lib/db/queries/workspaces";
 import { requireWorkspaceMember } from "@/lib/permission";
 
-type Props = {
+type LayoutProps = {
 	children: React.ReactNode;
 	params: Promise<{
 		workspaceSlug: string;
 	}>;
 };
 
-export default async function Layout({ children, params }: Props) {
+export default async function Layout({ children, params }: LayoutProps) {
 	const { workspaceSlug } = await params;
 
 	const user = await getCurrentUser();

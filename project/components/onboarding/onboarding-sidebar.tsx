@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/utils";
 import type { OnboardingStepConfig } from "@/types/onboarding";
 
 type OnboardingSidebarProps = {

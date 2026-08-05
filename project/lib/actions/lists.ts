@@ -1,6 +1,5 @@
 "use server";
 
-import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/dist/server/web/spec-extension/revalidate";
 import { treeifyError } from "zod/v4/core";
 import { createActivity } from "../activity";
@@ -8,11 +7,9 @@ import { getCurrentUser } from "../auth";
 import {
 	createList,
 	deleteList,
-	getListById,
 	getListsByProject,
 	updateList,
 } from "../db/queries/lists";
-import { getProjectById } from "../db/queries/projects";
 import { requireActiveProject, requireList } from "../permission";
 import {
 	type CreateListInput,

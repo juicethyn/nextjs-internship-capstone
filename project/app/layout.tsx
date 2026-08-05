@@ -7,7 +7,7 @@ import "./globals.css"; // FIX #2: Creating global.d.ts to declare module for CS
 import { ClerkProvider } from "@clerk/nextjs";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/utils";
 
 const geistHeading = Geist({ subsets: ["latin"], variable: "--font-heading" });
 

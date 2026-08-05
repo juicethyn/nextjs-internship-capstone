@@ -12,20 +12,37 @@ import {
 	archiveProject,
 	createProject,
 	deleteProject,
+	getProjectsByWorkspace,
 	restoreProject,
 	transferProjectLead,
 	updateProject,
 } from "../db/queries/projects";
-import {
-	requireProjectLead,
-	requireWorkspaceMember,
-	requireWorkspaceOwner,
-} from "../permission";
+import { requireProjectLead, requireWorkspaceMember } from "../permission";
 import {
 	type CreateProjectInput,
 	createProjectSchema,
 	type UpdateProjectInput,
 } from "../validations/project";
+
+export async function getProjectsByWorkspaceBySlug(workspaceSlug: string) {
+	const user = await getCurrentUser();
+
+	const workspace = await requireWorkspaceMember(workspaceSlug, user.id);
+
+	const projects = await getProjectsByWorkspace(workspace.id);
+
+	if (!projects) {
+		return {
+			success: false,
+			message: "No projects found for this workspace",
+		};
+	}
+
+	return {
+		success: true,
+		projects,
+	};
+}
 
 export async function createProjectAction(
 	workspaceSlug: string,

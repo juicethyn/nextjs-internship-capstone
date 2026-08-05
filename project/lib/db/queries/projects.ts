@@ -1,5 +1,5 @@
-import { and, desc, eq } from "drizzle-orm";
-import { generateProjectSlug } from "@/lib/slug";
+import { and, eq } from "drizzle-orm";
+import { generateProjectSlug } from "@/lib/utils/slug";
 import type {
 	CreateProjectInput,
 	UpdateProjectInput,

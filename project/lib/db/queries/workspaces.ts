@@ -1,5 +1,5 @@
 import { and, eq, exists } from "drizzle-orm";
-import { generateWorkspaceSlug } from "@/lib/slug";
+import { generateWorkspaceSlug } from "@/lib/utils/slug";
 import type {
 	CreateWorkspaceInput,
 	UpdateWorkspaceInput,

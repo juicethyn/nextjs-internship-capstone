@@ -210,6 +210,7 @@ export const projects = pgTable(
 		slug: text("slug").notNull(),
 		description: text("description"),
 		logoUrl: text("logo_url"),
+		color: varchar({ length: 7 }).notNull(),
 		status: projectStatusEnum("status").notNull().default("active"),
 		isArchived: boolean("is_archived").notNull().default(false),
 		startDate: timestamp("start_date"),

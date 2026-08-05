@@ -35,7 +35,7 @@ import {
 } from "@/components/ui/sidebar";
 import { NAV_LINKS } from "@/constants/navigation";
 import { switchWorkspaceAction } from "@/lib/actions/workspaces";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/utils";
 import type { WorkspaceItem } from "@/types/workspace";
 import { CreateWorkspaceModal } from "../modals/create-workspace-modal";
 import { WorkspaceAvatar } from "../workspace-avatar";

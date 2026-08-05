@@ -1,16 +1,11 @@
 "use server";
 
-import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/dist/server/web/spec-extension/revalidate";
-import { treeifyError } from "zod/v4/core";
 import { createActivity } from "../activity";
 import { getCurrentUser } from "../auth";
-import { getListById } from "../db/queries/lists";
-import { getProjectById } from "../db/queries/projects";
 import {
 	createTask,
 	deleteTask,
-	getTaskById,
 	getTasksByList,
 	updateTask,
 	updateTaskPosition,
@@ -255,7 +250,7 @@ export async function moveTaskAction(
 		};
 	}
 
-	const moveTask = await updateTaskPosition(
+	const _moveTask = await updateTaskPosition(
 		task.id,
 		destinationListId,
 		newPosition,
