@@ -3,7 +3,7 @@ import { invitationStatus } from "../../types/workspaceInvitation";
 
 export const createWorkspaceInvitationSchema = z.object({
 	email: z.email("Invalid email address"),
-	role: z.enum(["admin", "member"]),
+	role: z.enum(["owner", "admin", "member"]),
 });
 
 export type CreateWorkspaceInvitationInput = z.infer<

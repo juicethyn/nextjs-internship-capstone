@@ -4,11 +4,35 @@ import type {
 	CreateProjectInput,
 	UpdateProjectInput,
 } from "@/lib/validations/project";
+import type { DbClient } from "@/types/db";
 import { db } from "../index";
 import { projects } from "../schema";
 
 // CRUD Operations
 
+// CREATE
+export async function createProject(
+	workspaceId: string,
+	leadId: string,
+	data: CreateProjectInput,
+	dbClient: DbClient = db,
+) {
+	const slug = generateProjectSlug(data.name);
+
+	const [project] = await dbClient
+		.insert(projects)
+		.values({
+			...data,
+			slug,
+			workspaceId,
+			leadId,
+		})
+		.returning();
+
+	return project;
+}
+
+// READ
 export function getProjectsByWorkspace(workspaceId: string) {
 	return db.query.projects.findMany({
 		where: eq(projects.workspaceId, workspaceId),
@@ -45,26 +69,6 @@ export function getProjectBySlug(workspaceId: string, slug: string) {
 	return db.query.projects.findFirst({
 		where: and(eq(projects.workspaceId, workspaceId), eq(projects.slug, slug)),
 	});
-}
-
-export async function createProject(
-	workspaceId: string,
-	leadId: string,
-	data: CreateProjectInput,
-) {
-	const slug = generateProjectSlug(data.name);
-
-	const [project] = await db
-		.insert(projects)
-		.values({
-			...data,
-			slug,
-			workspaceId,
-			leadId,
-		})
-		.returning();
-
-	return project;
 }
 
 export async function updateProject(id: string, data: UpdateProjectInput) {

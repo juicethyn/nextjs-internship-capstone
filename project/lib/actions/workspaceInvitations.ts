@@ -27,16 +27,7 @@ import {
 
 // Workspace Invitation Actions
 
-export async function getWorkspaceInvitationsAction(workspaceSlug: string) {
-	const user = await getCurrentUser();
-
-	const workspace = await requireWorkspaceAdmin(workspaceSlug, user.id);
-
-	const invitations = await getWorkspaceInvitations(workspace.id);
-
-	return invitations;
-}
-
+// Used for Sending Individual Invites and not for bulk invites.
 export async function createWorkspaceInvitationAction(
 	workspaceSlug: string,
 	data: CreateWorkspaceInvitationInput,
@@ -118,6 +109,14 @@ export async function createWorkspaceInvitationAction(
 		success: true,
 		data: invitation,
 	};
+}
+
+export async function getWorkspaceInvitationsAction(workspaceSlug: string) {
+	const user = await getCurrentUser();
+	const workspace = await requireWorkspaceAdmin(workspaceSlug, user.id);
+	const invitations = await getWorkspaceInvitations(workspace.id);
+
+	return invitations;
 }
 
 export async function revokeWorkspaceInvitationAction(

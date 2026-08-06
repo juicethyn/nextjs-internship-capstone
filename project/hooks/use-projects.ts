@@ -1,6 +1,14 @@
 // TODO: Task 4.1 - Implement project CRUD operations
 // TODO: Task 4.2 - Create project listing and dashboard interface
 
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+	createProjectAction,
+	getProjectsByWorkspaceBySlug,
+} from "@/lib/actions/projects";
+import type { CreateProjectInput } from "@/lib/validations/project";
+import type { ProjectWithRelations } from "@/types/projects";
+
 /*
 TODO: Implementation Notes for Interns:
 
@@ -68,3 +76,41 @@ Dependencies to install:
 // 		deleteProject: (id: string) => console.log(`TODO: Delete project ${id}`),
 // 	};
 // }
+
+interface UseProjectsProps {
+	workspaceSlug: string;
+	initialProjects?: ProjectWithRelations[];
+}
+
+export function useProjects({
+	workspaceSlug,
+	initialProjects,
+}: UseProjectsProps) {
+	const query = useQuery({
+		queryKey: ["projects", workspaceSlug],
+		queryFn: async () => {
+			const response = await getProjectsByWorkspaceBySlug(workspaceSlug);
+			return response.projects ?? [];
+		},
+		initialData: initialProjects,
+	});
+
+	const queryClient = useQueryClient();
+
+	const createMutation = useMutation({
+		mutationFn: (data: CreateProjectInput) =>
+			createProjectAction(workspaceSlug, data),
+
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["projects", workspaceSlug] });
+		},
+	});
+
+	return {
+		projects: query.data ?? [],
+		isLoading: query.isLoading,
+
+		createProject: createMutation.mutateAsync,
+		isCreating: createMutation.isPending,
+	};
+}

@@ -14,7 +14,7 @@ export function useWorkspaceInvitations(workspaceSlug: string) {
 
 	const createInvitation = async (data: {
 		email: string;
-		role: "member" | "admin";
+		role: "owner" | "admin" | "member";
 	}) => {
 		setIsLoading(true);
 

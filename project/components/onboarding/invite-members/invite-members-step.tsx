@@ -9,6 +9,7 @@ type InviteMembersStepProps = {
 	onNext: () => void;
 	onSkip: () => void;
 	nextLabel: string;
+	isSubmitting: boolean;
 };
 
 export function InviteMembersStep({
@@ -16,6 +17,7 @@ export function InviteMembersStep({
 	onNext,
 	onSkip,
 	nextLabel,
+	isSubmitting,
 }: InviteMembersStepProps) {
 	const { invites } = useOnboardingStore();
 
@@ -36,6 +38,7 @@ export function InviteMembersStep({
 				onSkip={onSkip}
 				nextLabel={nextLabel}
 				isContinueDisabled={invites.length === 0}
+				isSubmitting={isSubmitting}
 			/>
 		</div>
 	);

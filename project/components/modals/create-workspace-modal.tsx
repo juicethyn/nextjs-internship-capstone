@@ -1,13 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
 import { OnboardingContainer } from "@/components/onboarding/onboarding-container";
-import {
-	createWorkspaceAction,
-	switchWorkspaceAction,
-} from "@/lib/actions/workspaces";
-import { useOnboardingStore } from "@/stores/onboarding-store";
+import { useCreateWorkspace } from "@/hooks/use-create-workspace";
 import { Dialog, DialogContent } from "../ui/dialog";
 
 type CreateWorkspaceModalProps = {
@@ -19,34 +13,7 @@ export function CreateWorkspaceModal({
 	open,
 	onOpenChange,
 }: CreateWorkspaceModalProps) {
-	const router = useRouter();
-
-	const handleComplete = async () => {
-		const { workspace, reset } = useOnboardingStore.getState();
-
-		if (!workspace) return;
-
-		const result = await createWorkspaceAction(workspace);
-
-		if (!result.success) {
-			return;
-		}
-
-		const workspaceSlug = result.data?.slug;
-
-		if (!workspaceSlug) {
-			toast.error("Failed to create workspace. Please try again.");
-			return;
-		}
-
-		await switchWorkspaceAction(workspaceSlug);
-
-		reset();
-		onOpenChange(false);
-
-		toast.success(`Workspace ${workspace.name} created successfully!`);
-		router.push(`/w/${workspaceSlug}/dashboard`);
-	};
+	const { createWorkspace, isCreating } = useCreateWorkspace();
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
@@ -70,7 +37,8 @@ export function CreateWorkspaceModal({
 				<OnboardingContainer
 					mode="createWorkspace"
 					onClose={() => onOpenChange(false)}
-					onComplete={handleComplete}
+					onComplete={createWorkspace}
+					isSubmitting={isCreating}
 				/>
 			</DialogContent>
 		</Dialog>

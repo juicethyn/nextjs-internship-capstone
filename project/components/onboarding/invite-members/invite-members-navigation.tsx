@@ -6,6 +6,7 @@ type InviteMembersNavigationProps = {
 	nextLabel: string;
 	skipLabel?: string;
 	isContinueDisabled?: boolean;
+	isSubmitting?: boolean;
 };
 
 export function InviteMembersNavigation({
@@ -14,23 +15,24 @@ export function InviteMembersNavigation({
 	nextLabel,
 	skipLabel = "Skip for now",
 	isContinueDisabled = false,
+	isSubmitting = false,
 }: InviteMembersNavigationProps) {
 	return (
 		<div className="flex flex-col gap-2 pt-4">
 			<Button
 				type="button"
 				onClick={onContinue}
-				disabled={isContinueDisabled}
+				disabled={isContinueDisabled || isSubmitting}
 				className="h-11 w-full sm:h-12"
 			>
-				{nextLabel}
+				{isSubmitting ? "Creating workspace..." : nextLabel}
 			</Button>
-
 			<Button
 				type="button"
 				variant="outline"
 				onClick={onSkip}
 				className="h-11 w-full sm:h-12"
+				disabled={isSubmitting && isContinueDisabled}
 			>
 				{skipLabel}
 			</Button>

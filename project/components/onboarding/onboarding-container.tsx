@@ -16,12 +16,14 @@ type OnboardingContainerProps = {
 	mode: keyof typeof ONBOARDING_FLOWS;
 	onClose?: () => void;
 	onComplete?: () => void;
+	isSubmitting?: boolean;
 };
 
 export function OnboardingContainer({
 	mode,
 	onClose,
 	onComplete,
+	isSubmitting = false,
 }: OnboardingContainerProps) {
 	const router = useRouter();
 	const steps = ONBOARDING_FLOWS[mode];
@@ -30,6 +32,8 @@ export function OnboardingContainer({
 	const currentIndex = steps.findIndex((step) => step.id === currentStep.id);
 
 	const next = () => {
+		if (isSubmitting) return;
+
 		const nextStep = steps[currentIndex + 1];
 
 		if (nextStep) {
@@ -68,8 +72,8 @@ export function OnboardingContainer({
 
 		reset();
 
-		toast.success("Welcome to Fora!");
 		router.push(`/w/${result.data?.slug}/dashboard`);
+		toast.success("Welcome to Fora!");
 	};
 
 	return (
@@ -84,6 +88,7 @@ export function OnboardingContainer({
 						onBack={back}
 						nextLabel={nextLabel}
 						onComplete={handleOnboardingComplete}
+						isSubmitting={isSubmitting}
 					/>
 				</div>
 			</div>

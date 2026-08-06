@@ -4,9 +4,41 @@ import type {
 	CreateWorkspaceInput,
 	UpdateWorkspaceInput,
 } from "@/lib/validations/workspace";
+import type { DbClient } from "@/types/db";
 import { db } from "../index";
 import { workspaceMembers, workspaces } from "../schema";
 
+// CREATE
+export async function createWorkspace(
+	userId: string,
+	data: CreateWorkspaceInput,
+	dbClient: DbClient = db,
+) {
+	const slug = generateWorkspaceSlug();
+
+	const [workspace] = await dbClient.transaction(async (tx) => {
+		const [workspace] = await tx
+			.insert(workspaces)
+			.values({
+				...data,
+				slug,
+				createdById: userId,
+			})
+			.returning();
+
+		await tx.insert(workspaceMembers).values({
+			workspaceId: workspace.id,
+			userId,
+			role: "owner",
+		});
+
+		return [workspace];
+	});
+
+	return workspace;
+}
+
+// READ
 export async function getWorkspaceByUserId(userId: string) {
 	return db.query.workspaces.findFirst({
 		where: exists(
@@ -90,30 +122,6 @@ export function getUserWorkspaceById(workspaceId: string, userId: string) {
 			workspace: true,
 		},
 	});
-}
-
-export async function createWorkspace(
-	userId: string,
-	data: CreateWorkspaceInput,
-) {
-	const slug = generateWorkspaceSlug();
-
-	const [workspace] = await db
-		.insert(workspaces)
-		.values({
-			...data,
-			slug,
-			createdById: userId,
-		})
-		.returning();
-
-	await db.insert(workspaceMembers).values({
-		workspaceId: workspace.id,
-		userId,
-		role: "owner",
-	});
-
-	return workspace;
 }
 
 export async function updateWorkspace(

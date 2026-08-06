@@ -1,5 +1,5 @@
 import { cva, type VariantProps } from "class-variance-authority";
-import { cn } from "@/lib/utils/utils";
+import { cn } from "@/lib/utils";
 
 const workspaceAvatarVariants = cva(
 	"flex shrink-0 items-center justify-center font-bold text-white",

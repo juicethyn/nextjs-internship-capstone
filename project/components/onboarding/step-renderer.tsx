@@ -10,6 +10,7 @@ type StepRendererProps = {
 	onBack: () => void;
 	onComplete: (occupation: Occupation) => Promise<void>;
 	nextLabel: string;
+	isSubmitting: boolean;
 };
 
 export function StepRenderer({
@@ -18,6 +19,7 @@ export function StepRenderer({
 	onBack,
 	onComplete,
 	nextLabel,
+	isSubmitting,
 }: StepRendererProps) {
 	switch (step) {
 		case OnboardingStep.Workspace:
@@ -30,6 +32,7 @@ export function StepRenderer({
 					onNext={onNext}
 					onSkip={onNext}
 					nextLabel={nextLabel}
+					isSubmitting={isSubmitting}
 				/>
 			);
 

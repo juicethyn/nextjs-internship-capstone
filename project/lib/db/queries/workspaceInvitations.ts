@@ -3,6 +3,7 @@ import type {
 	CreateWorkspaceInvitationInput,
 	UpdateWorkspaceInvitationInput,
 } from "@/lib/validations/workspaceInvitation";
+import type { DbClient } from "@/types/db";
 import { db } from "../index";
 import { workspaceInvitations } from "../schema";
 
@@ -50,8 +51,9 @@ export async function createWorkspaceInvitation(
 		token: string;
 		expiresAt: Date;
 	},
+	dbClient: DbClient = db,
 ) {
-	const [invitation] = await db
+	const [invitation] = await dbClient
 		.insert(workspaceInvitations)
 		.values({
 			...data,

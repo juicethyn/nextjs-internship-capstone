@@ -1,7 +1,11 @@
 import { Plus } from "lucide-react";
 import { Button } from "../ui/button";
 
-export function ProjectsHeader() {
+type ProjectHeaderProps = {
+	onCreateProject: () => void;
+};
+
+export function ProjectsHeader({ onCreateProject }: ProjectHeaderProps) {
 	return (
 		<div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
 			<div className="space-y-1">
@@ -10,7 +14,7 @@ export function ProjectsHeader() {
 				<p className="text-sm text-muted-foreground">6 active • 2 archived</p>
 			</div>
 
-			<Button size="lg" className="w-full sm:w-auto">
+			<Button size="lg" className="w-full sm:w-auto" onClick={onCreateProject}>
 				<Plus className="size-4" />
 				New Project
 			</Button>
