@@ -1,10 +1,9 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import type { Occupation } from "@/lib/db/schema";
 
 type ProfileNavigationProps = {
-	selectedOccupation: Occupation | null;
+	selectedOccupation: boolean;
 	isSubmitting: boolean;
 	finishSetup: () => void;
 };
@@ -19,7 +18,7 @@ export function ProfileNavigation({
 			<Button
 				type="button"
 				onClick={finishSetup}
-				disabled={!selectedOccupation}
+				disabled={isSubmitting || !selectedOccupation}
 				className="h-11 w-full sm:h-12"
 			>
 				{isSubmitting ? "Creating workspace..." : "Create workspace"}

@@ -5,9 +5,7 @@ import { createWorkspaceInvitationSchema } from "./workspaceInvitation";
 
 export const onboardingSchema = z.object({
 	workspace: createWorkspaceSchema,
-
 	invites: z.array(createWorkspaceInvitationSchema),
-
 	occupation: z.enum(occupationEnum.enumValues),
 });
 

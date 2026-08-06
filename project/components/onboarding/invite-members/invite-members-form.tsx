@@ -10,9 +10,12 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { useInviteMembers } from "@/hooks/use-invite-members";
+import { useCurrentUser } from "@/hooks/use-user";
 import type { WorkspaceMemberRole } from "@/types/workspace";
 
 export function InviteMembersForm() {
+	const { user } = useCurrentUser();
+
 	const {
 		email,
 		role,
@@ -21,7 +24,7 @@ export function InviteMembersForm() {
 		updateEmail,
 		updateRole,
 		handleEmailKeyDown,
-	} = useInviteMembers();
+	} = useInviteMembers(user?.emailAddresses[0]?.emailAddress ?? "");
 
 	return (
 		<div className="space-y-2">

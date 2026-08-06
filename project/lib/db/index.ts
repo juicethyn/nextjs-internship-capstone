@@ -1,7 +1,7 @@
-import { neon } from "@neondatabase/serverless";
+import { neonConfig, Pool } from "@neondatabase/serverless";
 import { config } from "dotenv";
-import { and, eq } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/neon-http";
+import { drizzle } from "drizzle-orm/neon-serverless";
+import ws from "ws";
 import * as relations from "./relations";
 import * as schema from "./schema";
 
@@ -13,8 +13,14 @@ if (!databaseUrl) {
 	throw new Error("DATABASE_URL is not defined in the environment variables.");
 }
 
-const sql = neon(databaseUrl);
-export const db = drizzle(sql, { schema: { ...schema, ...relations } });
+neonConfig.webSocketConstructor = ws;
+
+const pool = new Pool({ connectionString: databaseUrl });
+
+export const db = drizzle({
+	client: pool,
+	schema: { ...schema, ...relations },
+});
 // Note: moved queries to a separate file for better organization
 
 // TODO: Task 3.2 - Configure PostgreSQL database (Vercel Postgres or Neon)

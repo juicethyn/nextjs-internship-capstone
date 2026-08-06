@@ -16,7 +16,7 @@ export function ProfileStep({ onBack, onComplete }: ProfileStepProps) {
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	const handleFinish = async () => {
-		if (!selectedOccupation) return;
+		if (!selectedOccupation || isSubmitting) return;
 
 		setIsSubmitting(true);
 
@@ -37,7 +37,7 @@ export function ProfileStep({ onBack, onComplete }: ProfileStepProps) {
 			/>
 
 			<ProfileNavigation
-				selectedOccupation={selectedOccupation}
+				selectedOccupation={!!selectedOccupation}
 				isSubmitting={isSubmitting}
 				finishSetup={handleFinish}
 			/>

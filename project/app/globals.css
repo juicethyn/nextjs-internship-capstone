@@ -14,7 +14,7 @@
 	--popover-foreground: oklch(0.13 0.006 285);
 
 	/* Brand / primary — Fora purple #8200db */
-	--primary: oklch(0.48 0.22 302);
+	--primary: oklch(0.55 0.25 302);
 	--primary-foreground: oklch(1 0 0);
 
 	/* Surfaces */
@@ -22,7 +22,7 @@
 	--secondary-foreground: oklch(0.13 0.006 285);
 	--muted: oklch(0.95 0.003 285);
 	--muted-foreground: oklch(0.55 0.012 285);
-	--accent: oklch(0.44 0.26 302);
+	--accent: oklch(0.55 0.25 302);
 	--accent-foreground: oklch(1 0 0);
 
 	/* Semantic */

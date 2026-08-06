@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import type { OnboardingPayload } from "@/types/onboarding";
 import { createActivity } from "../activity";
 import { getCurrentUser } from "../auth";
+import { db } from "../db";
 import { updateUser } from "../db/queries/users";
 import { createWorkspaceInvitation } from "../db/queries/workspaceInvitations";
 import { createWorkspace } from "../db/queries/workspaces";
@@ -23,24 +24,77 @@ export async function completeOnboardingAction(data: OnboardingPayload) {
 		};
 	}
 
-	const workspace = await createWorkspace(
-		user.id,
-		validatedData.data.workspace,
-	);
+	const workspace = await db.transaction(async (tx) => {
+		const workspace = await createWorkspace(
+			user.id,
+			validatedData.data.workspace,
+			tx,
+		);
 
-	for (const invite of validatedData.data.invites) {
-		const invitation = await createWorkspaceInvitation({
-			workspaceId: workspace.id,
-			email: invite.email,
-			role: invite.role,
-			invitedById: user.id,
-			token: nanoid(32),
-			expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-		});
+		const invitations = [];
 
+		for (const invite of validatedData.data.invites) {
+			const invitation = await createWorkspaceInvitation(
+				{
+					workspaceId: workspace.id,
+					email: invite.email,
+					role: invite.role,
+					invitedById: user.id,
+					token: nanoid(32),
+					expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+				},
+				tx,
+			);
+
+			invitations.push(invitation);
+
+			await createActivity(
+				{
+					workspaceId: workspace.id,
+					actorId: user.id,
+					action: "created",
+					entity: "workspace_invitation",
+					entityId: invitation.id,
+					metadata: {
+						email: invitation.email,
+						role: invitation.role,
+					},
+				},
+				tx,
+			);
+		}
+
+		await updateUser(
+			user.id,
+			{
+				lastWorkspaceId: workspace.id,
+				occupation: validatedData.data.occupation,
+			},
+			tx,
+		);
+
+		await createActivity(
+			{
+				workspaceId: workspace.id,
+				actorId: user.id,
+				action: "created",
+				entity: "workspace",
+				entityId: workspace.id,
+			},
+			tx,
+		);
+
+		return {
+			workspace,
+			invitations,
+		};
+	});
+
+	// Outside the transaction for sending invites
+	for (const invitation of workspace.invitations) {
 		const emailResult = await sendWorkspaceInvitationEmail({
 			email: invitation.email,
-			workspaceName: workspace.name,
+			workspaceName: workspace.workspace.name,
 			token: invitation.token,
 		});
 
@@ -49,37 +103,12 @@ export async function completeOnboardingAction(data: OnboardingPayload) {
 				`Invitation ${invitation.id} created but email failed to send.`,
 			);
 		}
-
-		await createActivity({
-			workspaceId: workspace.id,
-			actorId: user.id,
-			action: "created",
-			entity: "workspace_invitation",
-			entityId: invitation.id,
-			metadata: {
-				email: invitation.email,
-				role: invitation.role,
-			},
-		});
 	}
 
-	await updateUser(user.id, {
-		lastWorkspaceId: workspace.id,
-		occupation: validatedData.data.occupation,
-	});
-
-	await createActivity({
-		workspaceId: workspace.id,
-		actorId: user.id,
-		action: "created",
-		entity: "workspace",
-		entityId: workspace.id,
-	});
-
-	revalidatePath(`/w/${workspace.slug}/dashboard`);
+	revalidatePath(`/w/${workspace.workspace.slug}/dashboard`);
 
 	return {
 		success: true,
-		data: workspace,
+		data: workspace.workspace,
 	};
 }

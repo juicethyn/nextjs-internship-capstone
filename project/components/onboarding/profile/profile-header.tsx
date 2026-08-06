@@ -1,4 +1,4 @@
-import { ArrowLeft, Briefcase } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 type ProfileHeaderProps = {

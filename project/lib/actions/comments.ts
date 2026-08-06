@@ -1,20 +1,15 @@
 "use server";
 
-import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/dist/server/web/spec-extension/revalidate";
-import { treeifyError } from "zod/v4/core";
 import { createActivity } from "../activity";
 import { getCurrentUser } from "../auth";
 import {
 	createComment,
 	deleteComment,
-	getCommentById,
 	getCommentsByTask,
 	updateComment,
 } from "../db/queries/comments";
 import { getListById } from "../db/queries/lists";
-import { getProjectById } from "../db/queries/projects";
-import { getTaskById } from "../db/queries/tasks";
 import {
 	requireActiveProject,
 	requireComment,

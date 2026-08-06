@@ -8,6 +8,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { cn } from "@/lib/utils";
+import { ReactQueryProvider } from "./providers/react-query-provider";
 
 const geistHeading = Geist({ subsets: ["latin"], variable: "--font-heading" });
 
@@ -36,8 +37,10 @@ export default function RootLayout({
 					className={`${inter.className} min-h-screen overflow-hidden bg-background text-foreground antialiased`}
 				>
 					<ThemeProvider>
-						{children}
-						<Toaster richColors position="bottom-center" />
+						<ReactQueryProvider>
+							{children}
+							<Toaster richColors position="bottom-center" />
+						</ReactQueryProvider>
 					</ThemeProvider>
 				</body>
 			</html>

@@ -30,19 +30,165 @@ Integration:
 - Handle errors gracefully
 */
 
-export function CreateProjectModal() {
+"use client";
+
+import { zodResolver } from "@hookform/resolvers/zod";
+import { CalendarIcon } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { Button } from "@/components/ui/button";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { WORKSPACE_COLORS } from "@/constants/workspace";
+import { useProjects } from "@/hooks/use-projects";
+import {
+	type CreateProjectFormInput,
+	type CreateProjectInput,
+	createProjectSchema,
+} from "@/lib/validations/project";
+
+type CreateProjectModalProps = {
+	workspaceSlug: string;
+	open: boolean;
+	onOpenChange: (open: boolean) => void;
+};
+
+export function CreateProjectModal({
+	workspaceSlug,
+	open,
+	onOpenChange,
+}: CreateProjectModalProps) {
+	const { createProject, isCreating } = useProjects({ workspaceSlug });
+
+	const form = useForm<CreateProjectFormInput, unknown, CreateProjectInput>({
+		resolver: zodResolver(createProjectSchema),
+		mode: "onChange",
+		defaultValues: {
+			name: "",
+			description: "",
+			color: WORKSPACE_COLORS[0],
+			startDate: undefined,
+			dueDate: undefined,
+		},
+	});
+	const selectedColor = form.watch("color");
+
+	const onSubmit = async (data: CreateProjectInput) => {
+		await createProject(data);
+		form.reset();
+		onOpenChange(false);
+	};
+
 	return (
-		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-			<div className="bg-white dark:bg-outer_space-500 rounded-lg p-6 w-full max-w-md mx-4">
-				<h3 className="text-lg font-semibold text-outer_space-500 dark:text-platinum-500 mb-4">
-					TODO: Create Project Modal
-				</h3>
-				<div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded border border-yellow-200 dark:border-yellow-800">
-					<p className="text-sm text-yellow-800 dark:text-yellow-200">
-						📋 Implement project creation form with validation
-					</p>
-				</div>
-			</div>
-		</div>
+		<Dialog open={open} onOpenChange={onOpenChange}>
+			<DialogContent className="sm:max-w-xl">
+				<form onSubmit={form.handleSubmit(onSubmit)}>
+					<DialogHeader>
+						<DialogTitle>Create Project</DialogTitle>
+
+						<DialogDescription>
+							Create a new project inside your workspace. Default lists will
+							automatically be generated for you.
+						</DialogDescription>
+					</DialogHeader>
+
+					<div className="space-y-6 py-2">
+						<div className="space-y-2">
+							<Label htmlFor="name">Project Name</Label>
+
+							<Input
+								id="name"
+								{...form.register("name")}
+								placeholder="e.g. Fora Mobile App"
+							/>
+						</div>
+
+						<div className="space-y-2">
+							<Label htmlFor="description">Description</Label>
+
+							<Textarea
+								id="description"
+								rows={4}
+								{...form.register("description")}
+								placeholder="Describe the purpose of this project..."
+							/>
+						</div>
+
+						<div className="space-y-2">
+							<Label>Project Color</Label>
+
+							<div className="flex flex-wrap gap-3">
+								{WORKSPACE_COLORS.map((projectColor) => (
+									<button
+										key={projectColor}
+										type="button"
+										onClick={() => form.setValue("color", projectColor)}
+										className={`size-8 rounded-full transition ${
+											selectedColor === projectColor
+												? "ring-2 ring-primary ring-offset-2"
+												: ""
+										}`}
+										style={{
+											backgroundColor: projectColor,
+										}}
+									/>
+								))}
+							</div>
+						</div>
+
+						<div className="grid gap-4 md:grid-cols-2">
+							<div className="space-y-2">
+								<Label htmlFor="start-date">Start Date</Label>
+
+								<div className="relative">
+									<Input
+										id="start-date"
+										type="date"
+										{...form.register("startDate")}
+									/>
+
+									<CalendarIcon className="pointer-events-none absolute right-3 top-3 size-4 text-muted-foreground" />
+								</div>
+							</div>
+
+							<div className="space-y-2">
+								<Label htmlFor="due-date">Due Date</Label>
+
+								<div className="relative">
+									<Input
+										id="due-date"
+										type="date"
+										{...form.register("dueDate")}
+									/>
+
+									<CalendarIcon className="pointer-events-none absolute right-3 top-3 size-4 text-muted-foreground" />
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<DialogFooter className="gap-2">
+						<Button variant="outline" onClick={() => onOpenChange(false)}>
+							Cancel
+						</Button>
+
+						<Button
+							type="submit"
+							disabled={isCreating || !form.formState.isValid}
+						>
+							{isCreating ? "Creating..." : "Create Project"}
+						</Button>
+					</DialogFooter>
+				</form>
+			</DialogContent>
+		</Dialog>
 	);
 }

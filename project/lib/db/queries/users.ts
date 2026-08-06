@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import type { UpdateUserInput } from "@/lib/validations/user";
+import type { DbClient } from "@/types/db";
 import { db } from "../index";
 import { type Occupation, users } from "../schema";
 
@@ -30,8 +31,12 @@ type UpsertUserInput = {
 	occupation: Occupation;
 };
 
-export async function updateUser(id: string, data: UpdateUserInput) {
-	const [user] = await db
+export async function updateUser(
+	id: string,
+	data: UpdateUserInput,
+	dbClient: DbClient = db,
+) {
+	const [user] = await dbClient
 		.update(users)
 		.set(data)
 		.where(eq(users.id, id))
@@ -40,8 +45,11 @@ export async function updateUser(id: string, data: UpdateUserInput) {
 }
 
 // Update and Create user function
-export async function upsertUser(data: UpsertUserInput) {
-	const [user] = await db
+export async function upsertUser(
+	data: UpsertUserInput,
+	dbClient: DbClient = db,
+) {
+	const [user] = await dbClient
 		.insert(users)
 		.values(data)
 		.onConflictDoUpdate({

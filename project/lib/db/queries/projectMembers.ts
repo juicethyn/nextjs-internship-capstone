@@ -1,4 +1,5 @@
 import { and, eq } from "drizzle-orm";
+import type { DbClient } from "@/types/db";
 import { db } from "../index";
 import { projectMembers, projects } from "../schema";
 
@@ -20,8 +21,12 @@ export async function getProjectMember(projectId: string, userId: string) {
 	});
 }
 
-export async function addProjectMember(projectId: string, userId: string) {
-	const [projectMember] = await db
+export async function addProjectMember(
+	projectId: string,
+	userId: string,
+	dbClient: DbClient = db,
+) {
+	const [projectMember] = await dbClient
 		.insert(projectMembers)
 		.values({
 			projectId,

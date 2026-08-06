@@ -1,7 +1,7 @@
 import { useOnboardingStore } from "@/stores/onboarding-store";
 import { useInvitationForm } from "./use-invitation-form";
 
-export function useInviteMembers() {
+export function useInviteMembers(currentUserEmail: string) {
 	const form = useInvitationForm();
 
 	const { invites, addInvite, removeInvite } = useOnboardingStore();
@@ -11,27 +11,31 @@ export function useInviteMembers() {
 
 		if (!invite) return;
 
+		const normalizedInviteEmail = invite.email.trim().toLowerCase();
+		const normalizedCurrentUserEmail = currentUserEmail.trim().toLowerCase();
+
+		if (normalizedInviteEmail === normalizedCurrentUserEmail) {
+			form.setError("You cannot invite yourself to this workspace.");
+			return;
+		}
+
 		const exists = invites.some(
-			(item) => item.email.toLowerCase() === invite.email.toLowerCase(),
+			(item) => item.email.toLowerCase() === normalizedInviteEmail,
 		);
 
 		if (exists) {
 			form.setError("This email has already been invited.");
-
 			return;
 		}
 
 		addInvite(invite);
-
 		form.reset();
 	};
 
 	return {
 		...form,
-
 		invites,
 		removeInvite,
-
 		addInvitation,
 	};
 }

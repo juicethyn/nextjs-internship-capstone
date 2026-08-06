@@ -1,4 +1,3 @@
-import { UserProfile } from "@clerk/nextjs";
 import { Bell, Palette, Shield, User } from "lucide-react";
 
 export default function SettingsPage() {
