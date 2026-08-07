@@ -6,7 +6,7 @@ import { getProjectBySlug } from "./db/queries/projects";
 import { getTaskById } from "./db/queries/tasks";
 import { getUserById } from "./db/queries/users";
 import { getWorkspaceInvitationById } from "./db/queries/workspaceInvitations";
-import { getWorkspaceMember } from "./db/queries/workspaceMembers";
+import { getWorkspaceMemberById } from "./db/queries/workspaceMembers";
 import { getWorkspaceById, getWorkspaceBySlug } from "./db/queries/workspaces";
 
 // Workspace Permissions
@@ -44,7 +44,7 @@ export async function requireWorkspaceMember(
 ) {
 	const workspace = await requireWorkspaceBySlug(workspaceSlug);
 
-	const member = await getWorkspaceMember(workspace.id, userId);
+	const member = await getWorkspaceMemberById(workspace.id, userId);
 
 	if (!member) {
 		await redirectToOwnWorkspace(userId);
@@ -59,7 +59,7 @@ export async function requireWorkspaceAdmin(
 ) {
 	const workspace = await requireWorkspaceBySlug(workspaceSlug);
 
-	const member = await getWorkspaceMember(workspace.id, userId);
+	const member = await getWorkspaceMemberById(workspace.id, userId);
 
 	if (!member || (member.role !== "owner" && member.role !== "admin")) {
 		redirect(`/w/${workspace.slug}/dashboard`);
@@ -74,7 +74,7 @@ export async function requireWorkspaceOwner(
 ) {
 	const workspace = await requireWorkspaceBySlug(workspaceSlug);
 
-	const member = await getWorkspaceMember(workspace.id, userId);
+	const member = await getWorkspaceMemberById(workspace.id, userId);
 
 	if (member?.role !== "owner") {
 		redirect(`/w/${workspace.slug}/dashboard`);

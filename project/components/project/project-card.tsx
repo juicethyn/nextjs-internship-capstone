@@ -1,7 +1,16 @@
-import { CalendarRange, CheckCircle2, Tag, Users } from "lucide-react";
+import { CalendarRange, CheckCircle2, Users } from "lucide-react";
+import Link from "next/link";
+import { LabelBadge } from "../labels/label-badge";
 import { WorkspaceAvatar } from "../workspace-avatar";
 
+type ProjectCardLabel = {
+	id: string;
+	name: string;
+	color: string;
+};
+
 interface ProjectCardProps {
+	href: string;
 	name: string;
 	description: string;
 	color: string;
@@ -10,10 +19,11 @@ interface ProjectCardProps {
 	members: number;
 	totalTasks: number;
 	dueDate: string;
-	label?: string[];
+	labels?: ProjectCardLabel[];
 }
 
 export function ProjectCard({
+	href,
 	name,
 	description,
 	color,
@@ -22,28 +32,46 @@ export function ProjectCard({
 	members,
 	totalTasks,
 	dueDate,
-	label = ["Frontend", "Capstone"],
+	labels = [],
 }: ProjectCardProps) {
 	return (
-		<div className="group flex cursor-pointer flex-col gap-4 rounded-xl border bg-card p-5 transition-all hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5">
+		<Link
+			href={href}
+			className="
+				group
+				flex
+				flex-col
+				gap-4
+				rounded-xl
+				border
+				bg-card
+				p-5
+				transition-all
+				hover:border-primary/30
+				hover:shadow-lg
+				hover:shadow-primary/5
+				focus-visible:outline-2
+				focus-visible:outline-offset-2
+				focus-visible:outline-ring
+			"
+		>
 			{/* Header */}
 			<div className="flex items-start justify-between gap-2">
-				<div className="flex flex-wrap gap-1.5">
-					{label.map((label) => (
-						<span
-							key={label}
-							className="inline-flex items-center gap-1 rounded-full border bg-secondary px-2 py-0.5 text-[10px] font-medium text-secondary-foreground"
-						>
-							<Tag className="size-2.5" />
-							{label}
-						</span>
+				<div className="flex min-w-0 flex-wrap gap-1.5">
+					{labels.map((label) => (
+						<LabelBadge
+							key={label.id}
+							name={label.name}
+							color={label.color}
+							className="text-[10px]"
+						/>
 					))}
 				</div>
 
-				<div className="flex items-center gap-2">
+				<div className="flex shrink-0 items-center gap-2">
 					<span className="inline-flex items-center gap-1.5 rounded-full border bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
 						<span className="size-1.5 rounded-full bg-primary" />
-						{status.at(0)?.toUpperCase() + status.slice(1)}
+						{status.charAt(0).toUpperCase() + status.slice(1)}
 					</span>
 				</div>
 			</div>
@@ -80,7 +108,7 @@ export function ProjectCard({
 			</div>
 
 			{/* Footer */}
-			<div className="flex items-center gap-3 border-t pt-1 text-[11px] text-muted-foreground">
+			<div className="mt-auto flex items-center gap-3 border-t pt-1 text-[11px] text-muted-foreground">
 				<div className="flex items-center gap-1">
 					<Users className="size-3" />
 					<span>{members}</span>
@@ -96,6 +124,6 @@ export function ProjectCard({
 					<span>{dueDate}</span>
 				</div>
 			</div>
-		</div>
+		</Link>
 	);
 }

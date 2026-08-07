@@ -14,7 +14,9 @@ import { projects } from "../schema";
 export async function createProject(
 	workspaceId: string,
 	leadId: string,
-	data: CreateProjectInput,
+	// labelIds lives on the join table, not on projects — the action strips it
+	// before calling this.
+	data: Omit<CreateProjectInput, "labelIds">,
 	dbClient: DbClient = db,
 ) {
 	const slug = generateProjectSlug(data.name);
@@ -41,6 +43,11 @@ export function getProjectsByWorkspace(workspaceId: string) {
 			members: {
 				with: {
 					user: true,
+				},
+			},
+			projectLabels: {
+				with: {
+					workspaceLabel: true,
 				},
 			},
 		},
@@ -71,7 +78,33 @@ export function getProjectBySlug(workspaceId: string, slug: string) {
 	});
 }
 
-export async function updateProject(id: string, data: UpdateProjectInput) {
+// requireProjectBySlug returns the bare row above; the detail page needs relations.
+export function getProjectBySlugWithRelations(
+	workspaceId: string,
+	slug: string,
+) {
+	return db.query.projects.findFirst({
+		where: and(eq(projects.workspaceId, workspaceId), eq(projects.slug, slug)),
+		with: {
+			lists: { with: { tasks: true } },
+			members: {
+				with: {
+					user: true,
+				},
+			},
+			projectLabels: {
+				with: {
+					workspaceLabel: true,
+				},
+			},
+		},
+	});
+}
+
+export async function updateProject(
+	id: string,
+	data: Omit<UpdateProjectInput, "labelIds">,
+) {
 	const slug = data.name ? generateProjectSlug(data.name) : undefined;
 
 	const [project] = await db

@@ -24,6 +24,8 @@ export const createProjectSchema = z.object({
 		},
 		{ message: "Due date must be in the future" },
 	),
+	// Not in the Projects table — lives on the join table. This is here for validation purposes only.
+	labelIds: z.array(z.uuid()).default([]),
 });
 
 export type CreateProjectFormInput = z.input<typeof createProjectSchema>;

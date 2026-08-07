@@ -39,7 +39,7 @@ export function ProjectClient({
 				</h1>
 			</div>
 
-			<ProjectGrid projects={projects} />
+			<ProjectGrid projects={projects} workspaceSlug={workspaceSlug} />
 
 			<CreateProjectModal
 				workspaceSlug={workspaceSlug}

@@ -9,6 +9,10 @@ import { db } from "../db";
 import { updateUser } from "../db/queries/users";
 import { createWorkspaceInvitation } from "../db/queries/workspaceInvitations";
 import {
+	getWorkspaceMemberById,
+	transferWorkspaceOwnership,
+} from "../db/queries/workspaceMembers";
+import {
 	createWorkspace,
 	deleteWorkspace,
 	getUserOwnedWorkspaces,
@@ -180,6 +184,8 @@ export async function getCurrentUserOwnedWorkspaces() {
 	};
 }
 
+// UPDATE
+
 export async function updateWorkspaceAction(
 	workspaceSlug: string,
 	data: UpdateWorkspaceInput,
@@ -213,11 +219,60 @@ export async function updateWorkspaceAction(
 		},
 	});
 
-	revalidatePath(`/workspaces/${updatedWorkspace.slug}`);
+	revalidatePath(`/w/${updatedWorkspace.slug}`, "layout");
 
 	return {
 		success: true,
 		data: updatedWorkspace,
+	};
+}
+
+export async function transferWorkspaceOwnershipAction(
+	workspaceSlug: string,
+	newOwnerUserId: string,
+) {
+	const user = await getCurrentUser();
+
+	const workspace = await requireWorkspaceOwner(workspaceSlug, user.id);
+
+	if (newOwnerUserId === user.id) {
+		return {
+			success: false,
+			message: "You are already the owner of this workspace.",
+		};
+	}
+
+	const newOwner = await getWorkspaceMemberById(workspace.id, newOwnerUserId);
+
+	if (!newOwner) {
+		return {
+			success: false,
+			message: "That user is not a member of this workspace.",
+		};
+	}
+
+	const transferredMember = await transferWorkspaceOwnership(
+		workspace.id,
+		user.id,
+		newOwnerUserId,
+	);
+
+	await createActivity({
+		workspaceId: workspace.id,
+		actorId: user.id,
+		action: "transferred",
+		entity: "workspace_member",
+		entityId: transferredMember.id,
+		metadata: {
+			name: workspace.name,
+		},
+	});
+
+	revalidatePath(`/w/${workspace.slug}`, "layout");
+
+	return {
+		success: true,
+		data: transferredMember,
 	};
 }
 

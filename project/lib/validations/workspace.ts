@@ -25,3 +25,15 @@ export const updateWorkspaceSchema = z.object({
 });
 
 export type UpdateWorkspaceInput = z.infer<typeof updateWorkspaceSchema>;
+
+// updateWorkspaceSchema is all-optional, so `{}` validates and would issue a
+// no-op UPDATE. The settings form needs both fields present, and reuses the
+// error messages that only createWorkspaceSchema carries.
+export const workspaceGeneralSettingsSchema = createWorkspaceSchema.pick({
+	name: true,
+	color: true,
+});
+
+export type WorkspaceGeneralSettingsInput = z.infer<
+	typeof workspaceGeneralSettingsSchema
+>;

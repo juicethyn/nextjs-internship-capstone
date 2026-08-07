@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/dist/server/web/spec-extension/revalidate";
+import { revalidatePath } from "next/cache";
 import { treeifyError } from "zod/v4/core";
 import { createActivity } from "../activity";
 import { getCurrentUser } from "../auth";
@@ -8,6 +8,8 @@ import { db } from "../db";
 import { createDefaultLists } from "../db/queries/lists";
 import { addProjectMember } from "../db/queries/projectMembers";
 import { createProject, getProjectsByWorkspace } from "../db/queries/projects";
+import { setProjectLabels } from "../db/queries/projectWorkspaceLabels";
+import { getLabelsByWorkspace } from "../db/queries/workspaceLabels";
 import { requireWorkspaceMember } from "../permission";
 import {
 	type CreateProjectInput,
@@ -51,16 +53,26 @@ export async function createProjectAction(
 
 	const workspace = await requireWorkspaceMember(workspaceSlug, user.id);
 
+	// labelIds is not a projects column — keep it out of the insert payload.
+	const { labelIds, ...projectData } = validatedData.data;
+
 	const project = await db.transaction(async (tx) => {
-		const project = await createProject(
-			workspace.id,
-			user.id,
-			validatedData.data,
-			tx,
-		);
+		const project = await createProject(workspace.id, user.id, projectData, tx);
 
 		await addProjectMember(project.id, user.id, tx);
 		await createDefaultLists(project.id, tx);
+
+		if (labelIds.length > 0) {
+			// labelIds comes from the client, so only attach labels that actually
+			// belong to this workspace.
+			const workspaceLabels = await getLabelsByWorkspace(workspace.id);
+
+			const validLabelIds = labelIds.filter((labelId) =>
+				workspaceLabels.some((label) => label.id === labelId),
+			);
+
+			await setProjectLabels(project.id, validLabelIds, tx);
+		}
 
 		return project;
 	});
@@ -76,7 +88,7 @@ export async function createProjectAction(
 		},
 	});
 
-	revalidatePath(`/workspaces/${workspaceSlug}`);
+	revalidatePath(`/w/${workspaceSlug}/projects`);
 
 	return { success: true, project };
 }

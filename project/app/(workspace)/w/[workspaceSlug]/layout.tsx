@@ -27,9 +27,15 @@ export default async function Layout({ children, params }: LayoutProps) {
 	const currentWorkspace = await requireWorkspaceMember(workspaceSlug, user.id);
 	const workspaces = await getUserWorkspaces(user.id);
 
+	// getWorkspaceBySlug already loads `members`, so the role costs no extra query.
+	const currentUserRole =
+		currentWorkspace.members.find((member) => member.userId === user.id)
+			?.role ?? "member";
+
 	return (
 		<DashboardLayout
 			currentWorkspace={currentWorkspace}
+			currentUserRole={currentUserRole}
 			workspaces={workspaces}
 		>
 			{children}

@@ -15,7 +15,7 @@ import {
 } from "../db/queries/workspaceInvitations";
 import {
 	addWorkspaceMember,
-	getWorkspaceMember,
+	getWorkspaceMemberById,
 } from "../db/queries/workspaceMembers";
 import { getWorkspaceById } from "../db/queries/workspaces";
 import { sendWorkspaceInvitationEmail } from "../email/send-workspace-invitation";
@@ -48,7 +48,7 @@ export async function createWorkspaceInvitationAction(
 	const existingUser = await getUserByEmail(validatedData.data.email);
 
 	if (existingUser) {
-		const existingMember = await getWorkspaceMember(
+		const existingMember = await getWorkspaceMemberById(
 			workspace.id,
 			existingUser.id,
 		);
@@ -302,7 +302,7 @@ export async function acceptWorkspaceInvitationAction(token: string) {
 		};
 	}
 
-	const existingMember = await getWorkspaceMember(
+	const existingMember = await getWorkspaceMemberById(
 		invitation.workspaceId,
 		user.id,
 	);

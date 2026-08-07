@@ -8,7 +8,7 @@ import {
 	removeProjectMember,
 	updateProjectLead,
 } from "../db/queries/projectMembers";
-import { getWorkspaceMember } from "../db/queries/workspaceMembers";
+import { getWorkspaceMemberById } from "../db/queries/workspaceMembers";
 import { requireActiveProject, requireProjectLead } from "../permission";
 
 export async function getProjectMembersAction(
@@ -37,7 +37,7 @@ export async function addProjectMemberAction(
 
 	const project = await requireProjectLead(workspaceSlug, projectSlug, user.id);
 
-	const workspaceMember = await getWorkspaceMember(
+	const workspaceMember = await getWorkspaceMemberById(
 		project.workspaceId,
 		memberUserId,
 	);

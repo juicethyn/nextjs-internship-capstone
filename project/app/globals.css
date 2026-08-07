@@ -6,7 +6,7 @@
 
 :root {
 	/* Core surfaces */
-	--background: oklch(0.96 0.003 285);
+	--background: oklch(0.94 0.003 285);
 	--foreground: oklch(0.13 0.006 285);
 	--card: oklch(1 0 0);
 	--card-foreground: oklch(0.13 0.006 285);
@@ -18,9 +18,9 @@
 	--primary-foreground: oklch(1 0 0);
 
 	/* Surfaces */
-	--secondary: oklch(0.94 0.002 285);
+	--secondary: oklch(0.91 0.003 285);
 	--secondary-foreground: oklch(0.13 0.006 285);
-	--muted: oklch(0.95 0.003 285);
+	--muted: oklch(0.92 0.003 285);
 	--muted-foreground: oklch(0.55 0.012 285);
 	--accent: oklch(0.55 0.25 302);
 	--accent-foreground: oklch(1 0 0);
@@ -36,8 +36,8 @@
 	--info-foreground: oklch(1 0 0);
 
 	/* Form */
-	--border: oklch(0.86 0.006 286);
-	--input: oklch(0.97 0.002 285);
+	--border: oklch(0.82 0.006 286);
+	--input: oklch(1 0 0);
 	--ring: oklch(0.44 0.26 302);
 	--radius: 0.625rem;
 

@@ -1,3 +1,5 @@
+"use server";
+
 import { revalidatePath } from "next/cache";
 import { createActivity } from "../activity";
 import { getCurrentUser } from "../auth";
@@ -8,25 +10,14 @@ import {
 	getWorkspaceLabelById,
 	updateWorkspaceLabel,
 } from "../db/queries/workspaceLabels";
-import { requireWorkspaceMember, requireWorkspaceOwner } from "../permission";
+import { requireWorkspaceAdmin, requireWorkspaceMember } from "../permission";
 import {
 	type CreateWorkspaceLabelInput,
 	createWorkspaceLabelSchema,
 	updateWorkspaceLabelSchema,
 } from "../validations/label";
 
-export async function getWorkspaceLabelByWorkspaceAction(
-	workspaceSlug: string,
-) {
-	const user = await getCurrentUser();
-
-	const workspace = await requireWorkspaceMember(workspaceSlug, user.id);
-
-	const labels = await getLabelsByWorkspace(workspace.id);
-
-	return labels;
-}
-
+// CREATE
 export async function createWorkspaceLabelAction(
 	workspaceSlug: string,
 	data: CreateWorkspaceLabelInput,
@@ -42,7 +33,23 @@ export async function createWorkspaceLabelAction(
 		};
 	}
 
-	const workspace = await requireWorkspaceOwner(workspaceSlug, user.id);
+	const workspace = await requireWorkspaceAdmin(workspaceSlug, user.id);
+
+	// The table has unique(workspaceId, name); check first so a duplicate reads as
+	// a form error instead of an uncaught unique violation.
+	const existingLabels = await getLabelsByWorkspace(workspace.id);
+
+	const isDuplicate = existingLabels.some(
+		(label) =>
+			label.name.toLowerCase() === validatedData.data.name.toLowerCase(),
+	);
+
+	if (isDuplicate) {
+		return {
+			success: false,
+			error: "A label with that name already exists.",
+		};
+	}
 
 	const label = await createWorkspaceLabel(workspace.id, validatedData.data);
 
@@ -57,11 +64,25 @@ export async function createWorkspaceLabelAction(
 		},
 	});
 
-	revalidatePath(`/workspaces/${workspace.slug}`);
+	revalidatePath(`/w/${workspace.slug}`, "layout");
 
 	return {
 		success: true,
 		data: label,
+	};
+}
+
+// READ
+export async function getWorkspaceLabels(workspaceSlug: string) {
+	const user = await getCurrentUser();
+
+	const workspace = await requireWorkspaceMember(workspaceSlug, user.id);
+
+	const labels = await getLabelsByWorkspace(workspace.id);
+
+	return {
+		success: true,
+		data: labels,
 	};
 }
 
@@ -81,7 +102,7 @@ export async function updateWorkspaceLabelAction(
 		};
 	}
 
-	const workspace = await requireWorkspaceOwner(workspaceSlug, user.id);
+	const workspace = await requireWorkspaceAdmin(workspaceSlug, user.id);
 
 	const label = await getWorkspaceLabelById(labelId);
 
@@ -105,7 +126,7 @@ export async function updateWorkspaceLabelAction(
 		},
 	});
 
-	revalidatePath(`/workspaces/${workspace.slug}`);
+	revalidatePath(`/w/${workspace.slug}`, "layout");
 
 	return {
 		success: true,
@@ -119,7 +140,7 @@ export async function deleteWorkspaceLabelAction(
 ) {
 	const user = await getCurrentUser();
 
-	const workspace = await requireWorkspaceOwner(workspaceSlug, user.id);
+	const workspace = await requireWorkspaceAdmin(workspaceSlug, user.id);
 
 	const label = await getWorkspaceLabelById(labelId);
 
@@ -143,7 +164,7 @@ export async function deleteWorkspaceLabelAction(
 		},
 	});
 
-	revalidatePath(`/workspaces/${workspace.slug}`);
+	revalidatePath(`/w/${workspace.slug}`, "layout");
 
 	return {
 		success: true,

@@ -1,6 +1,12 @@
 "use client";
 
-import { Check, ChevronDown, ChevronsUpDown, Plus } from "lucide-react";
+import {
+	Check,
+	ChevronDown,
+	ChevronsUpDown,
+	Plus,
+	Settings,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -36,16 +42,22 @@ import {
 import { NAV_LINKS } from "@/constants/navigation";
 import { switchWorkspaceAction } from "@/lib/actions/workspaces";
 import { cn } from "@/lib/utils";
-import type { WorkspaceItem } from "@/types/workspace";
+import type { WorkspaceItem, WorkspaceMemberRole } from "@/types/workspace";
 import { CreateWorkspaceModal } from "../modals/create-workspace-modal";
+import { WorkspaceSettingsModal } from "../modals/workspace-settings-modal";
 import { WorkspaceAvatar } from "../workspace-avatar";
 
 type AppSidebarProps = {
 	currentWorkspace: WorkspaceItem;
+	currentUserRole: WorkspaceMemberRole;
 	workspaces: WorkspaceItem[];
 };
 
-export function AppSidebar({ currentWorkspace, workspaces }: AppSidebarProps) {
+export function AppSidebar({
+	currentWorkspace,
+	currentUserRole,
+	workspaces,
+}: AppSidebarProps) {
 	const pathname = usePathname();
 	const { isMobile } = useSidebar();
 	const workspaceSlug = currentWorkspace.slug;
@@ -61,6 +73,7 @@ export function AppSidebar({ currentWorkspace, workspaces }: AppSidebarProps) {
 		});
 	};
 	const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
+	const [workspaceSettingsOpen, setWorkspaceSettingsOpen] = useState(false);
 	return (
 		<>
 			<Sidebar collapsible="icon">
@@ -139,6 +152,22 @@ export function AppSidebar({ currentWorkspace, workspaces }: AppSidebarProps) {
 									))}
 
 									<DropdownMenuSeparator />
+
+									<DropdownMenuItem
+										className="gap-2 p-2"
+										onSelect={(e) => {
+											e.preventDefault();
+											setWorkspaceSettingsOpen(true);
+										}}
+									>
+										<div className="flex size-6 items-center justify-center rounded-md border bg-background">
+											<Settings className="size-4" />
+										</div>
+
+										<span className="font-medium text-muted-foreground">
+											Workspace settings
+										</span>
+									</DropdownMenuItem>
 
 									<DropdownMenuItem
 										className="gap-2 p-2"
@@ -231,6 +260,13 @@ export function AppSidebar({ currentWorkspace, workspaces }: AppSidebarProps) {
 			<CreateWorkspaceModal
 				open={createWorkspaceOpen}
 				onOpenChange={setCreateWorkspaceOpen}
+			/>
+
+			<WorkspaceSettingsModal
+				workspace={currentWorkspace}
+				currentUserRole={currentUserRole}
+				open={workspaceSettingsOpen}
+				onOpenChange={setWorkspaceSettingsOpen}
 			/>
 		</>
 	);

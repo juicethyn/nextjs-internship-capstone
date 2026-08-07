@@ -35,6 +35,7 @@ Integration:
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CalendarIcon } from "lucide-react";
 import { useForm } from "react-hook-form";
+import { LabelToggle } from "@/components/labels/label-toggle";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -49,6 +50,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { WORKSPACE_COLORS } from "@/constants/workspace";
 import { useProjects } from "@/hooks/use-projects";
+import { useWorkspaceLabels } from "@/hooks/use-workspace-labels";
 import {
 	type CreateProjectFormInput,
 	type CreateProjectInput,
@@ -68,6 +70,9 @@ export function CreateProjectModal({
 }: CreateProjectModalProps) {
 	const { createProject, isCreating } = useProjects({ workspaceSlug });
 
+	const { labels, isLoading: isLoadingLabels } =
+		useWorkspaceLabels(workspaceSlug);
+
 	const form = useForm<CreateProjectFormInput, unknown, CreateProjectInput>({
 		resolver: zodResolver(createProjectSchema),
 		mode: "onChange",
@@ -77,9 +82,20 @@ export function CreateProjectModal({
 			color: WORKSPACE_COLORS[0],
 			startDate: undefined,
 			dueDate: undefined,
+			labelIds: [],
 		},
 	});
 	const selectedColor = form.watch("color");
+	const selectedLabelIds = form.watch("labelIds") ?? [];
+
+	const toggleLabel = (labelId: string) =>
+		form.setValue(
+			"labelIds",
+			selectedLabelIds.includes(labelId)
+				? selectedLabelIds.filter((id) => id !== labelId)
+				: [...selectedLabelIds, labelId],
+			{ shouldDirty: true, shouldValidate: true },
+		);
 
 	const onSubmit = async (data: CreateProjectInput) => {
 		await createProject(data);
@@ -142,6 +158,37 @@ export function CreateProjectModal({
 									/>
 								))}
 							</div>
+						</div>
+
+						<div className="space-y-2">
+							<Label>Labels</Label>
+
+							{isLoadingLabels && (
+								<p className="text-sm text-muted-foreground">
+									Loading labels...
+								</p>
+							)}
+
+							{!isLoadingLabels && labels.length === 0 && (
+								<p className="text-sm text-muted-foreground">
+									No labels yet — create them in Workspace Settings to reuse
+									across projects.
+								</p>
+							)}
+
+							{labels.length > 0 && (
+								<div className="flex flex-wrap gap-2">
+									{labels.map((label) => (
+										<LabelToggle
+											key={label.id}
+											name={label.name}
+											color={label.color}
+											selected={selectedLabelIds.includes(label.id)}
+											onToggle={() => toggleLabel(label.id)}
+										/>
+									))}
+								</div>
+							)}
 						</div>
 
 						<div className="grid gap-4 md:grid-cols-2">
