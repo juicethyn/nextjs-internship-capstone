@@ -11,13 +11,19 @@ export default async function InvitationPage({
 }) {
 	const { token } = await params;
 
-	console.log("TOKEN:", token);
-
 	const result = await getWorkspaceInvitationByTokenAction(token);
 
 	if (!result.success) {
-		return <InvitationError message={result.error} />;
+		return (
+			<div className="flex min-h-screen items-center justify-center">
+				<InvitationError message={result.error} />
+			</div>
+		);
 	}
 
-	return <InvitationCard invitation={result.data} token={token} />;
+	return (
+		<div className="flex min-h-screen items-center justify-center">
+			<InvitationCard invitation={result.data} token={token} />
+		</div>
+	);
 }

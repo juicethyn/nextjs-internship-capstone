@@ -12,8 +12,6 @@ import type { WorkspaceGeneralSettingsInput } from "@/lib/validations/workspace"
 export function useWorkspaceSettings(workspaceSlug: string) {
 	const router = useRouter();
 
-	// The sidebar reads workspace name/color from the RSC layout, not React Query,
-	// so invalidating a query key would not refresh it — router.refresh() does.
 	const updateMutation = useMutation({
 		mutationFn: (data: WorkspaceGeneralSettingsInput) =>
 			updateWorkspaceAction(workspaceSlug, data),
