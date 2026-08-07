@@ -5,8 +5,8 @@ import "./globals.css"; // FIX #2: Creating global.d.ts to declare module for CS
 
 // TODO: Task 2.1 - Set up Clerk authentication service - Complete
 import { ClerkProvider } from "@clerk/nextjs";
-import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
+import { ThemedToaster } from "@/components/themed-toaster";
 import { cn } from "@/lib/utils";
 import { ReactQueryProvider } from "./providers/react-query-provider";
 
@@ -39,7 +39,7 @@ export default function RootLayout({
 					<ThemeProvider>
 						<ReactQueryProvider>
 							{children}
-							<Toaster position="bottom-right" />
+							<ThemedToaster />
 						</ReactQueryProvider>
 					</ThemeProvider>
 				</body>

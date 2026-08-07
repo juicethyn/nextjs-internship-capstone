@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useProjects } from "@/hooks/use-projects";
 import type { ProjectWithRelations } from "@/types/projects";
 import { CreateProjectModal } from "../modals/create-project-modal";
+import { ProjectGridSkeleton } from "../skeletons/project-grid-skeleton";
 import { ProjectGrid } from "./project-grid";
 import { ProjectsHeader } from "./project-header";
 import { ProjectsSearchFilter } from "./project-search-filter";
@@ -28,9 +29,21 @@ export function ProjectClient({
 		return <div>Loading...</div>;
 	}
 
+	const activeCount = projects.filter(
+		(project) => project.status === "active",
+	).length;
+
+	const archivedCount = projects.filter(
+		(project) => project.status === "archived",
+	).length;
+
 	return (
 		<div className="space-y-6">
-			<ProjectsHeader onCreateProject={() => setOpen(true)} />
+			<ProjectsHeader
+				onCreateProject={() => setOpen(true)}
+				activeCount={activeCount}
+				archivedCount={archivedCount}
+			/>
 			<ProjectsSearchFilter />
 
 			<div className="flex items-center justify-between">
@@ -39,7 +52,9 @@ export function ProjectClient({
 				</h1>
 			</div>
 
-			<ProjectGrid projects={projects} workspaceSlug={workspaceSlug} />
+			<Suspense fallback={<ProjectGridSkeleton />}>
+				<ProjectGrid projects={projects} workspaceSlug={workspaceSlug} />
+			</Suspense>
 
 			<CreateProjectModal
 				workspaceSlug={workspaceSlug}

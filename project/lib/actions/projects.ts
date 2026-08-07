@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { treeifyError } from "zod/v4/core";
 import { createActivity } from "../activity";
 import { getCurrentUser } from "../auth";
 import { db } from "../db";
@@ -47,7 +46,7 @@ export async function createProjectAction(
 	if (!validatedData.success) {
 		return {
 			success: false,
-			message: treeifyError(validatedData.error),
+			message: "Invalid project data",
 		};
 	}
 
@@ -89,8 +88,7 @@ export async function createProjectAction(
 	});
 
 	revalidatePath(`/w/${workspaceSlug}/projects`);
-
-	return { success: true, project };
+	return { success: true, project, message: "Project created successfully!" };
 }
 
 // Not needed for now

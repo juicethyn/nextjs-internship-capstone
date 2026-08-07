@@ -1,5 +1,6 @@
 import { CalendarRange, CheckCircle2, Users } from "lucide-react";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 import { LabelBadge } from "../labels/label-badge";
 import { WorkspaceAvatar } from "../workspace-avatar";
 
@@ -9,18 +10,41 @@ type ProjectCardLabel = {
 	color: string;
 };
 
+type ProjectStatus = "active" | "completed" | "archived";
+
 interface ProjectCardProps {
 	href: string;
 	name: string;
 	description: string;
 	color: string;
-	status: string;
+	status: ProjectStatus;
 	progress: number;
 	members: number;
 	totalTasks: number;
 	dueDate: string;
 	labels?: ProjectCardLabel[];
 }
+
+export const PROJECT_STATUS_STYLES = {
+	active: {
+		bg: "bg-emerald-100 dark:bg-emerald-500/15",
+		text: "text-emerald-700 dark:text-emerald-400",
+		dot: "bg-emerald-500",
+		border: "border-emerald-200 dark:border-emerald-500/20",
+	},
+	completed: {
+		bg: "bg-sky-100 dark:bg-sky-500/15",
+		text: "text-sky-700 dark:text-sky-400",
+		dot: "bg-sky-500",
+		border: "border-sky-200 dark:border-sky-500/20",
+	},
+	archived: {
+		bg: "bg-muted",
+		text: "text-muted-foreground",
+		dot: "bg-muted-foreground",
+		border: "border-border",
+	},
+} as const;
 
 export function ProjectCard({
 	href,
@@ -34,6 +58,10 @@ export function ProjectCard({
 	dueDate,
 	labels = [],
 }: ProjectCardProps) {
+	const statusStyle = PROJECT_STATUS_STYLES[status];
+	const visibleLabels = labels.slice(0, 2);
+	const remainingLabels = labels.length - visibleLabels.length;
+
 	return (
 		<Link
 			href={href}
@@ -57,20 +85,33 @@ export function ProjectCard({
 		>
 			{/* Header */}
 			<div className="flex items-start justify-between gap-2">
-				<div className="flex min-w-0 flex-wrap gap-1.5">
-					{labels.map((label) => (
+				<div className="flex min-w-0 items-center gap-1 overflow-hidden">
+					{visibleLabels.map((label) => (
 						<LabelBadge
 							key={label.id}
 							name={label.name}
 							color={label.color}
-							className="text-[10px]"
+							className="max-w-25 text-[10px]"
 						/>
 					))}
+
+					{remainingLabels > 0 && (
+						<span className="inline-flex items-center rounded-full border bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
+							+{remainingLabels}
+						</span>
+					)}
 				</div>
 
 				<div className="flex shrink-0 items-center gap-2">
-					<span className="inline-flex items-center gap-1.5 rounded-full border bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
-						<span className="size-1.5 rounded-full bg-primary" />
+					<span
+						className={cn(
+							"inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-medium",
+							statusStyle.bg,
+							statusStyle.text,
+							statusStyle.border,
+						)}
+					>
+						<span className={cn("size-1.5 rounded-full", statusStyle.dot)} />
 						{status.charAt(0).toUpperCase() + status.slice(1)}
 					</span>
 				</div>
@@ -83,7 +124,7 @@ export function ProjectCard({
 					<h3 className="truncate text-sm font-semibold">{name}</h3>
 				</div>
 
-				<p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+				<p className="line-clamp-2 h-10 break-all text-xs leading-relaxed text-muted-foreground">
 					{description}
 				</p>
 			</div>
@@ -120,8 +161,12 @@ export function ProjectCard({
 				</div>
 
 				<div className="ml-auto flex items-center gap-1">
-					<CalendarRange className="size-3" />
-					<span>{dueDate}</span>
+					{dueDate && (
+						<>
+							<CalendarRange className="size-3" />
+							<span>{dueDate}</span>
+						</>
+					)}
 				</div>
 			</div>
 		</Link>

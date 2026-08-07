@@ -421,6 +421,7 @@ function SidebarGroupAction({
 
 	return (
 		<Comp
+			id="sidebar-group-action"
 			data-slot="sidebar-group-action"
 			data-sidebar="group-action"
 			className={cn(
@@ -508,6 +509,7 @@ function SidebarMenuButton({
 
 	const button = (
 		<Comp
+			id="sidebar-menu-button"
 			data-slot="sidebar-menu-button"
 			data-sidebar="menu-button"
 			data-size={size}
@@ -553,6 +555,7 @@ function SidebarMenuAction({
 
 	return (
 		<Comp
+			id="sidebar-menu-action"
 			data-slot="sidebar-menu-action"
 			data-sidebar="menu-action"
 			className={cn(
@@ -664,6 +667,7 @@ function SidebarMenuSubButton({
 
 	return (
 		<Comp
+			id="sidebar-menu-sub-button"
 			data-slot="sidebar-menu-sub-button"
 			data-sidebar="menu-sub-button"
 			data-size={size}

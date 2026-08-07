@@ -113,14 +113,13 @@ export function CreateProjectModal({
 					onSubmit={form.handleSubmit(onSubmit)}
 					className="flex min-h-0 flex-1 flex-col"
 				>
-					<DialogHeader className="shrink-0 border-b px-5 py-4 pr-12 sm:px-6">
-						<DialogTitle className="text-xl sm:text-2xl">
+					<DialogHeader className="shrink-0 border-b px-5 py-4 sm:px-6">
+						<DialogTitle className="text-base sm:text-lg">
 							Create Project
 						</DialogTitle>
 
-						<DialogDescription>
-							Create a new project inside your workspace. Default lists will
-							automatically be generated for you.
+						<DialogDescription className="text-xs lg:text-base">
+							Create a new project inside your workspace.
 						</DialogDescription>
 					</DialogHeader>
 

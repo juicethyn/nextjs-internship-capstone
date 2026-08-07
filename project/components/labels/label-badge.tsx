@@ -2,6 +2,7 @@
 
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "../ui/button";
 
 type LabelBadgeProps = {
 	name: string;
@@ -41,8 +42,9 @@ export function LabelBadge({
 			<span className="truncate">{name}</span>
 
 			{canDelete && (
-				<button
+				<Button
 					type="button"
+					variant="ghost"
 					aria-label={`Delete label ${name}`}
 					disabled={isDeleting}
 					onClick={onDelete}
@@ -63,7 +65,7 @@ export function LabelBadge({
 					"
 				>
 					<X className="size-3" />
-				</button>
+				</Button>
 			)}
 		</span>
 	);
