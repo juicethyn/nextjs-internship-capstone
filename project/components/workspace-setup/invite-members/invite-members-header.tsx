@@ -1,13 +1,13 @@
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useOnboardingStore } from "@/stores/onboarding-store";
+import { useWorkspaceSetupStore } from "@/stores/workspace-setup-store";
 
 type InviteMembersHeaderProps = {
 	onBack: () => void;
 };
 
 export function InviteMembersHeader({ onBack }: InviteMembersHeaderProps) {
-	const { workspace } = useOnboardingStore();
+	const { workspace } = useWorkspaceSetupStore();
 
 	return (
 		<div>

@@ -1,8 +1,13 @@
 "use client";
 
-import { OnboardingContainer } from "@/components/onboarding/onboarding-container";
-import { useCreateWorkspace } from "@/hooks/use-create-workspace";
-import { Dialog, DialogContent } from "../ui/dialog";
+import { CreateWorkspaceFlow } from "@/components/workspace-setup/create-workspace-flow";
+import { useWorkspaceSetupStore } from "@/stores/workspace-setup-store";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogTitle,
+} from "../ui/dialog";
 
 type CreateWorkspaceModalProps = {
 	open: boolean;
@@ -13,10 +18,16 @@ export function CreateWorkspaceModal({
 	open,
 	onOpenChange,
 }: CreateWorkspaceModalProps) {
-	const { createWorkspace, isCreating } = useCreateWorkspace();
+	const handleOpenChange = (nextOpen: boolean) => {
+		if (!nextOpen) {
+			useWorkspaceSetupStore.getState().reset();
+		}
+
+		onOpenChange(nextOpen);
+	};
 
 	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
+		<Dialog open={open} onOpenChange={handleOpenChange}>
 			<DialogContent
 				className="
 					fixed
@@ -34,12 +45,12 @@ export function CreateWorkspaceModal({
 				"
 				showCloseButton={false}
 			>
-				<OnboardingContainer
-					mode="createWorkspace"
-					onClose={() => onOpenChange(false)}
-					onComplete={createWorkspace}
-					isSubmitting={isCreating}
-				/>
+				<DialogTitle className="sr-only">Create workspace</DialogTitle>
+				<DialogDescription className="sr-only">
+					Name your workspace and invite your team.
+				</DialogDescription>
+
+				<CreateWorkspaceFlow onClose={() => handleOpenChange(false)} />
 			</DialogContent>
 		</Dialog>
 	);

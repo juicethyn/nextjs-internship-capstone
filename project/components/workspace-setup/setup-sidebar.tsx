@@ -1,15 +1,12 @@
 import { cn } from "@/lib/utils";
-import type { OnboardingStepConfig } from "@/types/onboarding";
+import type { SetupStepConfig } from "@/types/workspace-setup";
 
-type OnboardingSidebarProps = {
-	steps: OnboardingStepConfig[];
-	currentStep: OnboardingStepConfig;
+type SetupSidebarProps = {
+	steps: SetupStepConfig[];
+	currentIndex: number;
 };
 
-export function OnboardingSidebar({
-	steps,
-	currentStep,
-}: OnboardingSidebarProps) {
+export function SetupSidebar({ steps, currentIndex }: SetupSidebarProps) {
 	return (
 		<aside className="hidden w-80 flex-col border-r bg-muted/30 p-8 lg:flex">
 			{/* Header */}
@@ -21,18 +18,18 @@ export function OnboardingSidebar({
 				</p>
 
 				<p className="mt-6 text-xs font-medium uppercase tracking-widest text-muted-foreground">
-					Step {currentStep.id} of {steps.length}
+					Step {currentIndex + 1} of {steps.length}
 				</p>
 			</div>
 
 			{/* Steps */}
 			<div className="mt-10 space-y-8">
 				{steps.map((step, index) => {
-					const active = currentStep.id === step.id;
-					const completed = currentStep.id > step.id;
+					const active = index === currentIndex;
+					const completed = index < currentIndex;
 
 					return (
-						<div key={step.id} className="flex gap-4">
+						<div key={step.step} className="flex gap-4">
 							<div className="relative flex flex-col items-center">
 								<div
 									className={cn(
@@ -43,7 +40,7 @@ export function OnboardingSidebar({
 										!active && !completed && "bg-muted text-muted-foreground",
 									)}
 								>
-									{completed ? "✓" : step.id}
+									{completed ? "✓" : index + 1}
 								</div>
 
 								{index !== steps.length - 1 && (

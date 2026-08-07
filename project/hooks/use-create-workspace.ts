@@ -7,7 +7,7 @@ import {
 	createWorkspaceAction,
 	switchWorkspaceAction,
 } from "@/lib/actions/workspaces";
-import { useOnboardingStore } from "@/stores/onboarding-store";
+import { useWorkspaceSetupStore } from "@/stores/workspace-setup-store";
 
 export function useCreateWorkspace() {
 	const router = useRouter();
@@ -20,7 +20,7 @@ export function useCreateWorkspace() {
 		setIsCreating(true);
 
 		try {
-			const { workspace, invites, reset } = useOnboardingStore.getState();
+			const { workspace, invites, reset } = useWorkspaceSetupStore.getState();
 
 			if (!workspace) return;
 

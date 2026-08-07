@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { OnboardingContainer } from "@/components/onboarding/onboarding-container";
+import { OnboardingFlow } from "@/components/onboarding/onboarding-flow";
 import { getCurrentUserOwnedWorkspaces } from "@/lib/actions/workspaces";
 
 export default async function OnboardingPage() {
@@ -9,5 +9,5 @@ export default async function OnboardingPage() {
 		redirect(`/w/${ownedWorkspaces.data[0].slug}/dashboard`);
 	}
 
-	return <OnboardingContainer mode="onboarding" />;
+	return <OnboardingFlow />;
 }

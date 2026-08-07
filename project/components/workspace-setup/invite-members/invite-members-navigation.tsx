@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 type InviteMembersNavigationProps = {
 	onContinue: () => void;
 	onSkip: () => void;
-	nextLabel: string;
+	continueLabel: string;
 	skipLabel?: string;
 	isContinueDisabled?: boolean;
 	isSubmitting?: boolean;
@@ -12,7 +12,7 @@ type InviteMembersNavigationProps = {
 export function InviteMembersNavigation({
 	onContinue,
 	onSkip,
-	nextLabel,
+	continueLabel,
 	skipLabel = "Skip for now",
 	isContinueDisabled = false,
 	isSubmitting = false,
@@ -25,14 +25,14 @@ export function InviteMembersNavigation({
 				disabled={isContinueDisabled || isSubmitting}
 				className="h-11 w-full sm:h-12"
 			>
-				{isSubmitting ? "Creating workspace..." : nextLabel}
+				{isSubmitting ? "Creating workspace..." : continueLabel}
 			</Button>
 			<Button
 				type="button"
 				variant="outline"
 				onClick={onSkip}
 				className="h-11 w-full sm:h-12"
-				disabled={isSubmitting && isContinueDisabled}
+				disabled={isSubmitting}
 			>
 				{skipLabel}
 			</Button>

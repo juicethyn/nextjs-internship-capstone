@@ -1,4 +1,4 @@
-import { useOnboardingStore } from "@/stores/onboarding-store";
+import { useWorkspaceSetupStore } from "@/stores/workspace-setup-store";
 import { InviteMembersForm } from "./invite-members-form";
 import { InviteMembersHeader } from "./invite-members-header";
 import { InviteMembersLists } from "./invite-members-list";
@@ -6,20 +6,20 @@ import { InviteMembersNavigation } from "./invite-members-navigation";
 
 type InviteMembersStepProps = {
 	onBack: () => void;
-	onNext: () => void;
+	onContinue: () => void;
 	onSkip: () => void;
-	nextLabel: string;
-	isSubmitting: boolean;
+	continueLabel: string;
+	isSubmitting?: boolean;
 };
 
 export function InviteMembersStep({
 	onBack,
-	onNext,
+	onContinue,
 	onSkip,
-	nextLabel,
-	isSubmitting,
+	continueLabel,
+	isSubmitting = false,
 }: InviteMembersStepProps) {
-	const { invites } = useOnboardingStore();
+	const { invites } = useWorkspaceSetupStore();
 
 	return (
 		<div className="mx-auto w-full max-w-xl space-y-4 lg:space-y-5">
@@ -34,9 +34,9 @@ export function InviteMembersStep({
 
 			{/* Navigation */}
 			<InviteMembersNavigation
-				onContinue={onNext}
+				onContinue={onContinue}
 				onSkip={onSkip}
-				nextLabel={nextLabel}
+				continueLabel={continueLabel}
 				isContinueDisabled={invites.length === 0}
 				isSubmitting={isSubmitting}
 			/>

@@ -1,10 +1,10 @@
-import { useOnboardingStore } from "@/stores/onboarding-store";
+import { useWorkspaceSetupStore } from "@/stores/workspace-setup-store";
 import { useInvitationForm } from "./use-invitation-form";
 
 export function useInviteMembers(currentUserEmail: string) {
 	const form = useInvitationForm();
 
-	const { invites, addInvite, removeInvite } = useOnboardingStore();
+	const { invites, addInvite, removeInvite } = useWorkspaceSetupStore();
 
 	const addInvitation = () => {
 		const invite = form.validate();

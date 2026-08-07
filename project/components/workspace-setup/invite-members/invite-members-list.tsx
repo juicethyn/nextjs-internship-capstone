@@ -1,9 +1,9 @@
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useOnboardingStore } from "@/stores/onboarding-store";
+import { useWorkspaceSetupStore } from "@/stores/workspace-setup-store";
 
 export function InviteMembersLists() {
-	const { invites, removeInvite } = useOnboardingStore();
+	const { invites, removeInvite } = useWorkspaceSetupStore();
 
 	return (
 		<>

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { WORKSPACE_COLORS } from "@/constants/workspace";
 import { createWorkspaceSchema } from "@/lib/validations/workspace";
-import { useOnboardingStore } from "@/stores/onboarding-store";
+import { useWorkspaceSetupStore } from "@/stores/workspace-setup-store";
 import { Input } from "../ui/input";
 import { WorkspaceAvatar } from "../workspace-avatar";
 
@@ -13,7 +13,7 @@ type WorkspaceStepProps = {
 };
 
 export function WorkspaceStep({ onNext }: WorkspaceStepProps) {
-	const { workspace, setWorkspace } = useOnboardingStore();
+	const { workspace, setWorkspace } = useWorkspaceSetupStore();
 
 	const [name, setName] = useState(workspace?.name ?? "");
 	const [color, setColor] = useState(workspace?.color ?? WORKSPACE_COLORS[0]);
@@ -71,7 +71,7 @@ export function WorkspaceStep({ onNext }: WorkspaceStepProps) {
 						value={name}
 						id="workspace-name"
 						onChange={(e) => setName(e.target.value)}
-						maxLength={25}
+						maxLength={50}
 						placeholder="e.g. Fora"
 						className="mt-1 sm:mt-2 h-10 bg-muted! focus:bg-background transition-colors"
 						required
