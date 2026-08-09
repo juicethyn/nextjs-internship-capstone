@@ -15,7 +15,7 @@ type ProjectStatus = "active" | "completed" | "archived";
 interface ProjectCardProps {
 	href: string;
 	name: string;
-	description: string;
+	description?: string | null;
 	color: string;
 	status: ProjectStatus;
 	progress: number;
@@ -46,6 +46,8 @@ export const PROJECT_STATUS_STYLES = {
 	},
 } as const;
 
+const MAX_VISIBLE_LABELS = 3;
+
 export function ProjectCard({
 	href,
 	name,
@@ -59,8 +61,9 @@ export function ProjectCard({
 	labels = [],
 }: ProjectCardProps) {
 	const statusStyle = PROJECT_STATUS_STYLES[status];
-	const visibleLabels = labels.slice(0, 2);
+	const visibleLabels = labels.slice(0, MAX_VISIBLE_LABELS);
 	const remainingLabels = labels.length - visibleLabels.length;
+	const trimmedDescription = description?.trim();
 
 	return (
 		<Link
@@ -73,7 +76,7 @@ export function ProjectCard({
 				rounded-xl
 				border
 				bg-card
-				p-5
+				p-4
 				transition-all
 				hover:border-primary/30
 				hover:shadow-lg
@@ -81,52 +84,58 @@ export function ProjectCard({
 				focus-visible:outline-2
 				focus-visible:outline-offset-2
 				focus-visible:outline-ring
+				sm:p-5
 			"
 		>
-			{/* Header */}
-			<div className="flex items-start justify-between gap-2">
-				<div className="flex min-w-0 items-center gap-1 overflow-hidden">
+			<div className="flex items-center justify-between gap-3">
+				<div className="flex min-w-0 items-center gap-2.5">
+					<WorkspaceAvatar name={name} color={color} size="sm" />
+
+					<h3 className="truncate text-sm font-semibold">{name}</h3>
+				</div>
+
+				<span
+					className={cn(
+						"inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-medium",
+						statusStyle.bg,
+						statusStyle.text,
+						statusStyle.border,
+					)}
+				>
+					<span className={cn("size-1.5 rounded-full", statusStyle.dot)} />
+					{status.charAt(0).toUpperCase() + status.slice(1)}
+				</span>
+			</div>
+
+			{/* Description and Labels */}
+			<div className="space-y-2.5">
+				<p
+					className={cn(
+						"h-10 text-xs leading-relaxed text-muted-foreground",
+						trimmedDescription
+							? "line-clamp-2 wrap-break-word"
+							: "italic opacity-60",
+					)}
+				>
+					{trimmedDescription ?? "No description yet"}
+				</p>
+
+				<div className="flex min-h-7 items-center gap-1.5 overflow-hidden">
 					{visibleLabels.map((label) => (
 						<LabelBadge
 							key={label.id}
 							name={label.name}
 							color={label.color}
-							className="max-w-25 text-[10px]"
+							className="min-w-0 shrink"
 						/>
 					))}
 
 					{remainingLabels > 0 && (
-						<span className="inline-flex items-center rounded-full border bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
+						<span className="inline-flex shrink-0 items-center rounded-full border bg-muted px-2 py-1 text-xs font-medium text-muted-foreground">
 							+{remainingLabels}
 						</span>
 					)}
 				</div>
-
-				<div className="flex shrink-0 items-center gap-2">
-					<span
-						className={cn(
-							"inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-medium",
-							statusStyle.bg,
-							statusStyle.text,
-							statusStyle.border,
-						)}
-					>
-						<span className={cn("size-1.5 rounded-full", statusStyle.dot)} />
-						{status.charAt(0).toUpperCase() + status.slice(1)}
-					</span>
-				</div>
-			</div>
-
-			{/* Project */}
-			<div>
-				<div className="mb-1.5 flex items-center gap-2.5">
-					<WorkspaceAvatar name={name} color={color} size="sm" />
-					<h3 className="truncate text-sm font-semibold">{name}</h3>
-				</div>
-
-				<p className="line-clamp-2 h-10 break-all text-xs leading-relaxed text-muted-foreground">
-					{description}
-				</p>
 			</div>
 
 			{/* Progress */}
@@ -139,7 +148,7 @@ export function ProjectCard({
 
 				<div className="h-1.5 overflow-hidden rounded-full bg-secondary">
 					<div
-						className="h-full rounded-full"
+						className="h-full rounded-full transition-[width] duration-300"
 						style={{
 							width: `${progress}%`,
 							backgroundColor: color,
@@ -149,25 +158,23 @@ export function ProjectCard({
 			</div>
 
 			{/* Footer */}
-			<div className="mt-auto flex items-center gap-3 border-t pt-1 text-[11px] text-muted-foreground">
+			<div className="mt-auto flex items-center gap-3 border-t pt-3 text-[11px] text-muted-foreground">
 				<div className="flex items-center gap-1">
-					<Users className="size-3" />
+					<Users className="size-3 shrink-0" />
 					<span>{members}</span>
 				</div>
 
 				<div className="flex items-center gap-1">
-					<CheckCircle2 className="size-3" />
+					<CheckCircle2 className="size-3 shrink-0" />
 					<span>{totalTasks} tasks</span>
 				</div>
 
-				<div className="ml-auto flex items-center gap-1">
-					{dueDate && (
-						<>
-							<CalendarRange className="size-3" />
-							<span>{dueDate}</span>
-						</>
-					)}
-				</div>
+				{dueDate && (
+					<div className="ml-auto flex min-w-0 items-center gap-1">
+						<CalendarRange className="size-3 shrink-0" />
+						<span className="truncate">{dueDate}</span>
+					</div>
+				)}
 			</div>
 		</Link>
 	);

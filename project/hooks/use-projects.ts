@@ -25,7 +25,6 @@ export function useProjects({
 	const query = useQuery({
 		queryKey: ["projects", workspaceSlug],
 		queryFn: async () => {
-			await new Promise((resolve) => setTimeout(resolve, 2000));
 			const response = await getProjectsByWorkspaceBySlug(workspaceSlug);
 			return response.projects ?? [];
 		},
