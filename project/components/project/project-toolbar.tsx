@@ -18,7 +18,7 @@ import {
 	DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { Input } from "../ui/input";
-import { PROJECT_STATUS_STYLES } from "./project-card";
+import { PROJECT_STATUS_STYLES } from "./project-status-badge";
 
 type ProjectsToolbarProps = {
 	search: string;

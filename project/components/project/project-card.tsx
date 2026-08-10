@@ -1,16 +1,16 @@
 import { CalendarRange, CheckCircle2, Users } from "lucide-react";
 import Link from "next/link";
+import { formatProjectDate } from "@/lib/date-formatter";
 import { cn } from "@/lib/utils";
 import { LabelBadge } from "../labels/label-badge";
 import { WorkspaceAvatar } from "../workspace-avatar";
+import { type ProjectStatus, ProjectStatusBadge } from "./project-status-badge";
 
 type ProjectCardLabel = {
 	id: string;
 	name: string;
 	color: string;
 };
-
-type ProjectStatus = "active" | "completed" | "archived";
 
 interface ProjectCardProps {
 	href: string;
@@ -21,30 +21,9 @@ interface ProjectCardProps {
 	progress: number;
 	members: number;
 	totalTasks: number;
-	dueDate: string;
+	dueDate: Date | null;
 	labels?: ProjectCardLabel[];
 }
-
-export const PROJECT_STATUS_STYLES = {
-	active: {
-		bg: "bg-emerald-100 dark:bg-emerald-500/15",
-		text: "text-emerald-700 dark:text-emerald-400",
-		dot: "bg-emerald-500",
-		border: "border-emerald-200 dark:border-emerald-500/20",
-	},
-	completed: {
-		bg: "bg-sky-100 dark:bg-sky-500/15",
-		text: "text-sky-700 dark:text-sky-400",
-		dot: "bg-sky-500",
-		border: "border-sky-200 dark:border-sky-500/20",
-	},
-	archived: {
-		bg: "bg-muted",
-		text: "text-muted-foreground",
-		dot: "bg-muted-foreground",
-		border: "border-border",
-	},
-} as const;
 
 const MAX_VISIBLE_LABELS = 3;
 
@@ -60,7 +39,6 @@ export function ProjectCard({
 	dueDate,
 	labels = [],
 }: ProjectCardProps) {
-	const statusStyle = PROJECT_STATUS_STYLES[status];
 	const visibleLabels = labels.slice(0, MAX_VISIBLE_LABELS);
 	const remainingLabels = labels.length - visibleLabels.length;
 	const trimmedDescription = description?.trim() || null;
@@ -94,17 +72,7 @@ export function ProjectCard({
 					<h3 className="truncate text-sm font-semibold">{name}</h3>
 				</div>
 
-				<span
-					className={cn(
-						"inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-medium",
-						statusStyle.bg,
-						statusStyle.text,
-						statusStyle.border,
-					)}
-				>
-					<span className={cn("size-1.5 rounded-full", statusStyle.dot)} />
-					{status.charAt(0).toUpperCase() + status.slice(1)}
-				</span>
+				<ProjectStatusBadge status={status} />
 			</div>
 
 			{/* Description and Labels */}
@@ -170,7 +138,7 @@ export function ProjectCard({
 				{dueDate && (
 					<div className="ml-auto flex min-w-0 items-center gap-1">
 						<CalendarRange className="size-3 shrink-0" />
-						<span className="truncate">{dueDate}</span>
+						<span className="truncate">{formatProjectDate(dueDate)}</span>
 					</div>
 				)}
 			</div>

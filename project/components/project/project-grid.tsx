@@ -21,7 +21,7 @@ export function ProjectGrid({ items, workspaceSlug }: ProjectGridProps) {
 					labels={project.projectLabels.map(
 						(projectLabel) => projectLabel.workspaceLabel,
 					)}
-					dueDate={project.dueDate ? project.dueDate.toLocaleDateString() : ""}
+					dueDate={project.dueDate}
 					progress={stats.progress}
 					totalTasks={stats.totalTasks}
 				/>
