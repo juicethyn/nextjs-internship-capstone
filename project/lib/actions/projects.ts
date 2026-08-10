@@ -1,16 +1,19 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { treeifyError } from "zod/v4/core";
 import { createActivity } from "../activity";
 import { getCurrentUser } from "../auth";
 import { db } from "../db";
 import { createDefaultLists } from "../db/queries/lists";
 import { addProjectMember } from "../db/queries/projectMembers";
-import { createProject, getProjectsByWorkspace } from "../db/queries/projects";
+import {
+	createProject,
+	getProjectBySlugWithRelations,
+	getProjectsByWorkspace,
+} from "../db/queries/projects";
 import { setProjectLabels } from "../db/queries/projectWorkspaceLabels";
 import { getLabelsByWorkspace } from "../db/queries/workspaceLabels";
-import { requireWorkspaceMember } from "../permission";
+import { requireProjectMember, requireWorkspaceMember } from "../permission";
 import {
 	type CreateProjectInput,
 	createProjectSchema,
@@ -36,6 +39,33 @@ export async function getProjectsByWorkspaceBySlug(workspaceSlug: string) {
 	};
 }
 
+export async function getProjectBySlug(
+	workspaceSlug: string,
+	projectSlug: string,
+) {
+	const user = await getCurrentUser();
+
+	const { workspaceId } = await requireProjectMember(
+		workspaceSlug,
+		projectSlug,
+		user.id,
+	);
+
+	const project = await getProjectBySlugWithRelations(workspaceId, projectSlug);
+
+	if (!project) {
+		return {
+			success: false,
+			message: "Project not found",
+		};
+	}
+
+	return {
+		success: true,
+		project,
+	};
+}
+
 export async function createProjectAction(
 	workspaceSlug: string,
 	data: CreateProjectInput,
@@ -47,7 +77,7 @@ export async function createProjectAction(
 	if (!validatedData.success) {
 		return {
 			success: false,
-			message: treeifyError(validatedData.error),
+			message: "Invalid project data",
 		};
 	}
 
@@ -89,8 +119,7 @@ export async function createProjectAction(
 	});
 
 	revalidatePath(`/w/${workspaceSlug}/projects`);
-
-	return { success: true, project };
+	return { success: true, project, message: "Project created successfully!" };
 }
 
 // Not needed for now

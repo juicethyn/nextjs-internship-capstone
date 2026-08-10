@@ -2,6 +2,7 @@
 
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "../ui/button";
 
 type LabelBadgeProps = {
 	name: string;
@@ -29,8 +30,6 @@ export function LabelBadge({
 				className,
 			)}
 			style={{
-				// color-mix keeps the tint readable in both themes and accepts the
-				// 3-digit hex the label schema also allows.
 				backgroundColor: `color-mix(in srgb, ${color} 14%, transparent)`,
 				borderColor: `color-mix(in srgb, ${color} 40%, transparent)`,
 			}}
@@ -43,8 +42,9 @@ export function LabelBadge({
 			<span className="truncate">{name}</span>
 
 			{canDelete && (
-				<button
+				<Button
 					type="button"
+					variant="ghost"
 					aria-label={`Delete label ${name}`}
 					disabled={isDeleting}
 					onClick={onDelete}
@@ -65,7 +65,7 @@ export function LabelBadge({
 					"
 				>
 					<X className="size-3" />
-				</button>
+				</Button>
 			)}
 		</span>
 	);

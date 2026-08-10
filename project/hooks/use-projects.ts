@@ -2,12 +2,69 @@
 // TODO: Task 4.2 - Create project listing and dashboard interface
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
 	createProjectAction,
 	getProjectsByWorkspaceBySlug,
 } from "@/lib/actions/projects";
 import type { CreateProjectInput } from "@/lib/validations/project";
 import type { ProjectWithRelations } from "@/types/projects";
+
+interface UseProjectsProps {
+	workspaceSlug: string;
+	initialProjects?: ProjectWithRelations[];
+}
+
+export function useProjects({
+	workspaceSlug,
+	initialProjects,
+}: UseProjectsProps) {
+	const router = useRouter();
+
+	const query = useQuery({
+		queryKey: ["projects", workspaceSlug],
+		queryFn: async () => {
+			const response = await getProjectsByWorkspaceBySlug(workspaceSlug);
+			return response.projects ?? [];
+		},
+		initialData: initialProjects,
+	});
+
+	const queryClient = useQueryClient();
+
+	const createMutation = useMutation({
+		mutationFn: (data: CreateProjectInput) =>
+			createProjectAction(workspaceSlug, data),
+
+		onSuccess: (result) => {
+			if (!result.success) {
+				toast.error(result.message);
+				return;
+			}
+
+			toast.success(result.message);
+
+			queryClient.invalidateQueries({
+				queryKey: ["projects", workspaceSlug],
+			});
+
+			router.push(`/w/${workspaceSlug}/projects/${result.project?.slug}`);
+		},
+
+		onError: () => {
+			toast.error("Failed to create project.");
+		},
+	});
+
+	return {
+		projects: query.data ?? [],
+		isLoading: query.isLoading,
+
+		createProject: createMutation.mutateAsync,
+		isCreating: createMutation.isPending,
+	};
+}
 
 /*
 TODO: Implementation Notes for Interns:
@@ -34,27 +91,27 @@ export function useProjects() {
   const queryClient = useQueryClient()
 
   const {
-    data: projects,
-    isLoading,
-    error
+	data: projects,
+	isLoading,
+	error
   } = useQuery({
-    queryKey: ['projects'],
-    queryFn: () => queries.projects.getAll()
+	queryKey: ['projects'],
+	queryFn: () => queries.projects.getAll()
   })
 
   const createProject = useMutation({
-    mutationFn: queries.projects.create,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects'] })
-    }
+	mutationFn: queries.projects.create,
+	onSuccess: () => {
+	  queryClient.invalidateQueries({ queryKey: ['projects'] })
+	}
   })
 
   return {
-    projects,
-    isLoading,
-    error,
-    createProject: createProject.mutate,
-    isCreating: createProject.isPending
+	projects,
+	isLoading,
+	error,
+	createProject: createProject.mutate,
+	isCreating: createProject.isPending
   }
 }
 
@@ -76,41 +133,3 @@ Dependencies to install:
 // 		deleteProject: (id: string) => console.log(`TODO: Delete project ${id}`),
 // 	};
 // }
-
-interface UseProjectsProps {
-	workspaceSlug: string;
-	initialProjects?: ProjectWithRelations[];
-}
-
-export function useProjects({
-	workspaceSlug,
-	initialProjects,
-}: UseProjectsProps) {
-	const query = useQuery({
-		queryKey: ["projects", workspaceSlug],
-		queryFn: async () => {
-			const response = await getProjectsByWorkspaceBySlug(workspaceSlug);
-			return response.projects ?? [];
-		},
-		initialData: initialProjects,
-	});
-
-	const queryClient = useQueryClient();
-
-	const createMutation = useMutation({
-		mutationFn: (data: CreateProjectInput) =>
-			createProjectAction(workspaceSlug, data),
-
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["projects", workspaceSlug] });
-		},
-	});
-
-	return {
-		projects: query.data ?? [],
-		isLoading: query.isLoading,
-
-		createProject: createMutation.mutateAsync,
-		isCreating: createMutation.isPending,
-	};
-}

@@ -1,41 +1,11 @@
-// TODO: Task 4.1 - Implement project CRUD operations
-// TODO: Task 4.4 - Build task creation and editing functionality
-
-/*
-TODO: Implementation Notes for Interns:
-
-Modal for creating new projects with form validation.
-
-Features to implement:
-- Form with project name, description, due date
-- Zod validation
-- Error handling
-- Loading states
-- Success feedback
-- Team member assignment
-- Project template selection
-
-Form fields:
-- Name (required)
-- Description (optional)
-- Due date (optional)
-- Team members (optional)
-- Project template (optional)
-- Privacy settings
-
-Integration:
-- Use project validation schema from lib/validations.ts
-- Call project creation API
-- Update project list optimistically
-- Handle errors gracefully
-*/
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CalendarIcon } from "lucide-react";
 import { useForm } from "react-hook-form";
-import { LabelToggle } from "@/components/labels/label-toggle";
+import { LabelBadge } from "@/components/labels/label-badge";
+import { ProjectColorPicker } from "@/components/project/project-color-picker";
+import { ProjectDatePicker } from "@/components/project/project-date-picker";
+import { ProjectLabelPicker } from "@/components/project/project-label-picker";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -56,6 +26,16 @@ import {
 	type CreateProjectInput,
 	createProjectSchema,
 } from "@/lib/validations/project";
+
+const DESCRIPTION_MAX_LENGTH = 500;
+
+function OptionalTag() {
+	return (
+		<span className="ml-1 text-xs font-normal text-muted-foreground">
+			(optional)
+		</span>
+	);
+}
 
 type CreateProjectModalProps = {
 	workspaceSlug: string;
@@ -85,8 +65,17 @@ export function CreateProjectModal({
 			labelIds: [],
 		},
 	});
+
 	const selectedColor = form.watch("color");
 	const selectedLabelIds = form.watch("labelIds") ?? [];
+	const description = form.watch("description") ?? "";
+	const startDate = form.watch("startDate");
+	const dueDate = form.watch("dueDate");
+	const errors = form.formState.errors;
+
+	const selectedLabels = labels.filter((label) =>
+		selectedLabelIds.includes(label.id),
+	);
 
 	const toggleLabel = (labelId: string) =>
 		form.setValue(
@@ -97,6 +86,20 @@ export function CreateProjectModal({
 			{ shouldDirty: true, shouldValidate: true },
 		);
 
+	const handleDateChange = (range: {
+		startDate?: string;
+		dueDate?: string;
+	}) => {
+		form.setValue("startDate", range.startDate, {
+			shouldDirty: true,
+			shouldValidate: true,
+		});
+		form.setValue("dueDate", range.dueDate, {
+			shouldDirty: true,
+			shouldValidate: true,
+		});
+	};
+
 	const onSubmit = async (data: CreateProjectInput) => {
 		await createProject(data);
 		form.reset();
@@ -105,125 +108,134 @@ export function CreateProjectModal({
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="sm:max-w-xl">
-				<form onSubmit={form.handleSubmit(onSubmit)}>
-					<DialogHeader>
-						<DialogTitle>Create Project</DialogTitle>
+			<DialogContent className="flex max-h-[90dvh] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
+				<form
+					onSubmit={form.handleSubmit(onSubmit)}
+					className="flex min-h-0 flex-1 flex-col"
+				>
+					<DialogHeader className="shrink-0 border-b px-5 py-4 sm:px-6">
+						<DialogTitle className="text-base sm:text-lg">
+							Create Project
+						</DialogTitle>
 
-						<DialogDescription>
-							Create a new project inside your workspace. Default lists will
-							automatically be generated for you.
+						<DialogDescription className="text-xs lg:text-base">
+							Create a new project inside your workspace.
 						</DialogDescription>
 					</DialogHeader>
 
-					<div className="space-y-6 py-2">
+					<div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-5 sm:px-6">
 						<div className="space-y-2">
 							<Label htmlFor="name">Project Name</Label>
 
 							<Input
 								id="name"
 								{...form.register("name")}
+								maxLength={100}
 								placeholder="e.g. Fora Mobile App"
+								aria-invalid={!!errors.name}
 							/>
-						</div>
 
-						<div className="space-y-2">
-							<Label htmlFor="description">Description</Label>
-
-							<Textarea
-								id="description"
-								rows={4}
-								{...form.register("description")}
-								placeholder="Describe the purpose of this project..."
-							/>
-						</div>
-
-						<div className="space-y-2">
-							<Label>Project Color</Label>
-
-							<div className="flex flex-wrap gap-3">
-								{WORKSPACE_COLORS.map((projectColor) => (
-									<button
-										key={projectColor}
-										type="button"
-										onClick={() => form.setValue("color", projectColor)}
-										className={`size-8 rounded-full transition ${
-											selectedColor === projectColor
-												? "ring-2 ring-primary ring-offset-2"
-												: ""
-										}`}
-										style={{
-											backgroundColor: projectColor,
-										}}
-									/>
-								))}
-							</div>
-						</div>
-
-						<div className="space-y-2">
-							<Label>Labels</Label>
-
-							{isLoadingLabels && (
-								<p className="text-sm text-muted-foreground">
-									Loading labels...
+							{errors.name && (
+								<p className="text-sm text-destructive">
+									{errors.name.message}
 								</p>
 							)}
+						</div>
+
+						<div className="space-y-3">
+							<div className="flex flex-wrap items-center gap-2">
+								<ProjectColorPicker
+									value={selectedColor}
+									onChange={(color) =>
+										form.setValue("color", color, {
+											shouldDirty: true,
+											shouldValidate: true,
+										})
+									}
+								/>
+
+								<ProjectLabelPicker
+									labels={labels}
+									selectedLabelIds={selectedLabelIds}
+									onToggle={toggleLabel}
+									isLoading={isLoadingLabels}
+								/>
+							</div>
 
 							{!isLoadingLabels && labels.length === 0 && (
 								<p className="text-sm text-muted-foreground">
-									No labels yet — create them in Workspace Settings to reuse
-									across projects.
+									No labels yet. Create labels in Workspace Settings to reuse
+									them across projects.
 								</p>
 							)}
 
-							{labels.length > 0 && (
+							{selectedLabels.length > 0 && (
 								<div className="flex flex-wrap gap-2">
-									{labels.map((label) => (
-										<LabelToggle
+									{selectedLabels.map((label) => (
+										<LabelBadge
 											key={label.id}
 											name={label.name}
 											color={label.color}
-											selected={selectedLabelIds.includes(label.id)}
-											onToggle={() => toggleLabel(label.id)}
+											canDelete
+											onDelete={() => toggleLabel(label.id)}
 										/>
 									))}
 								</div>
 							)}
 						</div>
 
-						<div className="grid gap-4 md:grid-cols-2">
-							<div className="space-y-2">
-								<Label htmlFor="start-date">Start Date</Label>
+						<div className="space-y-2">
+							<Label htmlFor="description">
+								Description
+								<OptionalTag />
+							</Label>
 
-								<div className="relative">
-									<Input
-										id="start-date"
-										type="date"
-										{...form.register("startDate")}
-									/>
+							<Textarea
+								id="description"
+								{...form.register("description")}
+								maxLength={DESCRIPTION_MAX_LENGTH}
+								placeholder="Describe the purpose of this project..."
+								aria-invalid={!!errors.description}
+								className="max-h-40 min-h-24"
+							/>
 
-									<CalendarIcon className="pointer-events-none absolute right-3 top-3 size-4 text-muted-foreground" />
-								</div>
+							<div className="flex items-start justify-between gap-2">
+								<p className="text-sm text-destructive">
+									{errors.description?.message}
+								</p>
+
+								<span className="shrink-0 text-xs text-muted-foreground tabular-nums">
+									{description.length}/{DESCRIPTION_MAX_LENGTH}
+								</span>
 							</div>
+						</div>
 
-							<div className="space-y-2">
-								<Label htmlFor="due-date">Due Date</Label>
+						<div className="space-y-2">
+							<Label>
+								Date
+								<OptionalTag />
+							</Label>
 
-								<div className="relative">
-									<Input
-										id="due-date"
-										type="date"
-										{...form.register("dueDate")}
-									/>
+							<ProjectDatePicker
+								startDate={startDate}
+								dueDate={dueDate}
+								onChange={handleDateChange}
+							/>
 
-									<CalendarIcon className="pointer-events-none absolute right-3 top-3 size-4 text-muted-foreground" />
-								</div>
-							</div>
+							{errors.dueDate && (
+								<p className="text-sm text-destructive">
+									{errors.dueDate.message}
+								</p>
+							)}
 						</div>
 					</div>
 
-					<DialogFooter className="gap-2">
-						<Button variant="outline" onClick={() => onOpenChange(false)}>
+					<DialogFooter className="m-0 shrink-0 border-t px-5 py-4 sm:px-6">
+						<Button
+							type="button"
+							variant="outline"
+							onClick={() => onOpenChange(false)}
+						>
 							Cancel
 						</Button>
 
