@@ -1,80 +1,96 @@
-// TODO: Task 4.4 - Build task creation and editing functionality
-// TODO: Task 5.4 - Implement optimistic UI updates for smooth interactions
+"use client";
 
-/*
-TODO: Implementation Notes for Interns:
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import {
+	createTaskAction,
+	deleteTaskAction,
+	updateTaskAction,
+} from "@/lib/actions/tasks";
+import type { CreateTaskInput, UpdateTaskInput } from "@/lib/validations/task";
 
-Custom hook for task data management:
-- Fetch tasks for a project
-- Create new task
-- Update task
-- Delete task
-- Move task between lists
-- Bulk operations
-
-Features:
-- Optimistic updates for smooth UX
-- Real-time synchronization
-- Conflict resolution
-- Undo functionality
-- Batch operations
-
-Example structure:
-export function useTasks(projectId: string) {
-  const queryClient = useQueryClient()
-  
-  const {
-    data: tasks,
-    isLoading,
-    error
-  } = useQuery({
-    queryKey: ['tasks', projectId],
-    queryFn: () => queries.tasks.getByProject(projectId),
-    enabled: !!projectId
-  })
-  
-  const createTask = useMutation({
-    mutationFn: queries.tasks.create,
-    onMutate: async (newTask) => {
-      // Optimistic update
-      await queryClient.cancelQueries({ queryKey: ['tasks', projectId] })
-      const previousTasks = queryClient.getQueryData(['tasks', projectId])
-      queryClient.setQueryData(['tasks', projectId], (old: Task[]) => [...old, { ...newTask, id: 'temp-' + Date.now() }])
-      return { previousTasks }
-    },
-    onError: (err, newTask, context) => {
-      // Rollback on error
-      queryClient.setQueryData(['tasks', projectId], context?.previousTasks)
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks', projectId] })
-    }
-  })
-  
-  return {
-    tasks,
-    isLoading,
-    error,
-    createTask: createTask.mutate,
-    isCreating: createTask.isPending
-  }
+interface UseTasksProps {
+	workspaceSlug: string;
+	projectSlug: string;
 }
-*/
 
-// Placeholder to prevent import errors
-export function useTasks(projectId: string) {
-	console.log(`TODO: Implement useTasks hook for project ${projectId}`);
+function toMessage(message: unknown, fallback: string) {
+	return typeof message === "string" && message.length > 0 ? message : fallback;
+}
+
+export function useTasks({ workspaceSlug, projectSlug }: UseTasksProps) {
+	const queryClient = useQueryClient();
+
+	const invalidateProject = () =>
+		queryClient.invalidateQueries({
+			queryKey: ["project", workspaceSlug, projectSlug],
+		});
+
+	const createMutation = useMutation({
+		mutationFn: ({ listId, data }: { listId: string; data: CreateTaskInput }) =>
+			createTaskAction(workspaceSlug, projectSlug, listId, data),
+
+		onSuccess: (result) => {
+			if (!result.success) {
+				toast.error(toMessage(result.message, "Failed to create task."));
+				return;
+			}
+
+			toast.success("Card created.");
+			return invalidateProject();
+		},
+
+		onError: () => {
+			toast.error("Failed to create task.");
+		},
+	});
+
+	const updateMutation = useMutation({
+		mutationFn: ({ taskId, data }: { taskId: string; data: UpdateTaskInput }) =>
+			updateTaskAction(workspaceSlug, projectSlug, taskId, data),
+
+		onSuccess: (result) => {
+			if (!result.success) {
+				toast.error(toMessage(result.message, "Failed to update task."));
+				return;
+			}
+
+			toast.success("Task updated.");
+			return invalidateProject();
+		},
+
+		onError: () => {
+			toast.error("Failed to update task.");
+		},
+	});
+
+	const deleteMutation = useMutation({
+		mutationFn: (taskId: string) =>
+			deleteTaskAction(workspaceSlug, projectSlug, taskId),
+
+		onSuccess: (result) => {
+			if (!result.success) {
+				toast.error(toMessage(result.message, "Failed to delete task."));
+				return;
+			}
+
+			toast.success("Card deleted.");
+			return invalidateProject();
+		},
+
+		onError: () => {
+			toast.error("Failed to delete task.");
+		},
+	});
+
 	return {
-		tasks: [],
-		isLoading: false,
-		error: null,
-		createTask: (data: object) => console.log("TODO: Create task", data),
-		updateTask: (id: string, data: object) =>
-			console.log(`TODO: Update task ${id}`, data),
-		deleteTask: (id: string) => console.log(`TODO: Delete task ${id}`),
-		moveTask: (taskId: string, newListId: string, position: number) =>
-			console.log(
-				`TODO: Move task ${taskId} to list ${newListId} at position ${position}`,
-			),
+		createTask: createMutation.mutateAsync,
+		isCreating: createMutation.isPending,
+
+		updateTask: updateMutation.mutateAsync,
+		isUpdating: updateMutation.isPending,
+
+		deleteTask: deleteMutation.mutateAsync,
+		isDeleting: deleteMutation.isPending,
 	};
 }

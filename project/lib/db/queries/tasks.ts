@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, max } from "drizzle-orm";
 import type { CreateTaskInput, UpdateTaskInput } from "../../validations/task";
 import { db } from "../index";
 import { tasks } from "../schema";
@@ -43,14 +43,26 @@ export function getTasksByAssignee(userId: string) {
 	});
 }
 
+const TASK_POSITION_STEP = 1000;
+
 export async function createTask(
 	listId: string,
 	createdById: string,
 	data: CreateTaskInput,
 ) {
+	const [{ maxPosition }] = await db
+		.select({ maxPosition: max(tasks.position) })
+		.from(tasks)
+		.where(eq(tasks.listId, listId));
+
 	const [task] = await db
 		.insert(tasks)
-		.values({ ...data, listId, createdById, position: 1000 })
+		.values({
+			...data,
+			listId,
+			createdById,
+			position: (maxPosition ?? 0) + TASK_POSITION_STEP,
+		})
 		.returning();
 	return task;
 }

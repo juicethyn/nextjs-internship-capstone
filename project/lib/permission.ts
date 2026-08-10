@@ -53,6 +53,12 @@ export async function requireWorkspaceMember(
 	return workspace;
 }
 
+export async function isWorkspaceMember(workspaceId: string, userId: string) {
+	const member = await getWorkspaceMemberById(workspaceId, userId);
+
+	return Boolean(member);
+}
+
 export async function requireWorkspaceAdmin(
 	workspaceSlug: string,
 	userId: string,

@@ -231,6 +231,11 @@ function Sidebar({
 				data-slot="sidebar-container"
 				data-side={side}
 				className={cn(
+					// LOCAL DEVIATION FROM THE SHADCN REGISTRY — do not let `shadcn add sidebar`
+					// revert this. Upstream uses `fixed inset-y-0 z-10 h-svh`, which assumes the
+					// sidebar is pinned to the viewport. DashboardLayout renders it as a flex
+					// sibling of <main>, below TopBar, so `fixed` puts SidebarHeader behind the
+					// TopBar (z-50 over z-10) and the workspace switcher becomes invisible.
 					"relative hidden h-full w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear data-[side=left]:left-0 data-[side=left]:group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)] data-[side=right]:right-0 data-[side=right]:group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)] md:flex",
 					// Adjust the padding for floating and inset variants.
 					variant === "floating" || variant === "inset"
@@ -400,7 +405,6 @@ function SidebarGroupLabel({
 
 	return (
 		<Comp
-			id="sidebar-menu-button-static"
 			data-slot="sidebar-group-label"
 			data-sidebar="group-label"
 			className={cn(
@@ -421,7 +425,6 @@ function SidebarGroupAction({
 
 	return (
 		<Comp
-			id="sidebar-group-action"
 			data-slot="sidebar-group-action"
 			data-sidebar="group-action"
 			className={cn(
@@ -509,7 +512,6 @@ function SidebarMenuButton({
 
 	const button = (
 		<Comp
-			id="sidebar-menu-button"
 			data-slot="sidebar-menu-button"
 			data-sidebar="menu-button"
 			data-size={size}
@@ -555,7 +557,6 @@ function SidebarMenuAction({
 
 	return (
 		<Comp
-			id="sidebar-menu-action"
 			data-slot="sidebar-menu-action"
 			data-sidebar="menu-action"
 			className={cn(
@@ -667,7 +668,6 @@ function SidebarMenuSubButton({
 
 	return (
 		<Comp
-			id="sidebar-menu-sub-button"
 			data-slot="sidebar-menu-sub-button"
 			data-sidebar="menu-sub-button"
 			data-size={size}

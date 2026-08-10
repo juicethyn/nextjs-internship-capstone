@@ -1,8 +1,15 @@
 "use client";
 
-import { GripVertical, MoreHorizontal, Trash2 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { GripVertical, MoreHorizontal, Plus, Trash2 } from "lucide-react";
+import {
+	startTransition,
+	useEffect,
+	useOptimistic,
+	useRef,
+	useState,
+} from "react";
 import { useLists } from "@/hooks/use-lists";
+import { useTasks } from "@/hooks/use-tasks";
 import { cn } from "@/lib/utils";
 import { LIST_TYPE_STYLES } from "@/lib/utils/list-styles";
 import type { ProjectDetail } from "@/types/projects";
@@ -50,6 +57,54 @@ export function ListCard({
 		projectSlug,
 	});
 
+	const { createTask } = useTasks({ workspaceSlug, projectSlug });
+
+	const [optimisticTasks, addOptimisticTask] = useOptimistic(
+		tasks as { id: string; title: string; description?: string | null }[],
+		(current, pending: { id: string; title: string }) => [
+			...current,
+			{ ...pending, description: null },
+		],
+	);
+
+	const [isComposing, setIsComposing] = useState(false);
+	const [draftTitle, setDraftTitle] = useState("");
+	const composerRef = useRef<HTMLInputElement>(null);
+
+	useEffect(() => {
+		if (!isComposing) return;
+
+		const frame = requestAnimationFrame(() => composerRef.current?.focus());
+
+		return () => cancelAnimationFrame(frame);
+	}, [isComposing]);
+
+	const submitTask = () => {
+		const trimmed = draftTitle.trim();
+
+		if (trimmed === "") return;
+
+		setDraftTitle("");
+		setIsComposing(false);
+
+		startTransition(async () => {
+			addOptimisticTask({
+				id: `pending-${crypto.randomUUID()}`,
+				title: trimmed,
+			});
+
+			await createTask({
+				listId: list.id,
+				data: { title: trimmed, priority: "none" },
+			}).catch(() => null);
+		});
+	};
+
+	const cancelComposing = () => {
+		setDraftTitle("");
+		setIsComposing(false);
+	};
+
 	const [isEditing, setIsEditing] = useState(false);
 	const [draftName, setDraftName] = useState(list.name);
 	const [confirmOpen, setConfirmOpen] = useState(false);
@@ -96,7 +151,7 @@ export function ListCard({
 	};
 
 	return (
-		<section className="flex max-h-full w-full shrink-0 cursor-default snap-start flex-col rounded-xl border bg-card sm:w-72">
+		<section className="group flex max-h-full w-full shrink-0 cursor-default snap-start flex-col rounded-xl border bg-card sm:w-72">
 			<header className="flex shrink-0 items-center gap-2 border-b p-3">
 				<GripVertical className="size-4 shrink-0 cursor-grab text-muted-foreground" />
 
@@ -157,8 +212,8 @@ export function ListCard({
 
 						<DropdownMenuContent align="end" className="w-40">
 							<DropdownMenuItem
-								onSelect={() => setConfirmOpen(true)}
 								variant="destructive"
+								onSelect={() => setConfirmOpen(true)}
 							>
 								<Trash2 />
 								Delete list
@@ -169,16 +224,69 @@ export function ListCard({
 			</header>
 
 			<div className="board-scrollbar min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
-				{tasks.length === 0 ? (
-					<div className="rounded-lg border border-dashed py-8 text-center">
-						<p className="text-xs text-muted-foreground">No tasks yet</p>
+				{optimisticTasks.map((task) => (
+					<TaskCard
+						key={task.id}
+						task={task}
+						isPending={task.id.startsWith("pending-")}
+					/>
+				))}
+
+				{isComposing && (
+					<div className="rounded-lg border border-l-4 bg-background p-2">
+						<Input
+							ref={composerRef}
+							value={draftTitle}
+							onChange={(event) => setDraftTitle(event.target.value)}
+							onKeyDown={(event) => {
+								if (event.key === "Enter") {
+									event.preventDefault();
+									submitTask();
+								}
+
+								if (event.key === "Escape") {
+									event.preventDefault();
+									cancelComposing();
+								}
+							}}
+							placeholder="Card title..."
+							aria-label={`New card title in ${list.name}`}
+							maxLength={200}
+							className="h-8 text-sm"
+						/>
+
+						<div className="mt-2 flex items-center gap-2">
+							<Button type="button" size="sm" onClick={submitTask}>
+								Add
+							</Button>
+
+							<Button
+								type="button"
+								size="sm"
+								variant="ghost"
+								onClick={cancelComposing}
+							>
+								Cancel
+							</Button>
+						</div>
 					</div>
-				) : (
-					tasks.map((task) => (
-						<TaskCard key={task.id} task={task} listType={list.type} />
-					))
 				)}
 			</div>
+
+			{!isComposing && (
+				<div className="shrink-0 px-3 pb-3">
+					<Button
+						type="button"
+						variant="outline"
+						size="sm"
+						onClick={() => setIsComposing(true)}
+						className="w-full opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
+					>
+						<Plus />
+						Create card
+					</Button>
+				</div>
+			)}
 
 			<AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
 				<AlertDialogContent>
@@ -198,6 +306,7 @@ export function ListCard({
 						<AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
 
 						<AlertDialogAction
+							variant="destructive"
 							disabled={isDeleting}
 							onClick={async (event) => {
 								event.preventDefault();

@@ -1,3 +1,5 @@
+"use server";
+
 import { revalidatePath } from "next/cache";
 import { createActivity } from "../activity";
 import { getCurrentUser } from "../auth";

@@ -3,10 +3,12 @@
 import { useDragScroll } from "@/hooks/use-drag-scroll";
 import { useProject } from "@/hooks/use-project";
 import { cn } from "@/lib/utils";
+import { useUIStore } from "@/stores/ui-store";
 import type { ProjectDetail } from "@/types/projects";
 import { CreateListButton } from "./create-list-button";
 import { CreateListDialog } from "./create-list-dialog";
 import { ListCard } from "./list-card";
+import { TaskDetailsDialog } from "./task-details-dialog";
 
 type KanbanBoardProps = {
 	workspaceSlug: string;
@@ -30,6 +32,17 @@ export function KanbanBoard({
 	const lists = [...project.lists].sort((a, b) => a.position - b.position);
 
 	const { ref, isDragging, dragHandlers } = useDragScroll<HTMLDivElement>();
+
+	const openTaskId = useUIStore((state) => state.openTaskId);
+
+	const openListEntry = lists
+		.map((list) => ({
+			list,
+			task: list.tasks.find((task) => task.id === openTaskId),
+		}))
+		.find((entry) => entry.task);
+
+	const openTask = openListEntry?.task ?? null;
 
 	return (
 		<>
@@ -60,6 +73,14 @@ export function KanbanBoard({
 					projectSlug={projectSlug}
 				/>
 			)}
+
+			<TaskDetailsDialog
+				task={openTask}
+				members={project.members}
+				listName={openListEntry?.list.name ?? ""}
+				workspaceSlug={workspaceSlug}
+				projectSlug={projectSlug}
+			/>
 		</>
 	);
 }

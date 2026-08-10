@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/dist/server/web/spec-extension/revalidate";
+import { revalidatePath } from "next/cache";
 import { createActivity } from "../activity";
 import { getCurrentUser } from "../auth";
 import {
@@ -11,11 +11,11 @@ import {
 	updateTaskPosition,
 } from "../db/queries/tasks";
 import {
+	isWorkspaceMember,
 	requireActiveProject,
 	requireList,
 	requireProjectMember,
 	requireTask,
-	requireWorkspaceMember,
 } from "../permission";
 import {
 	type CreateTaskInput,
@@ -24,7 +24,7 @@ import {
 	updateTaskSchema,
 } from "../validations/task";
 
-export async function getTasksByListAction(
+export async function getTasksByListBySlug(
 	workspaceSlug: string,
 	projectSlug: string,
 	listId: string,
@@ -42,7 +42,7 @@ export async function getTasksByListAction(
 	if (list.projectId !== project.id) {
 		return {
 			success: false,
-			error: "List does not belong to the project.",
+			message: "List does not belong to the project.",
 		};
 	}
 
@@ -67,7 +67,7 @@ export async function createTaskAction(
 	if (!validatedData.success) {
 		return {
 			success: false,
-			error: "Invalid task data.",
+			message: "Invalid task data.",
 		};
 	}
 
@@ -82,12 +82,22 @@ export async function createTaskAction(
 	if (list.projectId !== project.id) {
 		return {
 			success: false,
-			error: "List does not belong to the project.",
+			message: "List does not belong to the project.",
 		};
 	}
 
 	if (validatedData.data.assigneeId) {
-		await requireWorkspaceMember(workspaceSlug, validatedData.data.assigneeId);
+		const assigneeIsMember = await isWorkspaceMember(
+			project.workspaceId,
+			validatedData.data.assigneeId,
+		);
+
+		if (!assigneeIsMember) {
+			return {
+				success: false,
+				message: "Assignee is not a member of this workspace.",
+			};
+		}
 	}
 
 	const task = await createTask(listId, user.id, validatedData.data);
@@ -105,7 +115,7 @@ export async function createTaskAction(
 		},
 	});
 
-	revalidatePath(`/workspaces/${workspaceSlug}/projects/${project.slug}`);
+	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
 	return {
 		success: true,
@@ -126,7 +136,7 @@ export async function updateTaskAction(
 	if (!validatedData.success) {
 		return {
 			success: false,
-			error: "Invalid task data.",
+			message: "Invalid task data.",
 		};
 	}
 
@@ -143,8 +153,22 @@ export async function updateTaskAction(
 	if (list?.projectId !== project.id) {
 		return {
 			success: false,
-			error: "Task does not belong to the project.",
+			message: "Task does not belong to the project.",
 		};
+	}
+
+	if (validatedData.data.assigneeId) {
+		const assigneeIsMember = await isWorkspaceMember(
+			project.workspaceId,
+			validatedData.data.assigneeId,
+		);
+
+		if (!assigneeIsMember) {
+			return {
+				success: false,
+				message: "Assignee is not a member of this workspace.",
+			};
+		}
 	}
 
 	const updatedTask = await updateTask(task.id, validatedData.data);
@@ -164,7 +188,7 @@ export async function updateTaskAction(
 		},
 	});
 
-	revalidatePath(`/workspaces/${workspaceSlug}/projects/${project.slug}`);
+	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
 	return {
 		success: true,
@@ -192,7 +216,7 @@ export async function deleteTaskAction(
 	if (list?.projectId !== project.id) {
 		return {
 			success: false,
-			error: "Task does not belong to the project.",
+			message: "Task does not belong to the project.",
 		};
 	}
 
@@ -211,7 +235,7 @@ export async function deleteTaskAction(
 		},
 	});
 
-	revalidatePath(`/workspaces/${workspaceSlug}/projects/${project.slug}`);
+	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
 	return {
 		success: true,
@@ -246,7 +270,7 @@ export async function moveTaskAction(
 	) {
 		return {
 			success: false,
-			error: "Task does not belong to the project.",
+			message: "Task does not belong to the project.",
 		};
 	}
 
@@ -269,5 +293,5 @@ export async function moveTaskAction(
 		},
 	});
 
-	revalidatePath(`/workspaces/${workspaceSlug}/projects/${project.slug}`);
+	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 }

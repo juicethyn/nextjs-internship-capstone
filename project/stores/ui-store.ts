@@ -11,6 +11,10 @@ type UIStore = {
 	openCreateList: () => void;
 	closeCreateList: () => void;
 	setCreateListOpen: (open: boolean) => void;
+
+	openTaskId: string | null;
+	openTaskDetails: (taskId: string) => void;
+	closeTaskDetails: () => void;
 };
 
 export const useUIStore = create<UIStore>((set) => ({
@@ -45,5 +49,17 @@ export const useUIStore = create<UIStore>((set) => ({
 	setCreateListOpen: (open) =>
 		set({
 			isCreateListOpen: open,
+		}),
+
+	openTaskId: null,
+
+	openTaskDetails: (taskId) =>
+		set({
+			openTaskId: taskId,
+		}),
+
+	closeTaskDetails: () =>
+		set({
+			openTaskId: null,
 		}),
 }));

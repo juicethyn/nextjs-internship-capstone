@@ -86,7 +86,17 @@ export function getProjectBySlugWithRelations(
 	return db.query.projects.findFirst({
 		where: and(eq(projects.workspaceId, workspaceId), eq(projects.slug, slug)),
 		with: {
-			lists: { with: { tasks: true } },
+			lists: {
+				with: {
+					tasks: {
+						with: {
+							assignee: true,
+							taskLabels: { with: { taskLabel: true } },
+							comments: { columns: { id: true } },
+						},
+					},
+				},
+			},
 			members: {
 				with: {
 					user: true,
