@@ -39,7 +39,6 @@ import {
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
-import { ScrollArea } from "../ui/scroll-area";
 import { PRIORITY_ICON_STYLES, PRIORITY_LABELS } from "./priority-badge";
 import { RichTextEditor } from "./rich-text-editor";
 
@@ -190,7 +189,7 @@ export function TaskDetailsDialog({
 					</DialogDescription>
 				</DialogHeader>
 
-				<ScrollArea className="min-h-0 flex-1">
+				<div className="board-scrollbar min-h-0 flex-1 overflow-y-auto">
 					<div className="min-w-0 space-y-4 px-4 py-4">
 						<Input
 							value={title}
@@ -415,7 +414,7 @@ export function TaskDetailsDialog({
 							<RichTextEditor content={description} onChange={setDescription} />
 						</div>
 					</div>
-				</ScrollArea>
+				</div>
 
 				<DialogFooter className="m-0 shrink-0 rounded-b-xl border-t px-4 py-3 sm:justify-between">
 					<Button

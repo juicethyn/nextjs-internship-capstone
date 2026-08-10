@@ -64,7 +64,7 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
 
 	return (
 		<div className="overflow-hidden rounded-lg border bg-background focus-within:border-ring">
-			<div className="flex items-center gap-1 border-b p-1">
+			<div className="flex shrink-0 items-center gap-1 border-b p-1">
 				{toolbar.map((item) => (
 					<Button
 						key={item.label}
