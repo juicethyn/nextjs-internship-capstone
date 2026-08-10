@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/dist/server/web/spec-extension/revalidate";
+import { revalidatePath } from "next/cache";
 import { treeifyError } from "zod/v4/core";
 import { createActivity } from "../activity";
 import { getCurrentUser } from "../auth";
@@ -10,12 +10,20 @@ import {
 	getListsByProject,
 	updateList,
 } from "../db/queries/lists";
-import { requireActiveProject, requireList } from "../permission";
+import {
+	isProjectListManager,
+	requireActiveProject,
+	requireList,
+} from "../permission";
 import {
 	type CreateListInput,
 	createListSchema,
 	type UpdateListInput,
+	updateListSchema,
 } from "../validations/list";
+
+const FORBIDDEN_MESSAGE =
+	"Only the project lead or a workspace owner/admin can manage lists.";
 
 export async function createListAction(
 	workspaceSlug: string,
@@ -39,6 +47,19 @@ export async function createListAction(
 		user.id,
 	);
 
+	const canManage = await isProjectListManager(
+		project.workspaceId,
+		project.leadId,
+		user.id,
+	);
+
+	if (!canManage) {
+		return {
+			success: false,
+			message: FORBIDDEN_MESSAGE,
+		};
+	}
+
 	const list = await createList(project.id, validatedDate.data);
 
 	await createActivity({
@@ -52,7 +73,7 @@ export async function createListAction(
 		},
 	});
 
-	revalidatePath(`/workspaces/${workspaceSlug}/projects/${project.slug}`);
+	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
 	return { success: true, data: list };
 }
@@ -65,7 +86,7 @@ export async function updateListAction(
 ) {
 	const user = await getCurrentUser();
 
-	const validatedData = createListSchema.safeParse(data);
+	const validatedData = updateListSchema.safeParse(data);
 
 	if (!validatedData.success) {
 		return {
@@ -80,12 +101,25 @@ export async function updateListAction(
 		user.id,
 	);
 
+	const canManage = await isProjectListManager(
+		project.workspaceId,
+		project.leadId,
+		user.id,
+	);
+
+	if (!canManage) {
+		return {
+			success: false,
+			message: FORBIDDEN_MESSAGE,
+		};
+	}
+
 	const list = await requireList(listId);
 
 	if (list.projectId !== project.id) {
 		return {
 			success: false,
-			error: "Invalid list.",
+			message: "Invalid list.",
 		};
 	}
 
@@ -94,7 +128,7 @@ export async function updateListAction(
 	if (!updatedList) {
 		return {
 			success: false,
-			error: "Failed to update list.",
+			message: "Failed to update list.",
 		};
 	}
 
@@ -109,7 +143,7 @@ export async function updateListAction(
 		},
 	});
 
-	revalidatePath(`/workspaces/${workspaceSlug}/projects/${project.slug}`);
+	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
 	return {
 		success: true,
@@ -130,12 +164,32 @@ export async function deleteListAction(
 		user.id,
 	);
 
+	const canManage = await isProjectListManager(
+		project.workspaceId,
+		project.leadId,
+		user.id,
+	);
+
+	if (!canManage) {
+		return {
+			success: false,
+			message: FORBIDDEN_MESSAGE,
+		};
+	}
+
 	const list = await requireList(listId);
 
 	if (list.projectId !== project.id) {
 		return {
 			success: false,
-			error: "Invalid list.",
+			message: "Invalid list.",
+		};
+	}
+
+	if (list.type === "done") {
+		return {
+			success: false,
+			message: "The Done list cannot be deleted.",
 		};
 	}
 
@@ -152,7 +206,7 @@ export async function deleteListAction(
 		},
 	});
 
-	revalidatePath(`/workspaces/${workspaceSlug}/projects/${project.slug}`);
+	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
 	return {
 		success: true,
@@ -160,7 +214,7 @@ export async function deleteListAction(
 	};
 }
 
-export async function getListsByProjectAction(
+export async function getListsByProjectBySlug(
 	workspaceSlug: string,
 	projectSlug: string,
 ) {

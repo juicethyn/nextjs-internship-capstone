@@ -1,4 +1,4 @@
-import { asc, eq } from "drizzle-orm";
+import { asc, eq, max } from "drizzle-orm";
 import type { CreateListInput, UpdateListInput } from "@/lib/validations/list";
 import type { DbClient } from "@/types/db";
 import { db } from "../index";
@@ -10,14 +10,25 @@ export const DEFAULT_LISTS = [
 	{ name: "Done", type: "done", position: 3000 },
 ] as const;
 
+const LIST_POSITION_STEP = 1000;
+
 export async function createList(
 	projectId: string,
 	data: CreateListInput,
 	dbClient: DbClient = db,
 ) {
+	const [{ maxPosition }] = await dbClient
+		.select({ maxPosition: max(lists.position) })
+		.from(lists)
+		.where(eq(lists.projectId, projectId));
+
 	const [list] = await dbClient
 		.insert(lists)
-		.values({ ...data, projectId, position: 1000 })
+		.values({
+			...data,
+			projectId,
+			position: (maxPosition ?? 0) + LIST_POSITION_STEP,
+		})
 		.returning();
 	return list;
 }

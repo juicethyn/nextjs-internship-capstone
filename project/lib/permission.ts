@@ -150,6 +150,20 @@ export async function requireActiveProject(
 
 // Lists Permissions
 
+export async function isProjectListManager(
+	workspaceId: string,
+	projectLeadId: string | null,
+	userId: string,
+) {
+	if (projectLeadId === userId) {
+		return true;
+	}
+
+	const member = await getWorkspaceMemberById(workspaceId, userId);
+
+	return member?.role === "owner" || member?.role === "admin";
+}
+
 export async function requireList(listId: string) {
 	const list = await getListById(listId);
 

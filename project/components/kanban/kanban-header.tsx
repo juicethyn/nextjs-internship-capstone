@@ -31,24 +31,7 @@ export function KanbanHeader({
 	const openProjectDetails = useUIStore((state) => state.openProjectDetails);
 
 	return (
-		<div
-			className="
-				sticky
-				top-0
-				z-10
-				-mx-4
-				-mt-8
-				space-y-3
-				border-b
-				bg-background
-				px-4
-				py-4
-				sm:-mx-6
-				sm:px-6
-				lg:-mx-8
-				lg:px-8
-			"
-		>
+		<div className="sticky top-0 z-10 w-full min-w-0 space-y-3 border-b bg-background py-4">
 			<Link
 				href={`/w/${workspaceSlug}/projects`}
 				className="inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
@@ -57,15 +40,18 @@ export function KanbanHeader({
 				Back to Projects
 			</Link>
 
-			<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-				<button
+			<div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+				{/* Project Info */}
+				<Button
 					type="button"
+					variant="ghost"
 					onClick={openProjectDetails}
 					aria-label={`View details for ${project.name}`}
 					className="
 						-mx-2
 						flex
 						min-w-0
+						max-w-full
 						items-center
 						gap-2.5
 						rounded-lg
@@ -85,32 +71,37 @@ export function KanbanHeader({
 						size="sm"
 					/>
 
-					<h1 className="truncate text-base font-semibold sm:text-lg">
+					<h1 className="min-w-0 flex-1 truncate text-base font-semibold sm:text-lg">
 						{project.name}
 					</h1>
 
-					<ProjectStatusBadge status={project.status} />
-				</button>
+					<div className="shrink-0">
+						<ProjectStatusBadge status={project.status} />
+					</div>
+				</Button>
 
-				<div className="flex shrink-0 items-center gap-2">
+				{/* Actions */}
+				<div className="flex min-w-0 items-center justify-between gap-2 sm:justify-end">
 					<MemberAvatarStack
 						members={project.members.map((member) => member.user)}
 					/>
 
-					<Button variant="outline" size="sm">
-						<UserPlus />
-						<span className="hidden sm:inline">Invite</span>
-					</Button>
+					<div className="flex shrink-0 items-center gap-2">
+						<Button variant="outline" size="sm">
+							<UserPlus className="size-4" />
+							<span className="hidden sm:inline">Invite</span>
+						</Button>
 
-					<Button variant="outline" size="sm">
-						<ArrowUpDown />
-						<span className="hidden sm:inline">Sort</span>
-					</Button>
+						<Button variant="outline" size="sm">
+							<ArrowUpDown className="size-4" />
+							<span className="hidden sm:inline">Sort</span>
+						</Button>
 
-					<Button variant="outline" size="sm">
-						<Settings />
-						<span className="hidden sm:inline">Settings</span>
-					</Button>
+						<Button variant="outline" size="sm">
+							<Settings className="size-4" />
+							<span className="hidden sm:inline">Settings</span>
+						</Button>
+					</div>
 				</div>
 			</div>
 

@@ -69,7 +69,7 @@ export function ProjectCard({
 				<div className="flex min-w-0 items-center gap-2.5">
 					<WorkspaceAvatar name={name} color={color} size="sm" />
 
-					<h3 className="truncate text-sm font-semibold">{name}</h3>
+					<h3 className="min-w-0 truncate text-sm font-semibold">{name}</h3>
 				</div>
 
 				<ProjectStatusBadge status={status} />
