@@ -63,7 +63,7 @@ export function ProjectCard({
 	const statusStyle = PROJECT_STATUS_STYLES[status];
 	const visibleLabels = labels.slice(0, MAX_VISIBLE_LABELS);
 	const remainingLabels = labels.length - visibleLabels.length;
-	const trimmedDescription = description?.trim();
+	const trimmedDescription = description?.trim() || null;
 
 	return (
 		<Link
@@ -111,10 +111,8 @@ export function ProjectCard({
 			<div className="space-y-2.5">
 				<p
 					className={cn(
-						"h-10 text-xs leading-relaxed text-muted-foreground",
-						trimmedDescription
-							? "line-clamp-2 wrap-break-word"
-							: "italic opacity-60",
+						"h-5 truncate text-xs leading-relaxed text-muted-foreground",
+						!trimmedDescription && "italic opacity-60",
 					)}
 				>
 					{trimmedDescription ?? "No description yet"}
