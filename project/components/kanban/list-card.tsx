@@ -1,5 +1,12 @@
 "use client";
 
+import { useDroppable } from "@dnd-kit/core";
+import {
+	SortableContext,
+	useSortable,
+	verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, MoreHorizontal, Plus, Trash2 } from "lucide-react";
 import {
 	startTransition,
@@ -31,6 +38,7 @@ import {
 	DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { Input } from "../ui/input";
+import { SortableTaskCard } from "./sortable-task-card";
 import { TaskCard } from "./task-card";
 
 type KanbanList = ProjectDetail["lists"][number];
@@ -51,6 +59,26 @@ export function ListCard({
 	const typeStyle = LIST_TYPE_STYLES[list.type];
 	const tasks = [...list.tasks].sort((a, b) => a.position - b.position);
 	const canDelete = list.type !== "done";
+
+	const {
+		attributes,
+		listeners,
+		setNodeRef,
+		transform,
+		transition,
+		isDragging,
+	} = useSortable({
+		id: list.id,
+		disabled: !canManage,
+		data: { type: "list", list },
+	});
+
+	// An empty list has no sortable children to collide with, so the body itself
+	// has to be a drop target or cards could never be dropped into it.
+	const { setNodeRef: setDroppableRef } = useDroppable({
+		id: `list-body-${list.id}`,
+		data: { type: "list-body", listId: list.id },
+	});
 
 	const { updateList, deleteList, isDeleting } = useLists({
 		workspaceSlug,
@@ -151,9 +179,28 @@ export function ListCard({
 	};
 
 	return (
-		<section className="group flex max-h-full w-full shrink-0 cursor-default snap-start flex-col rounded-xl border bg-card sm:w-72">
+		<section
+			ref={setNodeRef}
+			style={{ transform: CSS.Translate.toString(transform), transition }}
+			{...attributes}
+			className={cn(
+				"group flex max-h-full w-full shrink-0 cursor-default snap-start flex-col rounded-xl border bg-card sm:w-72",
+				isDragging && "opacity-40",
+			)}
+		>
 			<header className="flex shrink-0 items-center gap-2 border-b p-3">
-				<GripVertical className="size-4 shrink-0 cursor-grab text-muted-foreground" />
+				{/* Listeners live on the handle only, so renaming and the dropdown
+				    still work without starting a drag. */}
+				<GripVertical
+					{...(canManage ? listeners : {})}
+					aria-label={canManage ? `Reorder ${list.name}` : undefined}
+					className={cn(
+						"size-4 shrink-0 text-muted-foreground",
+						canManage
+							? "cursor-grab touch-none active:cursor-grabbing"
+							: "opacity-40",
+					)}
+				/>
 
 				<span
 					className={cn("size-2 shrink-0 rounded-full", typeStyle.accent)}
@@ -223,14 +270,26 @@ export function ListCard({
 				)}
 			</header>
 
-			<div className="board-scrollbar min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
-				{optimisticTasks.map((task) => (
-					<TaskCard
-						key={task.id}
-						task={task}
-						isPending={task.id.startsWith("pending-")}
-					/>
-				))}
+			<div
+				ref={setDroppableRef}
+				className="board-scrollbar min-h-16 flex-1 space-y-2 overflow-y-auto p-3"
+			>
+				{/* Only real tasks go into the sortable set — the useOptimistic
+				    placeholders have no persisted id for dnd-kit to track. */}
+				<SortableContext
+					items={tasks.map((task) => task.id)}
+					strategy={verticalListSortingStrategy}
+				>
+					{tasks.map((task) => (
+						<SortableTaskCard key={task.id} task={task} listId={list.id} />
+					))}
+				</SortableContext>
+
+				{optimisticTasks
+					.filter((task) => task.id.startsWith("pending-"))
+					.map((task) => (
+						<TaskCard key={task.id} task={task} isPending />
+					))}
 
 				{isComposing && (
 					<div className="rounded-lg border border-l-4 bg-background p-2">

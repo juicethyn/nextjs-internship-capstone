@@ -1,4 +1,8 @@
-import { eq, max } from "drizzle-orm";
+import { asc, eq, max } from "drizzle-orm";
+import {
+	buildRebalancedPositions,
+	needsRebalance,
+} from "@/lib/utils/positioning";
 import type { CreateTaskInput, UpdateTaskInput } from "../../validations/task";
 import { db } from "../index";
 import { tasks } from "../schema";
@@ -92,6 +96,39 @@ export async function updateTaskPosition(
 		.where(eq(tasks.id, taskId))
 		.returning();
 	return task;
+}
+
+// Counterpart to rebalanceListPositionsIfNeeded, scoped to one list's cards.
+export async function rebalanceTaskPositionsIfNeeded(listId: string) {
+	const current = await db
+		.select({ id: tasks.id, position: tasks.position })
+		.from(tasks)
+		.where(eq(tasks.listId, listId))
+		.orderBy(asc(tasks.position));
+
+	const hasCollapsedGap = current.some(
+		(task, index) =>
+			index > 0 && needsRebalance(current[index - 1].position, task.position),
+	);
+
+	if (!hasCollapsedGap) {
+		return false;
+	}
+
+	const positions = buildRebalancedPositions(current.length);
+
+	await db.transaction(async (tx) => {
+		await Promise.all(
+			current.map((task, index) =>
+				tx
+					.update(tasks)
+					.set({ position: positions[index] })
+					.where(eq(tasks.id, task.id)),
+			),
+		);
+	});
+
+	return true;
 }
 
 export async function completeTask(taskId: string) {

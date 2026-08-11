@@ -1,8 +1,8 @@
 import {
 	type AnyPgColumn,
 	boolean,
+	doublePrecision,
 	index,
-	integer,
 	jsonb,
 	pgEnum,
 	pgTable,
@@ -262,7 +262,9 @@ export const lists = pgTable(
 			.notNull()
 			.references(() => projects.id, { onDelete: "cascade" }),
 		name: text("name").notNull(),
-		position: integer("position").notNull(),
+		// Fractional: a reordered row takes the midpoint of its new neighbours,
+		// so only that one row is rewritten on a drag.
+		position: doublePrecision("position").notNull(),
 		type: listTypeEnum("type").notNull().default("todo"),
 		createdAt: timestamp("created_at").notNull().defaultNow(),
 		updatedAt: timestamp("updated_at")
@@ -291,7 +293,8 @@ export const tasks = pgTable(
 			.notNull()
 			.references(() => users.id, { onDelete: "restrict" }),
 		priority: priorityEnum("priority").notNull(),
-		position: integer("position").notNull(),
+		// Fractional — see the note on lists.position.
+		position: doublePrecision("position").notNull(),
 		startDate: timestamp("start_date"),
 		dueDate: timestamp("due_date"),
 		completedAt: timestamp("completed_at"),

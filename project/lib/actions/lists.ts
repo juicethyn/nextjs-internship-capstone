@@ -8,7 +8,9 @@ import {
 	createList,
 	deleteList,
 	getListsByProject,
+	rebalanceListPositionsIfNeeded,
 	updateList,
+	updateListPosition,
 } from "../db/queries/lists";
 import { syncProjectCompletionStatus } from "../db/queries/projects";
 import {
@@ -218,6 +220,62 @@ export async function deleteListAction(
 	return {
 		success: true,
 		data: deletedList,
+	};
+}
+
+export async function moveListAction(
+	workspaceSlug: string,
+	projectSlug: string,
+	listId: string,
+	position: number,
+) {
+	const user = await getCurrentUser();
+
+	if (!Number.isFinite(position)) {
+		return {
+			success: false,
+			message: "Invalid list position.",
+		};
+	}
+
+	const project = await requireActiveProject(
+		workspaceSlug,
+		projectSlug,
+		user.id,
+	);
+
+	const canManage = await isProjectManager(
+		project.workspaceId,
+		project.leadId,
+		user.id,
+	);
+
+	if (!canManage) {
+		return {
+			success: false,
+			message: FORBIDDEN_MESSAGE,
+		};
+	}
+
+	const list = await requireList(listId);
+
+	if (list.projectId !== project.id) {
+		return {
+			success: false,
+			message: "Invalid list.",
+		};
+	}
+
+	const movedList = await updateListPosition(listId, position);
+
+	// Self-heals if repeated midpoint splits ever collapse a gap.
+	await rebalanceListPositionsIfNeeded(project.id);
+
+	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
+
+	return {
+		success: true,
+		data: movedList,
 	};
 }
 

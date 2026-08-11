@@ -8,6 +8,7 @@ import {
 	createTask,
 	deleteTask,
 	getTasksByList,
+	rebalanceTaskPositionsIfNeeded,
 	updateTask,
 	updateTaskPosition,
 } from "../db/queries/tasks";
@@ -257,6 +258,13 @@ export async function moveTaskAction(
 ) {
 	const user = await getCurrentUser();
 
+	if (!Number.isFinite(newPosition)) {
+		return {
+			success: false,
+			message: "Invalid task position.",
+		};
+	}
+
 	const project = await requireActiveProject(
 		workspaceSlug,
 		projectSlug,
@@ -284,6 +292,9 @@ export async function moveTaskAction(
 		destinationListId,
 		newPosition,
 	);
+
+	// Self-heals if repeated midpoint splits ever collapse a gap.
+	await rebalanceTaskPositionsIfNeeded(destinationListId);
 
 	await syncProjectCompletionStatus(project.id);
 

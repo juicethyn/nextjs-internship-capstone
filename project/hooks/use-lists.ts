@@ -5,9 +5,12 @@ import { toast } from "sonner";
 import {
 	createListAction,
 	deleteListAction,
+	moveListAction,
 	updateListAction,
 } from "@/lib/actions/lists";
+import { applyListMove } from "@/lib/utils/board-dnd";
 import type { CreateListInput, UpdateListInput } from "@/lib/validations/list";
+import type { ProjectDetail } from "@/types/projects";
 
 interface UseListsProps {
 	workspaceSlug: string;
@@ -21,10 +24,9 @@ function toMessage(message: unknown, fallback: string) {
 export function useLists({ workspaceSlug, projectSlug }: UseListsProps) {
 	const queryClient = useQueryClient();
 
-	const invalidateProject = () =>
-		queryClient.invalidateQueries({
-			queryKey: ["project", workspaceSlug, projectSlug],
-		});
+	const queryKey = ["project", workspaceSlug, projectSlug];
+
+	const invalidateProject = () => queryClient.invalidateQueries({ queryKey });
 
 	const createMutation = useMutation({
 		mutationFn: (data: CreateListInput) =>
@@ -83,9 +85,49 @@ export function useLists({ workspaceSlug, projectSlug }: UseListsProps) {
 		},
 	});
 
+	// Silent on success — a toast on every drag would be unbearable. The board
+	// already shows the result, so only failures need to speak up.
+	const moveMutation = useMutation({
+		mutationFn: ({ listId, position }: { listId: string; position: number }) =>
+			moveListAction(workspaceSlug, projectSlug, listId, position),
+
+		onMutate: async ({ listId, position }) => {
+			// Stop an in-flight refetch from resolving after our optimistic write
+			// and snapping the list back.
+			await queryClient.cancelQueries({ queryKey });
+
+			const previous = queryClient.getQueryData<ProjectDetail>(queryKey);
+
+			queryClient.setQueryData<ProjectDetail>(queryKey, (current) =>
+				current ? applyListMove(current, listId, position) : current,
+			);
+
+			return { previous };
+		},
+
+		onError: (_error, _variables, context) => {
+			if (context?.previous) {
+				queryClient.setQueryData(queryKey, context.previous);
+			}
+
+			toast.error("Failed to move list.");
+		},
+
+		onSuccess: (result) => {
+			if (!result.success) {
+				toast.error(toMessage(result.message, "Failed to move list."));
+			}
+		},
+
+		onSettled: () => invalidateProject(),
+	});
+
 	return {
 		createList: createMutation.mutateAsync,
 		isCreating: createMutation.isPending,
+
+		moveList: moveMutation.mutateAsync,
+		isMoving: moveMutation.isPending,
 
 		updateList: updateMutation.mutateAsync,
 		isUpdating: updateMutation.isPending,

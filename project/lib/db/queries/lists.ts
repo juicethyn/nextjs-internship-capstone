@@ -1,4 +1,8 @@
 import { asc, eq, max } from "drizzle-orm";
+import {
+	buildRebalancedPositions,
+	needsRebalance,
+} from "@/lib/utils/positioning";
 import type { CreateListInput, UpdateListInput } from "@/lib/validations/list";
 import type { DbClient } from "@/types/db";
 import { db } from "../index";
@@ -79,4 +83,39 @@ export async function updateListPosition(id: string, position: number) {
 		.where(eq(lists.id, id))
 		.returning();
 	return list;
+}
+
+// Escape hatch for when repeated midpoint splits exhaust the gap between two
+// lists. Runs after a move: if any adjacent pair has collapsed, renumber the
+// project's lists to clean 1000-steps, preserving the current order.
+export async function rebalanceListPositionsIfNeeded(projectId: string) {
+	const current = await db
+		.select({ id: lists.id, position: lists.position })
+		.from(lists)
+		.where(eq(lists.projectId, projectId))
+		.orderBy(asc(lists.position));
+
+	const hasCollapsedGap = current.some(
+		(list, index) =>
+			index > 0 && needsRebalance(current[index - 1].position, list.position),
+	);
+
+	if (!hasCollapsedGap) {
+		return false;
+	}
+
+	const positions = buildRebalancedPositions(current.length);
+
+	await db.transaction(async (tx) => {
+		await Promise.all(
+			current.map((list, index) =>
+				tx
+					.update(lists)
+					.set({ position: positions[index] })
+					.where(eq(lists.id, list.id)),
+			),
+		);
+	});
+
+	return true;
 }

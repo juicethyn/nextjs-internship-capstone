@@ -1,4 +1,4 @@
-import { and, count, eq, sql } from "drizzle-orm";
+import { and, asc, count, eq, sql } from "drizzle-orm";
 import { generateProjectSlug } from "@/lib/utils/slug";
 import type { CreateProjectInput } from "@/lib/validations/project";
 import type { DbClient } from "@/types/db";
@@ -83,9 +83,13 @@ export function getProjectBySlugWithRelations(
 	return db.query.projects.findFirst({
 		where: and(eq(projects.workspaceId, workspaceId), eq(projects.slug, slug)),
 		with: {
+			// Board order is position-driven, so hand back rows already sorted
+			// instead of relying on the client to re-sort every render.
 			lists: {
+				orderBy: asc(lists.position),
 				with: {
 					tasks: {
+						orderBy: asc(tasks.position),
 						with: {
 							assignee: true,
 							taskLabels: { with: { taskLabel: true } },
