@@ -6,21 +6,25 @@ import { useProject } from "@/hooks/use-project";
 import { useUIStore } from "@/stores/ui-store";
 import type { ProjectDetail } from "@/types/projects";
 import { ProjectStatusBadge } from "../project/project-status-badge";
+import { ProjectSettingsDialog } from "../project-settings/project-settings-dialog";
 import { Button } from "../ui/button";
 import { WorkspaceAvatar } from "../workspace-avatar";
 import { MemberAvatarStack } from "./member-avatar-stack";
 import { ProjectDetailsDialog } from "./project-details-dialog";
+import { ProjectInviteDialog } from "./project-invite-dialog";
 
 type KanbanHeaderProps = {
 	workspaceSlug: string;
 	projectSlug: string;
 	initialProject: ProjectDetail;
+	canManageProject: boolean;
 };
 
 export function KanbanHeader({
 	workspaceSlug,
 	projectSlug,
 	initialProject,
+	canManageProject,
 }: KanbanHeaderProps) {
 	const { project } = useProject({
 		workspaceSlug,
@@ -29,6 +33,8 @@ export function KanbanHeader({
 	});
 
 	const openProjectDetails = useUIStore((state) => state.openProjectDetails);
+	const openProjectInvite = useUIStore((state) => state.openProjectInvite);
+	const openProjectSettings = useUIStore((state) => state.openProjectSettings);
 
 	return (
 		<div className="sticky top-0 z-10 w-full min-w-0 space-y-3 border-b bg-background py-4">
@@ -87,7 +93,12 @@ export function KanbanHeader({
 					/>
 
 					<div className="flex shrink-0 items-center gap-2">
-						<Button variant="outline" size="sm">
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={openProjectInvite}
+							aria-label="Add members to this project"
+						>
 							<UserPlus className="size-4" />
 							<span className="hidden sm:inline">Invite</span>
 						</Button>
@@ -97,7 +108,12 @@ export function KanbanHeader({
 							<span className="hidden sm:inline">Sort</span>
 						</Button>
 
-						<Button variant="outline" size="sm">
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => openProjectSettings()}
+							aria-label="Open project settings"
+						>
 							<Settings className="size-4" />
 							<span className="hidden sm:inline">Settings</span>
 						</Button>
@@ -106,6 +122,20 @@ export function KanbanHeader({
 			</div>
 
 			<ProjectDetailsDialog project={project} />
+
+			<ProjectInviteDialog
+				project={project}
+				workspaceSlug={workspaceSlug}
+				projectSlug={projectSlug}
+				canManageProject={canManageProject}
+			/>
+
+			<ProjectSettingsDialog
+				project={project}
+				workspaceSlug={workspaceSlug}
+				projectSlug={projectSlug}
+				canManageProject={canManageProject}
+			/>
 		</div>
 	);
 }

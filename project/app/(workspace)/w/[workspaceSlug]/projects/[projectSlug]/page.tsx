@@ -3,7 +3,7 @@ import { KanbanBoard } from "@/components/kanban/kanban-board";
 import { KanbanHeader } from "@/components/kanban/kanban-header";
 import { getCurrentUser } from "@/lib/auth";
 import { getProjectBySlugWithRelations } from "@/lib/db/queries/projects";
-import { isProjectListManager, requireProjectMember } from "@/lib/permission";
+import { isProjectManager, requireProjectMember } from "@/lib/permission";
 
 type ProjectPageProps = {
 	params: Promise<{
@@ -32,7 +32,8 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
 		notFound();
 	}
 
-	const canManageLists = await isProjectListManager(
+	// Drives lists, members, settings, and the danger zone.
+	const canManageProject = await isProjectManager(
 		project.workspaceId,
 		project.leadId,
 		user.id,
@@ -45,6 +46,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
 					workspaceSlug={workspaceSlug}
 					projectSlug={projectSlug}
 					initialProject={project}
+					canManageProject={canManageProject}
 				/>
 			</div>
 
@@ -53,7 +55,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
 					workspaceSlug={workspaceSlug}
 					projectSlug={projectSlug}
 					initialProject={project}
-					canManageLists={canManageLists}
+					canManageLists={canManageProject}
 				/>
 			</div>
 		</div>

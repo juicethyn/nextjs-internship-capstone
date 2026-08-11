@@ -10,8 +10,9 @@ import {
 	getListsByProject,
 	updateList,
 } from "../db/queries/lists";
+import { syncProjectCompletionStatus } from "../db/queries/projects";
 import {
-	isProjectListManager,
+	isProjectManager,
 	requireActiveProject,
 	requireList,
 } from "../permission";
@@ -47,7 +48,7 @@ export async function createListAction(
 		user.id,
 	);
 
-	const canManage = await isProjectListManager(
+	const canManage = await isProjectManager(
 		project.workspaceId,
 		project.leadId,
 		user.id,
@@ -101,7 +102,7 @@ export async function updateListAction(
 		user.id,
 	);
 
-	const canManage = await isProjectListManager(
+	const canManage = await isProjectManager(
 		project.workspaceId,
 		project.leadId,
 		user.id,
@@ -131,6 +132,9 @@ export async function updateListAction(
 			message: "Failed to update list.",
 		};
 	}
+
+	// A list's type can flip to or from "done", which moves the done ratio.
+	await syncProjectCompletionStatus(project.id);
 
 	await createActivity({
 		workspaceId: project.workspaceId,
@@ -164,7 +168,7 @@ export async function deleteListAction(
 		user.id,
 	);
 
-	const canManage = await isProjectListManager(
+	const canManage = await isProjectManager(
 		project.workspaceId,
 		project.leadId,
 		user.id,
@@ -194,6 +198,9 @@ export async function deleteListAction(
 	}
 
 	const deletedList = await deleteList(listId);
+
+	// The list's tasks cascade away with it, which can change the done ratio.
+	await syncProjectCompletionStatus(project.id);
 
 	await createActivity({
 		workspaceId: project.workspaceId,

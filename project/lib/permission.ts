@@ -116,24 +116,36 @@ export async function requireProjectMember(
 	const member = await getProjectMember(project.id, userId);
 
 	if (!member) {
-		redirect(`/w/${workspaceSlug}/dashboard`);
+		// Workspace owners/admins oversee every project in their workspace, so they can view/manage projects even if they aren't explicitly added as project members.
+		const workspaceMember = await getWorkspaceMemberById(
+			project.workspaceId,
+			userId,
+		);
+
+		if (
+			workspaceMember?.role !== "owner" &&
+			workspaceMember?.role !== "admin"
+		) {
+			redirect(`/w/${workspaceSlug}/dashboard`);
+		}
 	}
 
 	return project;
 }
 
-export async function requireProjectLead(
-	workspaceSlug: string,
-	projectSlug: string,
+// Only the project lead or a workspace owner/admin can manage this project.
+export async function isProjectManager(
+	workspaceId: string,
+	projectLeadId: string | null,
 	userId: string,
 ) {
-	const project = await requireProjectBySlug(workspaceSlug, projectSlug);
-
-	if (project.leadId !== userId) {
-		redirect(`/w/${workspaceSlug}/dashboard`);
+	if (projectLeadId === userId) {
+		return true;
 	}
 
-	return project;
+	const member = await getWorkspaceMemberById(workspaceId, userId);
+
+	return member?.role === "owner" || member?.role === "admin";
 }
 
 export async function requireActiveProject(
@@ -155,20 +167,6 @@ export async function requireActiveProject(
 }
 
 // Lists Permissions
-
-export async function isProjectListManager(
-	workspaceId: string,
-	projectLeadId: string | null,
-	userId: string,
-) {
-	if (projectLeadId === userId) {
-		return true;
-	}
-
-	const member = await getWorkspaceMemberById(workspaceId, userId);
-
-	return member?.role === "owner" || member?.role === "admin";
-}
 
 export async function requireList(listId: string) {
 	const list = await getListById(listId);

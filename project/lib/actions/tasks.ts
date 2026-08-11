@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createActivity } from "../activity";
 import { getCurrentUser } from "../auth";
+import { syncProjectCompletionStatus } from "../db/queries/projects";
 import {
 	createTask,
 	deleteTask,
@@ -101,6 +102,8 @@ export async function createTaskAction(
 	}
 
 	const task = await createTask(listId, user.id, validatedData.data);
+
+	await syncProjectCompletionStatus(project.id);
 
 	await createActivity({
 		workspaceId: project.workspaceId,
@@ -222,6 +225,8 @@ export async function deleteTaskAction(
 
 	const deletedTask = await deleteTask(taskId);
 
+	await syncProjectCompletionStatus(project.id);
+
 	await createActivity({
 		workspaceId: project.workspaceId,
 		actorId: user.id,
@@ -274,16 +279,18 @@ export async function moveTaskAction(
 		};
 	}
 
-	const _moveTask = await updateTaskPosition(
+	const movedTask = await updateTaskPosition(
 		task.id,
 		destinationListId,
 		newPosition,
 	);
 
+	await syncProjectCompletionStatus(project.id);
+
 	await createActivity({
 		workspaceId: project.workspaceId,
 		actorId: user.id,
-		action: "deleted",
+		action: "moved",
 		entity: "task",
 		entityId: task.id,
 		metadata: {
@@ -294,4 +301,9 @@ export async function moveTaskAction(
 	});
 
 	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
+
+	return {
+		success: true,
+		data: movedTask,
+	};
 }

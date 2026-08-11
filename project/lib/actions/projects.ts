@@ -1,23 +1,39 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { treeifyError } from "zod/v4/core";
 import { createActivity } from "../activity";
 import { getCurrentUser } from "../auth";
 import { db } from "../db";
 import { createDefaultLists } from "../db/queries/lists";
 import { addProjectMember } from "../db/queries/projectMembers";
 import {
+	archiveProject,
 	createProject,
+	deleteProject,
 	getProjectBySlugWithRelations,
 	getProjectsByWorkspace,
+	restoreProject,
+	syncProjectCompletionStatus,
+	updateProject,
 } from "../db/queries/projects";
 import { setProjectLabels } from "../db/queries/projectWorkspaceLabels";
 import { getLabelsByWorkspace } from "../db/queries/workspaceLabels";
-import { requireProjectMember, requireWorkspaceMember } from "../permission";
+import {
+	isProjectManager,
+	requireActiveProject,
+	requireProjectMember,
+	requireWorkspaceMember,
+} from "../permission";
 import {
 	type CreateProjectInput,
 	createProjectSchema,
+	type ProjectGeneralSettingsInput,
+	projectGeneralSettingsSchema,
 } from "../validations/project";
+
+const FORBIDDEN_MESSAGE =
+	"Only the project lead or a workspace owner/admin can manage this project.";
 
 export async function getProjectsByWorkspaceBySlug(workspaceSlug: string) {
 	const user = await getCurrentUser();
@@ -122,189 +138,222 @@ export async function createProjectAction(
 	return { success: true, project, message: "Project created successfully!" };
 }
 
-// Not needed for now
+export async function updateProjectAction(
+	workspaceSlug: string,
+	projectSlug: string,
+	data: ProjectGeneralSettingsInput,
+) {
+	const user = await getCurrentUser();
 
-// export async function updateProjectAction(
-// 	workspaceSlug: string,
-// 	projectSlug: string,
-// 	data: UpdateProjectInput,
-// ) {
-// 	const user = await getCurrentUser();
+	const validatedData = projectGeneralSettingsSchema.safeParse(data);
 
-// 	const validatedData = createProjectSchema.safeParse(data);
+	if (!validatedData.success) {
+		return {
+			success: false,
+			message: treeifyError(validatedData.error),
+		};
+	}
 
-// 	if (!validatedData.success) {
-// 		return {
-// 			success: false,
-// 			message: treeifyError(validatedData.error),
-// 		};
-// 	}
+	const project = await requireActiveProject(
+		workspaceSlug,
+		projectSlug,
+		user.id,
+	);
 
-// 	const project = await requireProjectLead(workspaceSlug, projectSlug, user.id);
+	const canManage = await isProjectManager(
+		project.workspaceId,
+		project.leadId,
+		user.id,
+	);
 
-// 	const updatedProject = await updateProject(project.id, validatedData.data);
+	if (!canManage) {
+		return {
+			success: false,
+			message: FORBIDDEN_MESSAGE,
+		};
+	}
 
-// 	await createActivity({
-// 		workspaceId: project.workspaceId,
-// 		actorId: user.id,
-// 		action: "updated",
-// 		entity: "project",
-// 		entityId: project.id,
-// 		metadata: {
-// 			name: updatedProject.name,
-// 		},
-// 	});
+	const updatedProject = await updateProject(project.id, {
+		...validatedData.data,
+		description: validatedData.data.description || null,
+		startDate: validatedData.data.startDate ?? null,
+		dueDate: validatedData.data.dueDate ?? null,
+	});
 
-// 	revalidatePath(`/workspaces/${workspaceSlug}/projects/${projectSlug}`);
+	await createActivity({
+		workspaceId: project.workspaceId,
+		actorId: user.id,
+		action: "updated",
+		entity: "project",
+		entityId: project.id,
+		metadata: {
+			name: updatedProject.name,
+		},
+	});
 
-// 	return { success: true, project: updatedProject };
-// }
+	revalidatePath(`/w/${workspaceSlug}/projects`);
+	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
-// export async function deleteProjectAction(
-// 	workspaceSlug: string,
-// 	projectSlug: string,
-// ) {
-// 	const user = await getCurrentUser();
+	return {
+		success: true,
+		project: updatedProject,
+		message: "Project updated successfully!",
+	};
+}
 
-// 	const project = await requireProjectLead(workspaceSlug, projectSlug, user.id);
+export async function archiveProjectAction(
+	workspaceSlug: string,
+	projectSlug: string,
+) {
+	const user = await getCurrentUser();
 
-// 	await createActivity({
-// 		workspaceId: project.workspaceId,
-// 		actorId: user.id,
-// 		action: "deleted",
-// 		entity: "project",
-// 		entityId: project.id,
-// 		metadata: {
-// 			name: project.name,
-// 		},
-// 	});
+	const project = await requireActiveProject(
+		workspaceSlug,
+		projectSlug,
+		user.id,
+	);
 
-// 	await deleteProject(project.id);
+	const canManage = await isProjectManager(
+		project.workspaceId,
+		project.leadId,
+		user.id,
+	);
 
-// 	revalidatePath(`/workspaces/${workspaceSlug}`);
+	if (!canManage) {
+		return {
+			success: false,
+			message: FORBIDDEN_MESSAGE,
+		};
+	}
 
-// 	return {
-// 		success: true,
-// 		message: "Project deleted successfully",
-// 	};
-// }
+	const archivedProject = await archiveProject(project.id);
 
-// export async function transferProjectLeadAction(
-// 	workspaceSlug: string,
-// 	projectSlug: string,
-// 	newLeadId: string,
-// ) {
-// 	const user = await getCurrentUser();
+	await createActivity({
+		workspaceId: project.workspaceId,
+		actorId: user.id,
+		action: "archived",
+		entity: "project",
+		entityId: project.id,
+		metadata: {
+			name: project.name,
+		},
+	});
 
-// 	const project = await requireProjectLead(workspaceSlug, projectSlug, user.id);
+	revalidatePath(`/w/${workspaceSlug}/projects`);
+	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
-// 	const newLead = await getProjectMember(project.id, newLeadId);
+	return {
+		success: true,
+		project: archivedProject,
+		message: "Project archived.",
+	};
+}
 
-// 	if (!newLead) {
-// 		return {
-// 			success: false,
-// 			message: "User is not a member of the project",
-// 		};
-// 	}
+export async function restoreProjectAction(
+	workspaceSlug: string,
+	projectSlug: string,
+) {
+	const user = await getCurrentUser();
 
-// 	await transferProjectLead(project.id, newLeadId);
+	// Not requireActiveProject — the project being archived is the whole point.
+	const project = await requireProjectMember(
+		workspaceSlug,
+		projectSlug,
+		user.id,
+	);
 
-// 	await createActivity({
-// 		workspaceId: project.workspaceId,
-// 		actorId: user.id,
-// 		action: "transferred",
-// 		entity: "project",
-// 		entityId: project.id,
-// 		metadata: {
-// 			previousLeadId: user.id,
-// 			newLeadId,
-// 		},
-// 	});
+	const canManage = await isProjectManager(
+		project.workspaceId,
+		project.leadId,
+		user.id,
+	);
 
-// 	revalidatePath(`/workspaces/${workspaceSlug}/projects/${projectSlug}`);
+	if (!canManage) {
+		return {
+			success: false,
+			message: FORBIDDEN_MESSAGE,
+		};
+	}
 
-// 	return {
-// 		success: true,
-// 		message: "Project lead transferred successfully",
-// 	};
-// }
+	if (!project.isArchived) {
+		return {
+			success: false,
+			message: "Project is not archived.",
+		};
+	}
 
-// export async function archiveProjectAction(
-// 	workspaceSlug: string,
-// 	projectSlug: string,
-// ) {
-// 	const user = await getCurrentUser();
+	const restoredProject = await restoreProject(project.id);
 
-// 	const project = await requireProjectLead(workspaceSlug, projectSlug, user.id);
+	// restoreProject always writes "active"; re-derive so a fully-done project
+	// comes back as completed.
+	await syncProjectCompletionStatus(project.id);
 
-// 	if (project.isArchived) {
-// 		return {
-// 			success: false,
-// 			message: "Project is already archived",
-// 		};
-// 	}
+	await createActivity({
+		workspaceId: project.workspaceId,
+		actorId: user.id,
+		action: "restored",
+		entity: "project",
+		entityId: project.id,
+		metadata: {
+			name: project.name,
+		},
+	});
 
-// 	const archivedProject = await archiveProject(project.id);
+	revalidatePath(`/w/${workspaceSlug}/projects`);
+	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
-// 	await createActivity({
-// 		workspaceId: project.workspaceId,
-// 		actorId: user.id,
-// 		action: "archived",
-// 		entity: "project",
-// 		entityId: project.id,
-// 		metadata: {
-// 			name: project.name,
-// 			archived: true,
-// 		},
-// 	});
+	return {
+		success: true,
+		project: restoredProject,
+		message: "Project restored.",
+	};
+}
 
-// 	revalidatePath(`/workspaces/${workspaceSlug}`);
-// 	revalidatePath(`/workspaces/${workspaceSlug}/projects/${projectSlug}`);
+export async function deleteProjectAction(
+	workspaceSlug: string,
+	projectSlug: string,
+) {
+	const user = await getCurrentUser();
 
-// 	return {
-// 		success: true,
-// 		data: archivedProject,
-// 	};
-// }
+	// Archived projects must stay deletable.
+	const project = await requireProjectMember(
+		workspaceSlug,
+		projectSlug,
+		user.id,
+	);
 
-// export async function restoreProjectAction(
-// 	workspaceSlug: string,
-// 	projectSlug: string,
-// ) {
-// 	const user = await getCurrentUser();
+	const canManage = await isProjectManager(
+		project.workspaceId,
+		project.leadId,
+		user.id,
+	);
 
-// 	const project = await requireProjectLead(workspaceSlug, projectSlug, user.id);
+	if (!canManage) {
+		return {
+			success: false,
+			message: FORBIDDEN_MESSAGE,
+		};
+	}
 
-// 	if (!project.isArchived) {
-// 		return {
-// 			success: false,
-// 			message: "Project is not archived",
-// 		};
-// 	}
+	// Logged before the delete — the activity row references the workspace, and
+	// lists/tasks/members cascade away with the project.
+	await createActivity({
+		workspaceId: project.workspaceId,
+		actorId: user.id,
+		action: "deleted",
+		entity: "project",
+		entityId: project.id,
+		metadata: {
+			name: project.name,
+		},
+	});
 
-// 	const restoredProject = await restoreProject(project.id);
+	await deleteProject(project.id);
 
-// 	await createActivity({
-// 		workspaceId: project.workspaceId,
-// 		actorId: user.id,
-// 		action: "restored",
-// 		entity: "project",
-// 		entityId: project.id,
-// 		metadata: {
-// 			name: project.name,
-// 			archived: false,
-// 		},
-// 	});
+	revalidatePath(`/w/${workspaceSlug}/projects`);
 
-// 	revalidatePath(`/workspaces/${workspaceSlug}`);
-// 	revalidatePath(`/workspaces/${workspaceSlug}/projects/${projectSlug}`);
-
-// 	return {
-// 		success: true,
-// 		data: restoredProject,
-// 	};
-// }
-
-// // export async function toggleProjectArchiveStatusAction(projectId: string, archived: boolean) {
-// // 	return archived ? await archiveProject(projectId) : await restoreProject(projectId);
-// // }
+	return {
+		success: true,
+		message: "Project deleted.",
+	};
+}
