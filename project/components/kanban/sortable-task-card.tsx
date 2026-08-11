@@ -12,6 +12,7 @@ type SortableTaskCardProps = {
 	task: KanbanTask;
 	listId: string;
 	disabled?: boolean;
+	isDone?: boolean;
 };
 
 // Thin wrapper so TaskCard stays presentational — DragOverlay renders a second
@@ -20,6 +21,7 @@ export function SortableTaskCard({
 	task,
 	listId,
 	disabled = false,
+	isDone = false,
 }: SortableTaskCardProps) {
 	const {
 		attributes,
@@ -45,7 +47,7 @@ export function SortableTaskCard({
 			// The TouchSensor's hold delay is what separates a drag from a swipe.
 			className={cn("touch-manipulation", isDragging && "opacity-40")}
 		>
-			<TaskCard task={task} />
+			<TaskCard task={task} isDone={isDone} />
 		</div>
 	);
 }

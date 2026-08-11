@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, ArrowUpDown, Settings, UserPlus } from "lucide-react";
+import { ArrowLeft, Settings, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { useProject } from "@/hooks/use-project";
 import { useUIStore } from "@/stores/ui-store";
@@ -9,6 +9,7 @@ import { ProjectStatusBadge } from "../project/project-status-badge";
 import { ProjectSettingsDialog } from "../project-settings/project-settings-dialog";
 import { Button } from "../ui/button";
 import { WorkspaceAvatar } from "../workspace-avatar";
+import { KanbanSortMenu } from "./kanban-sort-menu";
 import { MemberAvatarStack } from "./member-avatar-stack";
 import { ProjectDetailsDialog } from "./project-details-dialog";
 import { ProjectInviteDialog } from "./project-invite-dialog";
@@ -103,10 +104,7 @@ export function KanbanHeader({
 							<span className="hidden sm:inline">Invite</span>
 						</Button>
 
-						<Button variant="outline" size="sm">
-							<ArrowUpDown className="size-4" />
-							<span className="hidden sm:inline">Sort</span>
-						</Button>
+						<KanbanSortMenu />
 
 						<Button
 							variant="outline"

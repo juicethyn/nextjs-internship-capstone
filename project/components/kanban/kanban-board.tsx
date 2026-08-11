@@ -82,6 +82,7 @@ export function KanbanBoard({
 	const { ref, isDragging, dragHandlers } = useDragScroll<HTMLDivElement>();
 
 	const openTaskId = useUIStore((state) => state.openTaskId);
+	const taskSort = useUIStore((state) => state.taskSort);
 
 	const [activeList, setActiveList] = useState<KanbanList | null>(null);
 	const [activeTask, setActiveTask] = useState<KanbanTask | null>(null);
@@ -228,15 +229,35 @@ export function KanbanBoard({
 
 		if (newIndex === -1) return;
 
+		const isSameList = dragOriginListId.current === destinationListId;
+
+		// Under a sort, a drop height inside the same list means nothing — the
+		// comparator would immediately re-place the card. Cross-list still counts.
+		if (taskSort !== "manual" && isSameList) return;
+
 		// Same list, same slot — nothing to persist.
-		const stayedPut =
-			dragOriginListId.current === destinationListId && oldIndex === newIndex;
+		if (isSameList && oldIndex === newIndex) return;
 
-		if (stayedPut) return;
+		let position: number;
 
-		const reordered = arrayMove(ordered, oldIndex, newIndex);
-		const { prev, next } = getNeighbourPositions(reordered, newIndex);
-		const position = calculatePosition(prev, next);
+		if (taskSort === "manual") {
+			const reordered = arrayMove(ordered, oldIndex, newIndex);
+			const { prev, next } = getNeighbourPositions(reordered, newIndex);
+			position = calculatePosition(prev, next);
+		} else {
+			// Sorted view: append to the end so the card sits at the bottom of its
+			// new list once the user switches back to Manual.
+			const others = ordered.filter((task) => task.id !== activeTaskId);
+			const last = others.reduce(
+				(max, task) => Math.max(max, task.position),
+				Number.NEGATIVE_INFINITY,
+			);
+
+			position = calculatePosition(
+				others.length > 0 ? last : undefined,
+				undefined,
+			);
+		}
 
 		moveTask({
 			taskId: activeTaskId,
@@ -259,6 +280,11 @@ export function KanbanBoard({
 	};
 
 	const isItemDragging = Boolean(activeList || activeTask);
+
+	const activeTaskIsDone = activeTask
+		? lists.find((list) => list.tasks.some((task) => task.id === activeTask.id))
+				?.type === "done"
+		: false;
 
 	return (
 		<DndContext
@@ -313,7 +339,9 @@ export function KanbanBoard({
 
 				{activeTask && (
 					<div className="w-full rotate-2 opacity-90 shadow-lg sm:w-64">
-						<TaskCard task={activeTask} />
+						{/* Same isDone as the original, so the card does not change
+						    colour halfway through a drag into or out of Done. */}
+						<TaskCard task={activeTask} isDone={activeTaskIsDone} />
 					</div>
 				)}
 			</DragOverlay>

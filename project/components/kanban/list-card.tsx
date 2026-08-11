@@ -19,6 +19,8 @@ import { useLists } from "@/hooks/use-lists";
 import { useTasks } from "@/hooks/use-tasks";
 import { cn } from "@/lib/utils";
 import { LIST_TYPE_STYLES } from "@/lib/utils/list-styles";
+import { sortTasks } from "@/lib/utils/task-sort";
+import { useUIStore } from "@/stores/ui-store";
 import type { ProjectDetail } from "@/types/projects";
 import {
 	AlertDialog,
@@ -57,8 +59,13 @@ export function ListCard({
 	canManage,
 }: ListCardProps) {
 	const typeStyle = LIST_TYPE_STYLES[list.type];
-	const tasks = [...list.tasks].sort((a, b) => a.position - b.position);
 	const canDelete = list.type !== "done";
+	const isDone = list.type === "done";
+
+	// View-only ordering. SortableContext below is fed this exact array, since
+	// its items must match render order or drop targets land on the wrong card.
+	const taskSort = useUIStore((state) => state.taskSort);
+	const tasks = sortTasks(list.tasks, taskSort);
 
 	const {
 		attributes,
@@ -281,7 +288,12 @@ export function ListCard({
 					strategy={verticalListSortingStrategy}
 				>
 					{tasks.map((task) => (
-						<SortableTaskCard key={task.id} task={task} listId={list.id} />
+						<SortableTaskCard
+							key={task.id}
+							task={task}
+							listId={list.id}
+							isDone={isDone}
+						/>
 					))}
 				</SortableContext>
 

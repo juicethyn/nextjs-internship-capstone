@@ -58,6 +58,23 @@ export async function createTaskLabelAction(
 		user.id,
 	);
 
+	// unique(projectId, name) is enforced in Postgres — check first so a repeat
+	// name reads as a message instead of a constraint violation.
+	const existingLabels = await getTaskLabelsByProject(project.id);
+
+	const nameTaken = existingLabels.some(
+		(existing) =>
+			existing.name.toLowerCase() ===
+			validatedData.data.name.trim().toLowerCase(),
+	);
+
+	if (nameTaken) {
+		return {
+			success: false,
+			error: "A label with that name already exists.",
+		};
+	}
+
 	const label = await createTaskLabel(project.id, validatedData.data);
 
 	await createActivity({
@@ -72,7 +89,7 @@ export async function createTaskLabelAction(
 		},
 	});
 
-	revalidatePath(`/workspaces/${workspaceSlug}/projects/${project.slug}`);
+	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
 	return {
 		success: true,
@@ -125,7 +142,7 @@ export async function updateTaskLabelAction(
 		},
 	});
 
-	revalidatePath(`/workspaces/${workspaceSlug}/projects/${project.slug}`);
+	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
 	return {
 		success: true,
@@ -168,7 +185,7 @@ export async function deleteTaskLabelAction(
 		},
 	});
 
-	revalidatePath(`/workspaces/${workspaceSlug}/projects/${project.slug}`);
+	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
 	return {
 		success: true,

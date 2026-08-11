@@ -1,6 +1,7 @@
 import { create } from "zustand";
+import { DEFAULT_TASK_SORT, type TaskSortKey } from "@/lib/utils/task-sort";
 
-export type ProjectSettingsTab = "general" | "members" | "danger";
+export type ProjectSettingsTab = "general" | "members" | "labels" | "danger";
 
 type UIStore = {
 	isProjectDetailsOpen: boolean;
@@ -29,6 +30,11 @@ type UIStore = {
 	openTaskId: string | null;
 	openTaskDetails: (taskId: string) => void;
 	closeTaskDetails: () => void;
+
+	// View-only card ordering. The Sort button lives in KanbanHeader while the
+	// cards render in ListCard — sibling trees, so this has to be shared state.
+	taskSort: TaskSortKey;
+	setTaskSort: (sort: TaskSortKey) => void;
 };
 
 export const useUIStore = create<UIStore>((set) => ({
@@ -114,5 +120,12 @@ export const useUIStore = create<UIStore>((set) => ({
 	closeTaskDetails: () =>
 		set({
 			openTaskId: null,
+		}),
+
+	taskSort: DEFAULT_TASK_SORT,
+
+	setTaskSort: (sort) =>
+		set({
+			taskSort: sort,
 		}),
 }));

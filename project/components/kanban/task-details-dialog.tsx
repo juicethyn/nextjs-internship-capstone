@@ -4,10 +4,6 @@ import { Flag, Tag, Trash2, UserRound } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTaskLabels } from "@/hooks/use-task-labels";
 import { useTasks } from "@/hooks/use-tasks";
-import {
-	addTaskLabelToTaskAction,
-	removeTaskLabelFromTaskAction,
-} from "@/lib/actions/taskLabelAssignments";
 import { cn } from "@/lib/utils";
 import { useUIStore } from "@/stores/ui-store";
 import type { ProjectDetail } from "@/types/projects";
@@ -73,10 +69,11 @@ export function TaskDetailsDialog({
 
 	const isOpen = Boolean(task) && openTaskId === task?.id;
 
-	const { updateTask, deleteTask, isUpdating, isDeleting } = useTasks({
-		workspaceSlug,
-		projectSlug,
-	});
+	const { updateTask, deleteTask, setTaskLabels, isUpdating, isDeleting } =
+		useTasks({
+			workspaceSlug,
+			projectSlug,
+		});
 
 	const { taskLabels } = useTaskLabels({
 		workspaceSlug,
@@ -152,14 +149,17 @@ export function TaskDetailsDialog({
 			(id) => !selectedLabelIds.includes(id),
 		);
 
-		await Promise.all([
-			...added.map((id) =>
-				addTaskLabelToTaskAction(workspaceSlug, projectSlug, task.id, id),
-			),
-			...removed.map((id) =>
-				removeTaskLabelFromTaskAction(workspaceSlug, projectSlug, task.id, id),
-			),
-		]).catch(() => undefined);
+		if (added.length > 0 || removed.length > 0) {
+			await setTaskLabels({
+				taskId: task.id,
+				added,
+				removed,
+				// Full label rows so the optimistic write can render real badges.
+				labels: taskLabels.filter((label) =>
+					selectedLabelIds.includes(label.id),
+				),
+			}).catch(() => undefined);
+		}
 
 		closeTaskDetails();
 	};

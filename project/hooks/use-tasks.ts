@@ -3,12 +3,16 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
+	addTaskLabelToTaskAction,
+	removeTaskLabelFromTaskAction,
+} from "@/lib/actions/taskLabelAssignments";
+import {
 	createTaskAction,
 	deleteTaskAction,
 	moveTaskAction,
 	updateTaskAction,
 } from "@/lib/actions/tasks";
-import { applyTaskMove } from "@/lib/utils/board-dnd";
+import { applyTaskLabels, applyTaskMove } from "@/lib/utils/board-dnd";
 import type { CreateTaskInput, UpdateTaskInput } from "@/lib/validations/task";
 import type { ProjectDetail } from "@/types/projects";
 
@@ -16,6 +20,9 @@ interface UseTasksProps {
 	workspaceSlug: string;
 	projectSlug: string;
 }
+
+type TaskLabelOption =
+	ProjectDetail["lists"][number]["tasks"][number]["taskLabels"][number]["taskLabel"];
 
 function toMessage(message: unknown, fallback: string) {
 	return typeof message === "string" && message.length > 0 ? message : fallback;
@@ -137,6 +144,62 @@ export function useTasks({ workspaceSlug, projectSlug }: UseTasksProps) {
 		onSettled: () => invalidateProject(),
 	});
 
+	// Label assignment used to be raw server-action calls from the dialog, which
+	// never touched React Query — hence needing a refresh to see the change.
+	const setLabelsMutation = useMutation({
+		mutationFn: async ({
+			taskId,
+			added,
+			removed,
+		}: {
+			taskId: string;
+			added: string[];
+			removed: string[];
+			labels: TaskLabelOption[];
+		}) =>
+			Promise.all([
+				...added.map((labelId) =>
+					addTaskLabelToTaskAction(workspaceSlug, projectSlug, taskId, labelId),
+				),
+				...removed.map((labelId) =>
+					removeTaskLabelFromTaskAction(
+						workspaceSlug,
+						projectSlug,
+						taskId,
+						labelId,
+					),
+				),
+			]),
+
+		onMutate: async ({ taskId, labels }) => {
+			await queryClient.cancelQueries({ queryKey });
+
+			const previous = queryClient.getQueryData<ProjectDetail>(queryKey);
+
+			queryClient.setQueryData<ProjectDetail>(queryKey, (current) =>
+				current ? applyTaskLabels(current, taskId, labels) : current,
+			);
+
+			return { previous };
+		},
+
+		onError: (_error, _variables, context) => {
+			if (context?.previous) {
+				queryClient.setQueryData(queryKey, context.previous);
+			}
+
+			toast.error("Failed to update labels.");
+		},
+
+		onSuccess: (results) => {
+			if (results.some((result) => !result.success)) {
+				toast.error("Some labels could not be updated.");
+			}
+		},
+
+		onSettled: () => invalidateProject(),
+	});
+
 	// Cache-only relocation used during onDragOver so the gap opens in the target
 	// list mid-drag. No server call — onDragEnd is what persists.
 	const previewTaskMove = (
@@ -157,6 +220,9 @@ export function useTasks({ workspaceSlug, projectSlug }: UseTasksProps) {
 		moveTask: moveMutation.mutateAsync,
 		isMoving: moveMutation.isPending,
 		previewTaskMove,
+
+		setTaskLabels: setLabelsMutation.mutateAsync,
+		isSettingLabels: setLabelsMutation.isPending,
 
 		updateTask: updateMutation.mutateAsync,
 		isUpdating: updateMutation.isPending,

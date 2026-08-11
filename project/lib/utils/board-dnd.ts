@@ -67,6 +67,44 @@ export function applyTaskMove(
 	return { ...project, lists };
 }
 
+type TaskLabelEntry = BoardTask["taskLabels"][number];
+type TaskLabel = TaskLabelEntry["taskLabel"];
+
+// Optimistic label assignment. The cache stores join rows with the label
+// nested, so the selected labels get wrapped in throwaway assignment rows —
+// the refetch in onSettled replaces them with the real ones.
+export function applyTaskLabels(
+	project: ProjectDetail,
+	taskId: string,
+	labels: TaskLabel[],
+): ProjectDetail {
+	const lists = project.lists.map((list) => {
+		if (!list.tasks.some((task) => task.id === taskId)) {
+			return list;
+		}
+
+		return {
+			...list,
+			tasks: list.tasks.map((task) =>
+				task.id === taskId
+					? {
+							...task,
+							taskLabels: labels.map((label) => ({
+								id: `optimistic-${taskId}-${label.id}`,
+								taskId,
+								taskLabelId: label.id,
+								createdAt: new Date(),
+								taskLabel: label,
+							})),
+						}
+					: task,
+			),
+		};
+	});
+
+	return { ...project, lists };
+}
+
 export function findListIdByTaskId(project: ProjectDetail, taskId: string) {
 	return project.lists.find((list) =>
 		list.tasks.some((task) => task.id === taskId),

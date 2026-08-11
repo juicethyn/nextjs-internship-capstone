@@ -45,7 +45,7 @@ export async function addTaskLabelToTaskAction(
 
 	const assignment = await addLabelToTask(task.id, label.id);
 
-	revalidatePath(`/workspaces/${workspaceSlug}/projects/${project.slug}`);
+	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
 	return {
 		success: true,
@@ -80,7 +80,7 @@ export async function removeTaskLabelFromTaskAction(
 
 	const removed = await removeLabelFromTask(task.id, taskLabelId);
 
-	revalidatePath(`/workspaces/${workspaceSlug}/projects/${project.slug}`);
+	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
 	return {
 		success: true,

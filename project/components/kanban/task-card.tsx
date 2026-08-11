@@ -1,7 +1,7 @@
 "use client";
 
 import { CalendarRange, MessageSquare } from "lucide-react";
-import { formatProjectDate } from "@/lib/date-formatter";
+import { formatProjectDate, isOverdue } from "@/lib/date-formatter";
 import { cn } from "@/lib/utils";
 import { useUIStore } from "@/stores/ui-store";
 import type { ProjectDetail } from "@/types/projects";
@@ -11,18 +11,32 @@ import { PriorityBadge } from "./priority-badge";
 
 type KanbanTask = ProjectDetail["lists"][number]["tasks"][number];
 
+const MAX_VISIBLE_LABELS = 2;
+
 type TaskCardProps = {
 	task: Pick<KanbanTask, "id" | "title"> &
 		Partial<Omit<KanbanTask, "id" | "title">>;
 	isPending?: boolean;
+	isDone?: boolean;
 };
 
-export function TaskCard({ task, isPending = false }: TaskCardProps) {
+export function TaskCard({
+	task,
+	isPending = false,
+	isDone = false,
+}: TaskCardProps) {
 	const openTaskDetails = useUIStore((state) => state.openTaskDetails);
+
+	// A finished card stops nagging, however late it was.
+	const overdue = !isDone && isOverdue(task.dueDate);
 
 	const assignee = task.assignee ?? null;
 	const labels = task.taskLabels ?? [];
 	const commentCount = task.comments?.length ?? 0;
+
+	// Cards stay one line of labels tall no matter how many are attached.
+	const visibleLabels = labels.slice(0, MAX_VISIBLE_LABELS);
+	const hiddenLabels = labels.slice(MAX_VISIBLE_LABELS);
 	const priority = task.priority ?? "none";
 	const showPriority = priority !== "none";
 
@@ -61,15 +75,26 @@ export function TaskCard({ task, isPending = false }: TaskCardProps) {
 			</div>
 
 			{labels.length > 0 && (
-				<div className="flex flex-wrap items-center gap-1.5">
-					{labels.map(({ taskLabel }) => (
+				<div className="flex min-w-0 items-center gap-1.5">
+					{visibleLabels.map(({ taskLabel }) => (
 						<LabelBadge
 							key={taskLabel.id}
 							name={taskLabel.name}
 							color={taskLabel.color}
-							className="max-w-full text-[10px]"
+							className="min-w-0 text-[10px]"
 						/>
 					))}
+
+					{hiddenLabels.length > 0 && (
+						<span
+							title={hiddenLabels
+								.map(({ taskLabel }) => taskLabel.name)
+								.join(", ")}
+							className="shrink-0 rounded-full border border-border px-1.5 py-1 text-[10px] font-medium text-muted-foreground"
+						>
+							+{hiddenLabels.length}
+						</span>
+					)}
 				</div>
 			)}
 
@@ -79,11 +104,19 @@ export function TaskCard({ task, isPending = false }: TaskCardProps) {
 
 					<div className="flex min-w-0 items-center gap-3">
 						{task.dueDate && (
-							<span className="inline-flex min-w-0 items-center gap-1">
+							<span
+								title={overdue ? "Overdue" : undefined}
+								className={cn(
+									"inline-flex min-w-0 items-center gap-1",
+									overdue && "font-medium text-destructive",
+								)}
+							>
 								<CalendarRange className="size-3 shrink-0" />
 								<span className="truncate">
 									{formatProjectDate(task.dueDate)}
 								</span>
+
+								{overdue && <span className="sr-only">Overdue</span>}
 							</span>
 						)}
 

@@ -12,6 +12,7 @@ import { type ProjectSettingsTab, useUIStore } from "@/stores/ui-store";
 import type { ProjectDetail } from "@/types/projects";
 import { DangerTab } from "./danger-tab";
 import { GeneralTab } from "./general-tab";
+import { LabelsTab } from "./labels-tab";
 import { MembersTab } from "./members-tab";
 
 type ProjectSettingsDialogProps = {
@@ -57,6 +58,7 @@ export function ProjectSettingsDialog({
 						<TabsList className="w-full sm:w-fit">
 							<TabsTrigger value="general">General</TabsTrigger>
 							<TabsTrigger value="members">Members</TabsTrigger>
+							<TabsTrigger value="labels">Labels</TabsTrigger>
 							{canManageProject && (
 								<TabsTrigger value="danger">Danger</TabsTrigger>
 							)}
@@ -79,6 +81,14 @@ export function ProjectSettingsDialog({
 								workspaceSlug={workspaceSlug}
 								projectSlug={projectSlug}
 								canManage={canManageProject}
+							/>
+						</TabsContent>
+
+						<TabsContent value="labels" className="mt-0">
+							<LabelsTab
+								project={project}
+								workspaceSlug={workspaceSlug}
+								projectSlug={projectSlug}
 							/>
 						</TabsContent>
 
