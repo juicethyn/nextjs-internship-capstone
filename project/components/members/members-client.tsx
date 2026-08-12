@@ -4,10 +4,10 @@ import { useMemo } from "react";
 import { WorkspaceInviteDialog } from "@/components/invitations/workspace-invite-dialog";
 import { useWorkspaceInvitations } from "@/hooks/use-workspace-invitations";
 import {
-	type PendingInvitationListItem,
-	sortWorkspaceMembers,
-	type WorkspaceMemberListItem,
-} from "@/lib/utils/workspace-members";
+	useWorkspaceMembersStats,
+	type WorkspaceMembersStats,
+} from "@/hooks/use-workspace-members-stats";
+import { sortWorkspaceMembers } from "@/lib/utils/workspace-members";
 import { useUIStore } from "@/stores/ui-store";
 import { MembersGrid } from "./members-grid";
 import { MembersHeader } from "./members-header";
@@ -15,23 +15,17 @@ import { MembersToolbar } from "./members-toolbar";
 import { PendingMemberCard } from "./pending-member-card";
 
 type MembersClientProps = {
-	members: WorkspaceMemberListItem[];
-	pendingInvitations: PendingInvitationListItem[];
-	currentUserId: string;
-	viewerCanManage: boolean;
 	workspaceSlug: string;
-	workspaceName: string;
+	initialData: WorkspaceMembersStats;
 };
 
 export function MembersClient({
-	members,
-	pendingInvitations,
-	currentUserId,
-	viewerCanManage,
 	workspaceSlug,
-	workspaceName,
+	initialData,
 }: MembersClientProps) {
 	const openWorkspaceInvite = useUIStore((state) => state.openWorkspaceInvite);
+
+	const { data } = useWorkspaceMembersStats({ workspaceSlug, initialData });
 
 	const {
 		revokeInvitation,
@@ -40,7 +34,15 @@ export function MembersClient({
 		resendingInvitationId,
 	} = useWorkspaceInvitations(workspaceSlug);
 
-	const sortedMembers = useMemo(() => sortWorkspaceMembers(members), [members]);
+	const sortedMembers = useMemo(
+		() => sortWorkspaceMembers(data.members),
+		[data.members],
+	);
+
+	// Derived from query data rather than a server-computed prop, so a refetch
+	// that changes the viewer's role updates the UI with it.
+	const viewerCanManage =
+		data.viewerRole === "owner" || data.viewerRole === "admin";
 
 	return (
 		<div className="space-y-6">
@@ -59,20 +61,20 @@ export function MembersClient({
 
 			<MembersGrid
 				members={sortedMembers}
-				currentUserId={currentUserId}
+				currentUserId={data.currentUserId}
 				viewerCanManage={viewerCanManage}
 			/>
 
-			{pendingInvitations.length > 0 && (
+			{data.pendingInvitations.length > 0 && (
 				<>
 					<div className="flex items-center justify-between">
 						<h2 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-							Pending {pendingInvitations.length}
+							Pending {data.pendingInvitations.length}
 						</h2>
 					</div>
 
 					<div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-						{pendingInvitations.map((invitation) => (
+						{data.pendingInvitations.map((invitation) => (
 							<PendingMemberCard
 								key={invitation.id}
 								invitation={invitation}
@@ -91,7 +93,7 @@ export function MembersClient({
 
 			<WorkspaceInviteDialog
 				workspaceSlug={workspaceSlug}
-				workspaceName={workspaceName}
+				workspaceName={data.workspaceName}
 			/>
 		</div>
 	);

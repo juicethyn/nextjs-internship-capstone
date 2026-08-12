@@ -1,7 +1,6 @@
 "use client";
 
-import { useMutation } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import {
@@ -12,12 +11,12 @@ import {
 import type { CreateWorkspaceInvitationInput } from "@/lib/validations/workspaceInvitation";
 
 export function useWorkspaceInvitations(workspaceSlug: string) {
-	const router = useRouter();
+	const queryClient = useQueryClient();
 
-	// The members page reads server props, not a React Query cache, so
-	// invalidateQueries would refresh nothing. The actions revalidatePath, and
-	// router.refresh() is what re-runs the server component with that fresh data.
-	const refreshMembers = () => router.refresh();
+	const refreshMembers = () =>
+		queryClient.invalidateQueries({
+			queryKey: ["workspace-members", workspaceSlug],
+		});
 
 	const sendMutation = useMutation({
 		mutationFn: (invites: CreateWorkspaceInvitationInput[]) =>

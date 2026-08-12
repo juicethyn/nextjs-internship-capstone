@@ -10,22 +10,9 @@ type MembersPageProps = {
 export default async function MembersPage({ params }: MembersPageProps) {
 	const { workspaceSlug } = await params;
 
-	const {
-		members,
-		pendingInvitations,
-		currentUserId,
-		viewerRole,
-		workspaceName,
-	} = await getWorkspaceMembersWithStatsBySlug(workspaceSlug);
+	const initialData = await getWorkspaceMembersWithStatsBySlug(workspaceSlug);
 
 	return (
-		<MembersClient
-			members={members}
-			pendingInvitations={pendingInvitations}
-			currentUserId={currentUserId}
-			viewerCanManage={viewerRole === "owner" || viewerRole === "admin"}
-			workspaceSlug={workspaceSlug}
-			workspaceName={workspaceName}
-		/>
+		<MembersClient workspaceSlug={workspaceSlug} initialData={initialData} />
 	);
 }
