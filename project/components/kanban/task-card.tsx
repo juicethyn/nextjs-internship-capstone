@@ -27,14 +27,12 @@ export function TaskCard({
 }: TaskCardProps) {
 	const openTaskDetails = useUIStore((state) => state.openTaskDetails);
 
-	// A finished card stops nagging, however late it was.
 	const overdue = !isDone && isOverdue(task.dueDate);
 
 	const assignee = task.assignee ?? null;
 	const labels = task.taskLabels ?? [];
 	const commentCount = task.comments?.length ?? 0;
 
-	// Cards stay one line of labels tall no matter how many are attached.
 	const visibleLabels = labels.slice(0, MAX_VISIBLE_LABELS);
 	const hiddenLabels = labels.slice(MAX_VISIBLE_LABELS);
 	const priority = task.priority ?? "none";

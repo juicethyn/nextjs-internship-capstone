@@ -1,6 +1,6 @@
 "use client";
 
-import { Flag, Tag, Trash2, UserRound } from "lucide-react";
+import { Flag, MessageSquare, Tag, Trash2, UserRound } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTaskLabels } from "@/hooks/use-task-labels";
 import { useTasks } from "@/hooks/use-tasks";
@@ -37,6 +37,7 @@ import { Label } from "../ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { PRIORITY_ICON_STYLES, PRIORITY_LABELS } from "./priority-badge";
 import { RichTextEditor } from "./rich-text-editor";
+import { TaskComments } from "./task-comments";
 
 type KanbanTask = ProjectDetail["lists"][number]["tasks"][number];
 type ProjectMember = ProjectDetail["members"][number];
@@ -66,6 +67,8 @@ export function TaskDetailsDialog({
 }: TaskDetailsDialogProps) {
 	const openTaskId = useUIStore((state) => state.openTaskId);
 	const closeTaskDetails = useUIStore((state) => state.closeTaskDetails);
+	const isCommentsOpen = useUIStore((state) => state.isCommentsOpen);
+	const toggleComments = useUIStore((state) => state.toggleComments);
 
 	const isOpen = Boolean(task) && openTaskId === task?.id;
 
@@ -154,7 +157,6 @@ export function TaskDetailsDialog({
 				taskId: task.id,
 				added,
 				removed,
-				// Full label rows so the optimistic write can render real badges.
 				labels: taskLabels.filter((label) =>
 					selectedLabelIds.includes(label.id),
 				),
@@ -180,7 +182,12 @@ export function TaskDetailsDialog({
 				if (!open) handleDiscard();
 			}}
 		>
-			<DialogContent className="flex max-h-[85vh] min-w-0 flex-col gap-0 p-0 sm:max-w-xl">
+			<DialogContent
+				className={cn(
+					"flex max-h-[85vh] min-w-0 flex-col gap-0 p-0 sm:max-w-xl",
+					isCommentsOpen && "lg:max-w-4xl",
+				)}
+			>
 				<DialogHeader className="shrink-0 border-b px-4 py-3">
 					<DialogTitle className="text-base">Task Details</DialogTitle>
 
@@ -189,8 +196,8 @@ export function TaskDetailsDialog({
 					</DialogDescription>
 				</DialogHeader>
 
-				<div className="board-scrollbar min-h-0 flex-1 overflow-y-auto">
-					<div className="min-w-0 space-y-4 px-4 py-4">
+				<div className="board-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto lg:flex-row lg:overflow-hidden">
+					<div className="board-scrollbar min-w-0 space-y-4 px-4 py-4 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
 						<Input
 							value={title}
 							onChange={(event) => setTitle(event.target.value)}
@@ -414,6 +421,16 @@ export function TaskDetailsDialog({
 							<RichTextEditor content={description} onChange={setDescription} />
 						</div>
 					</div>
+
+					{isCommentsOpen && (
+						<div className="board-scrollbar min-w-0 border-t px-4 py-4 lg:min-h-0 lg:w-96 lg:shrink-0 lg:overflow-y-auto lg:border-t-0 lg:border-l">
+							<TaskComments
+								taskId={task.id}
+								workspaceSlug={workspaceSlug}
+								projectSlug={projectSlug}
+							/>
+						</div>
+					)}
 				</div>
 
 				<DialogFooter className="m-0 shrink-0 rounded-b-xl border-t px-4 py-3 sm:justify-between">
@@ -432,10 +449,12 @@ export function TaskDetailsDialog({
 						<Button
 							type="button"
 							variant="outline"
-							onClick={handleDiscard}
-							className="w-full sm:w-auto"
+							onClick={toggleComments}
+							aria-expanded={isCommentsOpen}
+							className="w-full gap-1.5 sm:w-auto"
 						>
-							Discard
+							<MessageSquare className="size-4" />
+							{isCommentsOpen ? "Hide Comments" : "Show Comments"}
 						</Button>
 
 						<Button

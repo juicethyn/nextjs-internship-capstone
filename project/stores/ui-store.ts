@@ -31,6 +31,9 @@ type UIStore = {
 	openTaskDetails: (taskId: string) => void;
 	closeTaskDetails: () => void;
 
+	isCommentsOpen: boolean;
+	toggleComments: () => void;
+
 	// View-only card ordering. The Sort button lives in KanbanHeader while the
 	// cards render in ListCard — sibling trees, so this has to be shared state.
 	taskSort: TaskSortKey;
@@ -117,10 +120,19 @@ export const useUIStore = create<UIStore>((set) => ({
 			openTaskId: taskId,
 		}),
 
+	// Back to the default on close, so the next card opens with comments shown.
 	closeTaskDetails: () =>
 		set({
 			openTaskId: null,
+			isCommentsOpen: true,
 		}),
+
+	isCommentsOpen: true,
+
+	toggleComments: () =>
+		set((state) => ({
+			isCommentsOpen: !state.isCommentsOpen,
+		})),
 
 	taskSort: DEFAULT_TASK_SORT,
 
