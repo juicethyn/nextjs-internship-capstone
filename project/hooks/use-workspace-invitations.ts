@@ -1,88 +1,108 @@
 "use client";
 
-import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import {
-	createWorkspaceInvitationAction,
+	createWorkspaceInvitationsAction,
 	resendWorkspaceInvitationAction,
 	revokeWorkspaceInvitationAction,
 } from "@/lib/actions/workspaceInvitations";
+import type { CreateWorkspaceInvitationInput } from "@/lib/validations/workspaceInvitation";
 
 export function useWorkspaceInvitations(workspaceSlug: string) {
-	const [isLoading, setIsLoading] = useState(false);
+	const router = useRouter();
 
-	const createInvitation = async (data: {
-		email: string;
-		role: "owner" | "admin" | "member";
-	}) => {
-		setIsLoading(true);
+	// The members page reads server props, not a React Query cache, so
+	// invalidateQueries would refresh nothing. The actions revalidatePath, and
+	// router.refresh() is what re-runs the server component with that fresh data.
+	const refreshMembers = () => router.refresh();
 
-		try {
-			const result = await createWorkspaceInvitationAction(workspaceSlug, data);
+	const sendMutation = useMutation({
+		mutationFn: (invites: CreateWorkspaceInvitationInput[]) =>
+			createWorkspaceInvitationsAction(workspaceSlug, invites),
 
-			if (!result.success) {
-				toast.error(result.error);
-				return false;
+		onSuccess: (result) => {
+			if ("message" in result && result.message) {
+				toast.error(result.message);
+				return;
 			}
 
-			toast.success("Invitation sent successfully!");
+			const failed = result.results.filter((entry) => !entry.success);
 
-			return true;
-		} finally {
-			setIsLoading(false);
-		}
-	};
-
-	const resendInvitation = async (invitationId: string) => {
-		setIsLoading(true);
-
-		try {
-			const result = await resendWorkspaceInvitationAction(
-				workspaceSlug,
-				invitationId,
-			);
-
-			if (!result.success) {
-				toast.error(result.error);
-				return false;
+			if (result.sentCount > 0) {
+				toast.success(
+					result.sentCount === 1
+						? "Invitation sent."
+						: `${result.sentCount} invitations sent.`,
+				);
 			}
 
-			toast.success("Invitation resent!");
-
-			return true;
-		} finally {
-			setIsLoading(false);
-		}
-	};
-
-	const revokeInvitation = async (invitationId: string) => {
-		setIsLoading(true);
-
-		try {
-			const result = await revokeWorkspaceInvitationAction(
-				workspaceSlug,
-				invitationId,
-			);
-
-			if (!result.success) {
-				toast.error(result.error);
-				return false;
+			for (const entry of failed) {
+				toast.error(`${entry.email}: ${entry.error}`);
 			}
 
-			toast.success("Invitation revoked");
+			if (result.sentCount > 0) {
+				refreshMembers();
+			}
+		},
 
-			return true;
-		} finally {
-			setIsLoading(false);
-		}
-	};
+		onError: () => {
+			toast.error("Failed to send invitations.");
+		},
+	});
+
+	const revokeMutation = useMutation({
+		mutationFn: (invitationId: string) =>
+			revokeWorkspaceInvitationAction(workspaceSlug, invitationId),
+
+		onSuccess: (result) => {
+			if (!result.success) {
+				toast.error(result.error ?? "Failed to revoke invitation.");
+				return;
+			}
+
+			toast.success("Invitation revoked.");
+			refreshMembers();
+		},
+
+		onError: () => {
+			toast.error("Failed to revoke invitation.");
+		},
+	});
+
+	const resendMutation = useMutation({
+		mutationFn: (invitationId: string) =>
+			resendWorkspaceInvitationAction(workspaceSlug, invitationId),
+
+		onSuccess: (result) => {
+			if (!result.success) {
+				toast.error(result.error ?? "Failed to resend invitation.");
+				return;
+			}
+
+			toast.success("Invitation resent.");
+			refreshMembers();
+		},
+
+		onError: () => {
+			toast.error("Failed to resend invitation.");
+		},
+	});
 
 	return {
-		isLoading,
+		sendInvitations: sendMutation.mutateAsync,
+		isSending: sendMutation.isPending,
 
-		createInvitation,
-		resendInvitation,
-		revokeInvitation,
+		revokeInvitation: revokeMutation.mutateAsync,
+		revokingInvitationId: revokeMutation.isPending
+			? revokeMutation.variables
+			: null,
+
+		resendInvitation: resendMutation.mutateAsync,
+		resendingInvitationId: resendMutation.isPending
+			? resendMutation.variables
+			: null,
 	};
 }

@@ -59,6 +59,14 @@ export async function isWorkspaceMember(workspaceId: string, userId: string) {
 	return Boolean(member);
 }
 
+// The non-redirecting counterpart to requireWorkspaceAdmin below. Actions called
+// from a mutation need a value they can turn into a toast, not a NEXT_REDIRECT.
+export async function isWorkspaceAdmin(workspaceId: string, userId: string) {
+	const member = await getWorkspaceMemberById(workspaceId, userId);
+
+	return member?.role === "owner" || member?.role === "admin";
+}
+
 export async function requireWorkspaceAdmin(
 	workspaceSlug: string,
 	userId: string,

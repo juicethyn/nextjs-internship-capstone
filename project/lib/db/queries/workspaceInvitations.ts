@@ -14,6 +14,16 @@ export function getWorkspaceInvitations(workspaceId: string) {
 	});
 }
 
+export function getPendingWorkspaceInvitations(workspaceId: string) {
+	return db.query.workspaceInvitations.findMany({
+		where: and(
+			eq(workspaceInvitations.workspaceId, workspaceId),
+			eq(workspaceInvitations.status, "pending"),
+		),
+		orderBy: (invitation, { desc }) => desc(invitation.createdAt),
+	});
+}
+
 export function getWorkspaceInvitationById(id: string) {
 	return db.query.workspaceInvitations.findFirst({
 		where: eq(workspaceInvitations.id, id),

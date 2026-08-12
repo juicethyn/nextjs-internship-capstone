@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "../auth";
 import { getWorkspaceProjectAssignmentCounts } from "../db/queries/projects";
+import { getUsersByEmails } from "../db/queries/users";
+import { getPendingWorkspaceInvitations } from "../db/queries/workspaceInvitations";
 import {
 	addWorkspaceMember,
 	getWorkspaceMemberById,
@@ -73,13 +75,56 @@ export async function getWorkspaceMembersWithStatsBySlug(
 		getWorkspaceProjectAssignmentCounts(workspace.id),
 	]);
 
+	const viewerRole =
+		members.find((member) => member.userId === user.id)?.role ?? "member";
+
+	const canManage = viewerRole === "owner" || viewerRole === "admin";
+
+	// Pending invitations are admin-only information — a plain member gets an
+	// empty list rather than a hidden section they could read off the payload.
+	const pendingInvitations = canManage
+		? await getPendingInvitationsWithUsers(workspace.id)
+		: [];
+
 	return {
 		currentUserId: user.id,
+		workspaceName: workspace.name,
+		viewerRole,
+		pendingInvitations,
 		members: members.map((member) => ({
 			...member,
 			projectCount: projectCounts[member.userId] ?? 0,
 		})),
 	};
+}
+
+async function getPendingInvitationsWithUsers(workspaceId: string) {
+	const invitations = await getPendingWorkspaceInvitations(workspaceId);
+
+	if (invitations.length === 0) return [];
+
+	const users = await getUsersByEmails(
+		invitations.map((invitation) => invitation.email),
+	);
+
+	const usersByEmail = new Map(users.map((user) => [user.email, user]));
+
+	return invitations.map((invitation) => {
+		const user = usersByEmail.get(invitation.email);
+
+		return {
+			...invitation,
+			user: user
+				? {
+						firstName: user.firstName,
+						lastName: user.lastName,
+						email: user.email,
+						imageUrl: user.imageUrl,
+						occupation: user.occupation,
+					}
+				: null,
+		};
+	});
 }
 
 export async function updateWorkspaceMemberRoleAction(

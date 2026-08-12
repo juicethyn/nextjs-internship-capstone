@@ -8,6 +8,10 @@ export type WorkspaceMemberListItem = Awaited<
 	ReturnType<typeof getWorkspaceMembersWithStatsBySlug>
 >["members"][number];
 
+export type PendingInvitationListItem = Awaited<
+	ReturnType<typeof getWorkspaceMembersWithStatsBySlug>
+>["pendingInvitations"][number];
+
 export type WorkspaceMemberRoleFilter = "all" | WorkspaceMemberRole;
 
 export type WorkspaceMemberStatusFilter = "all" | "online" | "offline";

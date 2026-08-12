@@ -1,7 +1,12 @@
 import { UserPlus } from "lucide-react";
 import { Button } from "../ui/button";
 
-export function MembersHeader() {
+type MembersHeaderProps = {
+	canInvite: boolean;
+	onInvite: () => void;
+};
+
+export function MembersHeader({ canInvite, onInvite }: MembersHeaderProps) {
 	return (
 		<div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
 			<div className="space-y-1">
@@ -12,10 +17,12 @@ export function MembersHeader() {
 				</p>
 			</div>
 
-			<Button size="lg" className="w-full sm:w-auto">
-				<UserPlus className="size-4" />
-				Invite Member
-			</Button>
+			{canInvite && (
+				<Button size="lg" onClick={onInvite} className="w-full sm:w-auto">
+					<UserPlus className="size-4" />
+					Invite Member
+				</Button>
+			)}
 		</div>
 	);
 }

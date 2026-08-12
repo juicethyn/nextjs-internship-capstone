@@ -19,33 +19,49 @@ import {
 } from "../db/queries/workspaceMembers";
 import { getWorkspaceById } from "../db/queries/workspaces";
 import { sendWorkspaceInvitationEmail } from "../email/send-workspace-invitation";
-import { isInvitationExpired, requireWorkspaceAdmin } from "../permission";
+import {
+	isInvitationExpired,
+	isWorkspaceAdmin,
+	requireWorkspaceAdmin,
+	requireWorkspaceMember,
+} from "../permission";
 import {
 	type CreateWorkspaceInvitationInput,
 	createWorkspaceInvitationSchema,
 } from "../validations/workspaceInvitation";
 
+const FORBIDDEN_MESSAGE = "Only a workspace owner or admin can invite members.";
+
+const INVITATION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
 // Workspace Invitation Actions
 
-// Used for Sending Individual Invites and not for bulk invites.
-export async function createWorkspaceInvitationAction(
+// Resolves an email before it is staged in the invite dialog, so a duplicate or an existing member is rejected at Add time rather than after Send.
+export async function findWorkspaceInviteeByEmailAction(
 	workspaceSlug: string,
-	data: CreateWorkspaceInvitationInput,
+	email: string,
 ) {
 	const user = await getCurrentUser();
 
-	const workspace = await requireWorkspaceAdmin(workspaceSlug, user.id);
+	const workspace = await requireWorkspaceMember(workspaceSlug, user.id);
 
-	const validatedData = createWorkspaceInvitationSchema.safeParse(data);
-
-	if (!validatedData.success) {
+	if (!(await isWorkspaceAdmin(workspace.id, user.id))) {
 		return {
-			success: false,
-			error: "Invalid invitation data.",
+			success: false as const,
+			message: FORBIDDEN_MESSAGE,
 		};
 	}
 
-	const existingUser = await getUserByEmail(validatedData.data.email);
+	const normalizedEmail = email.trim().toLowerCase();
+
+	if (normalizedEmail === user.email.toLowerCase()) {
+		return {
+			success: false as const,
+			message: "You are already a member of this workspace.",
+		};
+	}
+
+	const existingUser = await getUserByEmail(normalizedEmail);
 
 	if (existingUser) {
 		const existingMember = await getWorkspaceMemberById(
@@ -55,59 +71,156 @@ export async function createWorkspaceInvitationAction(
 
 		if (existingMember) {
 			return {
-				success: false,
-				error: "User is already a member of this workspace.",
+				success: false as const,
+				message: "This person is already a member of this workspace.",
 			};
 		}
 	}
 
 	const existingInvitation = await getWorkspaceInvitationByEmail(
 		workspace.id,
-		validatedData.data.email,
+		normalizedEmail,
 	);
 
 	if (existingInvitation) {
 		return {
-			success: false,
-			error: "An invitation has already been sent to this email.",
+			success: false as const,
+			message: "An invitation is already pending for this email.",
 		};
 	}
 
-	const invitation = await createWorkspaceInvitation({
-		...validatedData.data,
-		workspaceId: workspace.id,
-		invitedById: user.id,
-		token: nanoid(32),
-		expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-	});
+	return {
+		success: true as const,
+		data: {
+			email: normalizedEmail,
+			// The invitee may not be a registered user yet, so the user object is null if they don't exist.
+			user: existingUser
+				? {
+						firstName: existingUser.firstName,
+						lastName: existingUser.lastName,
+						email: existingUser.email,
+						imageUrl: existingUser.imageUrl,
+					}
+				: null,
+		},
+	};
+}
 
-	const emailResult = await sendWorkspaceInvitationEmail({
-		email: invitation.email,
-		workspaceName: workspace.name,
-		token: invitation.token,
-	});
+// Batches workspace invitations, creating a row for each invite and sending an email. Returns a list of results for each invite, including any errors that occurred.
+export async function createWorkspaceInvitationsAction(
+	workspaceSlug: string,
+	invites: CreateWorkspaceInvitationInput[],
+) {
+	const user = await getCurrentUser();
 
-	if (!emailResult.success) {
-		console.warn(`Failed to send invitation email to ${invitation.email}`);
+	const workspace = await requireWorkspaceMember(workspaceSlug, user.id);
+
+	if (!(await isWorkspaceAdmin(workspace.id, user.id))) {
+		return {
+			success: false as const,
+			message: FORBIDDEN_MESSAGE,
+			sentCount: 0,
+			results: [],
+		};
 	}
 
-	await createActivity({
-		workspaceId: workspace.id,
-		actorId: user.id,
-		action: "created",
-		entity: "workspace_invitation",
-		entityId: invitation.id,
-		metadata: {
-			email: invitation.email,
-			role: invitation.role,
-		},
-	});
+	const results: { email: string; success: boolean; error?: string }[] = [];
 
-	revalidatePath(`/workspaces/${workspace.slug}/settings/members`);
+	for (const invite of invites) {
+		const validatedData = createWorkspaceInvitationSchema.safeParse({
+			...invite,
+			email: invite.email.trim().toLowerCase(),
+		});
+
+		if (!validatedData.success) {
+			results.push({
+				email: invite.email,
+				success: false,
+				error: "Invalid email address.",
+			});
+			continue;
+		}
+
+		const { email, role } = validatedData.data;
+
+		const existingUser = await getUserByEmail(email);
+
+		if (existingUser) {
+			const existingMember = await getWorkspaceMemberById(
+				workspace.id,
+				existingUser.id,
+			);
+
+			if (existingMember) {
+				results.push({
+					email,
+					success: false,
+					error: "Already a member of this workspace.",
+				});
+				continue;
+			}
+		}
+
+		const existingInvitation = await getWorkspaceInvitationByEmail(
+			workspace.id,
+			email,
+		);
+
+		if (existingInvitation) {
+			results.push({
+				email,
+				success: false,
+				error: "An invitation is already pending.",
+			});
+			continue;
+		}
+
+		const invitation = await createWorkspaceInvitation({
+			email,
+			role,
+			workspaceId: workspace.id,
+			invitedById: user.id,
+			token: nanoid(32),
+			expiresAt: new Date(Date.now() + INVITATION_TTL_MS),
+		});
+
+		const emailResult = await sendWorkspaceInvitationEmail({
+			email: invitation.email,
+			workspaceName: workspace.name,
+			token: invitation.token,
+		});
+
+		// The row is what makes the invite acceptable via its token link, so a
+		// bounced email is logged rather than treated as a failed invite.
+		if (!emailResult.success) {
+			console.warn(`Failed to send invitation email to ${invitation.email}`);
+		}
+
+		await createActivity({
+			workspaceId: workspace.id,
+			actorId: user.id,
+			action: "invited",
+			entity: "workspace_invitation",
+			entityId: invitation.id,
+			metadata: {
+				email: invitation.email,
+				role: invitation.role,
+			},
+		});
+
+		results.push({ email, success: true });
+	}
+
+	const sentCount = results.filter((result) => result.success).length;
+
+	if (sentCount > 0) {
+		revalidatePath(`/w/${workspace.slug}/members`);
+	}
 
 	return {
-		success: true,
-		data: invitation,
+		success: sentCount > 0,
+		sentCount,
+		results,
 	};
 }
 
@@ -166,7 +279,7 @@ export async function revokeWorkspaceInvitationAction(
 		},
 	});
 
-	revalidatePath(`/workspaces/${workspace.slug}/settings/members`);
+	revalidatePath(`/w/${workspace.slug}/members`);
 
 	return {
 		success: true,
@@ -229,7 +342,7 @@ export async function resendWorkspaceInvitationAction(
 		},
 	});
 
-	revalidatePath(`/workspaces/${workspace.slug}/settings/members`);
+	revalidatePath(`/w/${workspace.slug}/members`);
 
 	return {
 		success: true,
