@@ -1,21 +1,23 @@
 "use server";
 
-import { revalidatePath } from "next/dist/server/web/spec-extension/revalidate";
+import { revalidatePath } from "next/cache";
 import { createActivity } from "../activity";
 import { getCurrentUser } from "../auth";
+import { syncProjectCompletionStatus } from "../db/queries/projects";
 import {
 	createTask,
 	deleteTask,
 	getTasksByList,
+	rebalanceTaskPositionsIfNeeded,
 	updateTask,
 	updateTaskPosition,
 } from "../db/queries/tasks";
 import {
+	isWorkspaceMember,
 	requireActiveProject,
 	requireList,
 	requireProjectMember,
 	requireTask,
-	requireWorkspaceMember,
 } from "../permission";
 import {
 	type CreateTaskInput,
@@ -24,7 +26,7 @@ import {
 	updateTaskSchema,
 } from "../validations/task";
 
-export async function getTasksByListAction(
+export async function getTasksByListBySlug(
 	workspaceSlug: string,
 	projectSlug: string,
 	listId: string,
@@ -42,7 +44,7 @@ export async function getTasksByListAction(
 	if (list.projectId !== project.id) {
 		return {
 			success: false,
-			error: "List does not belong to the project.",
+			message: "List does not belong to the project.",
 		};
 	}
 
@@ -67,7 +69,7 @@ export async function createTaskAction(
 	if (!validatedData.success) {
 		return {
 			success: false,
-			error: "Invalid task data.",
+			message: "Invalid task data.",
 		};
 	}
 
@@ -82,15 +84,27 @@ export async function createTaskAction(
 	if (list.projectId !== project.id) {
 		return {
 			success: false,
-			error: "List does not belong to the project.",
+			message: "List does not belong to the project.",
 		};
 	}
 
 	if (validatedData.data.assigneeId) {
-		await requireWorkspaceMember(workspaceSlug, validatedData.data.assigneeId);
+		const assigneeIsMember = await isWorkspaceMember(
+			project.workspaceId,
+			validatedData.data.assigneeId,
+		);
+
+		if (!assigneeIsMember) {
+			return {
+				success: false,
+				message: "Assignee is not a member of this workspace.",
+			};
+		}
 	}
 
 	const task = await createTask(listId, user.id, validatedData.data);
+
+	await syncProjectCompletionStatus(project.id);
 
 	await createActivity({
 		workspaceId: project.workspaceId,
@@ -105,7 +119,7 @@ export async function createTaskAction(
 		},
 	});
 
-	revalidatePath(`/workspaces/${workspaceSlug}/projects/${project.slug}`);
+	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
 	return {
 		success: true,
@@ -126,7 +140,7 @@ export async function updateTaskAction(
 	if (!validatedData.success) {
 		return {
 			success: false,
-			error: "Invalid task data.",
+			message: "Invalid task data.",
 		};
 	}
 
@@ -143,8 +157,22 @@ export async function updateTaskAction(
 	if (list?.projectId !== project.id) {
 		return {
 			success: false,
-			error: "Task does not belong to the project.",
+			message: "Task does not belong to the project.",
 		};
+	}
+
+	if (validatedData.data.assigneeId) {
+		const assigneeIsMember = await isWorkspaceMember(
+			project.workspaceId,
+			validatedData.data.assigneeId,
+		);
+
+		if (!assigneeIsMember) {
+			return {
+				success: false,
+				message: "Assignee is not a member of this workspace.",
+			};
+		}
 	}
 
 	const updatedTask = await updateTask(task.id, validatedData.data);
@@ -164,7 +192,7 @@ export async function updateTaskAction(
 		},
 	});
 
-	revalidatePath(`/workspaces/${workspaceSlug}/projects/${project.slug}`);
+	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
 	return {
 		success: true,
@@ -192,11 +220,13 @@ export async function deleteTaskAction(
 	if (list?.projectId !== project.id) {
 		return {
 			success: false,
-			error: "Task does not belong to the project.",
+			message: "Task does not belong to the project.",
 		};
 	}
 
 	const deletedTask = await deleteTask(taskId);
+
+	await syncProjectCompletionStatus(project.id);
 
 	await createActivity({
 		workspaceId: project.workspaceId,
@@ -211,7 +241,7 @@ export async function deleteTaskAction(
 		},
 	});
 
-	revalidatePath(`/workspaces/${workspaceSlug}/projects/${project.slug}`);
+	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
 	return {
 		success: true,
@@ -227,6 +257,13 @@ export async function moveTaskAction(
 	newPosition: number,
 ) {
 	const user = await getCurrentUser();
+
+	if (!Number.isFinite(newPosition)) {
+		return {
+			success: false,
+			message: "Invalid task position.",
+		};
+	}
 
 	const project = await requireActiveProject(
 		workspaceSlug,
@@ -246,20 +283,25 @@ export async function moveTaskAction(
 	) {
 		return {
 			success: false,
-			error: "Task does not belong to the project.",
+			message: "Task does not belong to the project.",
 		};
 	}
 
-	const _moveTask = await updateTaskPosition(
+	const movedTask = await updateTaskPosition(
 		task.id,
 		destinationListId,
 		newPosition,
 	);
 
+	// Self-heals if repeated midpoint splits ever collapse a gap.
+	await rebalanceTaskPositionsIfNeeded(destinationListId);
+
+	await syncProjectCompletionStatus(project.id);
+
 	await createActivity({
 		workspaceId: project.workspaceId,
 		actorId: user.id,
-		action: "deleted",
+		action: "moved",
 		entity: "task",
 		entityId: task.id,
 		metadata: {
@@ -269,5 +311,10 @@ export async function moveTaskAction(
 		},
 	});
 
-	revalidatePath(`/workspaces/${workspaceSlug}/projects/${project.slug}`);
+	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
+
+	return {
+		success: true,
+		data: movedTask,
+	};
 }

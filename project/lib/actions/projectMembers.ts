@@ -1,19 +1,119 @@
+"use server";
+
 import { revalidatePath } from "next/cache";
+import { treeifyError } from "zod/v4/core";
 import { createActivity } from "../activity";
 import { getCurrentUser } from "../auth";
 import {
-	addProjectMember,
+	addProjectMembers,
 	getProjectMember,
 	getProjectMembers,
 	removeProjectMember,
-	updateProjectLead,
 } from "../db/queries/projectMembers";
-import { getWorkspaceMemberById } from "../db/queries/workspaceMembers";
-import { requireActiveProject, requireProjectLead } from "../permission";
+import { transferProjectLead } from "../db/queries/projects";
+import { getWorkspaceMembersById } from "../db/queries/workspaceMembers";
+import { isProjectManager, requireActiveProject } from "../permission";
+import {
+	type AddProjectMembersInput,
+	addProjectMembersSchema,
+} from "../validations/projectMember";
 
-export async function getProjectMembersAction(
+const FORBIDDEN_MESSAGE =
+	"Only the project lead or a workspace owner/admin can manage project members.";
+
+export async function addProjectMembersAction(
 	workspaceSlug: string,
 	projectSlug: string,
+	data: AddProjectMembersInput,
+) {
+	const user = await getCurrentUser();
+
+	const validatedData = addProjectMembersSchema.safeParse(data);
+
+	if (!validatedData.success) {
+		return {
+			success: false,
+			message: treeifyError(validatedData.error),
+		};
+	}
+
+	const project = await requireActiveProject(
+		workspaceSlug,
+		projectSlug,
+		user.id,
+	);
+
+	const canManage = await isProjectManager(
+		project.workspaceId,
+		project.leadId,
+		user.id,
+	);
+
+	if (!canManage) {
+		return {
+			success: false,
+			message: FORBIDDEN_MESSAGE,
+		};
+	}
+
+	const [workspaceMembers, existingMembers] = await Promise.all([
+		getWorkspaceMembersById(project.workspaceId),
+		getProjectMembers(project.id),
+	]);
+
+	const workspaceUserIds = new Set(
+		workspaceMembers.map((member) => member.userId),
+	);
+	const existingUserIds = new Set(
+		existingMembers.map((member) => member.userId),
+	);
+
+	// Prevents a race condition where two users add the same member at the same time, and one of them gets a error.
+	const userIdsToAdd = [...new Set(validatedData.data.userIds)].filter(
+		(userId) => workspaceUserIds.has(userId) && !existingUserIds.has(userId),
+	);
+
+	if (userIdsToAdd.length === 0) {
+		return {
+			success: false,
+			message: "Those members are already part of this project.",
+		};
+	}
+
+	const addedMembers = await addProjectMembers(project.id, userIdsToAdd);
+
+	await Promise.all(
+		addedMembers.map((member) =>
+			createActivity({
+				workspaceId: project.workspaceId,
+				actorId: user.id,
+				action: "created",
+				entity: "project_member",
+				entityId: member.id,
+				metadata: {
+					project: project.name,
+					userId: member.userId,
+				},
+			}),
+		),
+	);
+
+	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
+
+	return {
+		success: true,
+		data: addedMembers,
+		message:
+			addedMembers.length === 1
+				? "Member added to the project."
+				: `${addedMembers.length} members added to the project.`,
+	};
+}
+
+export async function removeProjectMemberAction(
+	workspaceSlug: string,
+	projectSlug: string,
+	userId: string,
 ) {
 	const user = await getCurrentUser();
 
@@ -23,82 +123,36 @@ export async function getProjectMembersAction(
 		user.id,
 	);
 
-	const members = await getProjectMembers(project.id);
-
-	return members;
-}
-
-export async function addProjectMemberAction(
-	workspaceSlug: string,
-	projectSlug: string,
-	memberUserId: string,
-) {
-	const user = await getCurrentUser();
-
-	const project = await requireProjectLead(workspaceSlug, projectSlug, user.id);
-
-	const workspaceMember = await getWorkspaceMemberById(
+	const canManage = await isProjectManager(
 		project.workspaceId,
-		memberUserId,
+		project.leadId,
+		user.id,
 	);
 
-	if (!workspaceMember) {
+	if (!canManage) {
 		return {
 			success: false,
-			error: "User is not a member of the workspace.",
+			message: FORBIDDEN_MESSAGE,
 		};
 	}
 
-	const existingMember = await getProjectMember(project.id, memberUserId);
-
-	if (existingMember) {
+	if (project.leadId === userId) {
 		return {
 			success: false,
-			error: "User is already a member of this project.",
+			message: "Transfer the project lead role before removing this member.",
 		};
 	}
 
-	const member = await addProjectMember(project.id, memberUserId);
+	const member = await getProjectMember(project.id, userId);
 
-	await createActivity({
-		workspaceId: project.workspaceId,
-		actorId: user.id,
-		action: "created",
-		entity: "project_member",
-		entityId: member.id,
-		metadata: {
-			project: project.name,
-			userId: memberUserId,
-		},
-	});
-
-	revalidatePath(`/workspaces/${workspaceSlug}/projects/${project.slug}`);
-
-	return {
-		success: true,
-		data: member,
-	};
-}
-
-export async function removeProjectMemberAction(
-	workspaceSlug: string,
-	projectSlug: string,
-	memberId: string,
-) {
-	const user = await getCurrentUser();
-
-	const project = await requireProjectLead(workspaceSlug, projectSlug, user.id);
-
-	const member = await getProjectMember(project.id, memberId);
-
-	if (!member || member.projectId !== project.id) {
+	if (!member) {
 		return {
 			success: false,
-			error: "User is not a member of this project.",
+			message: "User is not a member of this project.",
 		};
 	}
 
-	const removed = await removeProjectMember(project.id, memberId);
+	const removed = await removeProjectMember(project.id, userId);
 
 	await createActivity({
 		workspaceId: project.workspaceId,
@@ -112,11 +166,12 @@ export async function removeProjectMemberAction(
 		},
 	});
 
-	revalidatePath(`/workspaces/${workspaceSlug}/projects/${project.slug}`);
+	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
 	return {
 		success: true,
 		data: removed,
+		message: "Member removed from the project.",
 	};
 }
 
@@ -127,35 +182,60 @@ export async function transferProjectLeadAction(
 ) {
 	const user = await getCurrentUser();
 
-	const project = await requireProjectLead(workspaceSlug, projectSlug, user.id);
+	const project = await requireActiveProject(
+		workspaceSlug,
+		projectSlug,
+		user.id,
+	);
 
-	const member = getProjectMember(project.id, newLeadUserId);
+	const canManage = await isProjectManager(
+		project.workspaceId,
+		project.leadId,
+		user.id,
+	);
+
+	if (!canManage) {
+		return {
+			success: false,
+			message: FORBIDDEN_MESSAGE,
+		};
+	}
+
+	if (project.leadId === newLeadUserId) {
+		return {
+			success: false,
+			message: "That member is already the project lead.",
+		};
+	}
+
+	const member = await getProjectMember(project.id, newLeadUserId);
 
 	if (!member) {
 		return {
 			success: false,
-			error: "User is not a member of this project.",
+			message: "User is not a member of this project.",
 		};
 	}
 
-	const updatedProject = await updateProjectLead(project.id, newLeadUserId);
+	const updatedProject = await transferProjectLead(project.id, newLeadUserId);
 
 	await createActivity({
 		workspaceId: project.workspaceId,
 		actorId: user.id,
-		action: "updated",
+		action: "transferred",
 		entity: "project",
 		entityId: project.id,
 		metadata: {
-			previousLead: user.id,
-			newLead: newLeadUserId,
+			previousLeadId: project.leadId,
+			newLeadId: newLeadUserId,
 		},
 	});
 
-	revalidatePath(`/workspaces/${workspaceSlug}/projects/${project.slug}`);
+	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
 	return {
 		success: true,
 		data: updatedProject,
+		message: "Project lead transferred.",
 	};
 }

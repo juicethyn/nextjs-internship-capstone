@@ -1,12 +1,9 @@
-import { and, eq } from "drizzle-orm";
+import { and, asc, count, eq, sql } from "drizzle-orm";
 import { generateProjectSlug } from "@/lib/utils/slug";
-import type {
-	CreateProjectInput,
-	UpdateProjectInput,
-} from "@/lib/validations/project";
+import type { CreateProjectInput } from "@/lib/validations/project";
 import type { DbClient } from "@/types/db";
 import { db } from "../index";
-import { projects } from "../schema";
+import { lists, projects, tasks } from "../schema";
 
 // CRUD Operations
 
@@ -19,7 +16,7 @@ export async function createProject(
 	data: Omit<CreateProjectInput, "labelIds">,
 	dbClient: DbClient = db,
 ) {
-	const slug = generateProjectSlug(data.name);
+	const slug = generateProjectSlug();
 
 	const [project] = await dbClient
 		.insert(projects)
@@ -86,7 +83,24 @@ export function getProjectBySlugWithRelations(
 	return db.query.projects.findFirst({
 		where: and(eq(projects.workspaceId, workspaceId), eq(projects.slug, slug)),
 		with: {
-			lists: { with: { tasks: true } },
+			// Board order is position-driven, so hand back rows already sorted
+			// instead of relying on the client to re-sort every render.
+			lists: {
+				orderBy: asc(lists.position),
+				with: {
+					tasks: {
+						orderBy: asc(tasks.position),
+						with: {
+							assignee: true,
+							taskLabels: { with: { taskLabel: true } },
+							comments: { columns: { id: true } },
+						},
+					},
+				},
+			},
+			// leadId can point at someone with no project_members row, so the roster
+			// needs the lead's user record independently of members.
+			lead: true,
 			members: {
 				with: {
 					user: true,
@@ -101,18 +115,17 @@ export function getProjectBySlugWithRelations(
 	});
 }
 
+// The slug is frozen at creation. Regenerating it on rename would change the
+// project URL and 404 the page the user is standing on.
 export async function updateProject(
 	id: string,
-	data: Omit<UpdateProjectInput, "labelIds">,
+	data: Partial<
+		Omit<typeof projects.$inferInsert, "id" | "workspaceId" | "slug">
+	>,
 ) {
-	const slug = data.name ? generateProjectSlug(data.name) : undefined;
-
 	const [project] = await db
 		.update(projects)
-		.set({
-			...data,
-			slug,
-		})
+		.set(data)
 		.where(eq(projects.id, id))
 		.returning();
 
@@ -145,11 +158,14 @@ export async function transferProjectLead(
 	return project;
 }
 
+// status and isArchived have to move together, otherwise ProjectStatusBadge
+// keeps reporting "Active" for an archived project.
 export async function archiveProject(projectId: string) {
 	const [project] = await db
 		.update(projects)
 		.set({
 			isArchived: true,
+			status: "archived",
 		})
 		.where(eq(projects.id, projectId))
 		.returning();
@@ -162,11 +178,50 @@ export async function restoreProject(projectId: string) {
 		.update(projects)
 		.set({
 			isArchived: false,
+			status: "active",
 		})
 		.where(eq(projects.id, projectId))
 		.returning();
 
 	return project;
+}
+
+// A project is completed once every task it has sits in a "done" list. The
+// totalTasks > 0 guard keeps an empty project on "active" rather than counting
+// "nothing to do" as "everything done".
+export async function syncProjectCompletionStatus(projectId: string) {
+	const [project] = await db
+		.select({ status: projects.status, isArchived: projects.isArchived })
+		.from(projects)
+		.where(eq(projects.id, projectId));
+
+	// Archiving wins over board activity.
+	if (!project || project.isArchived) {
+		return;
+	}
+
+	const [taskCounts] = await db
+		.select({
+			total: count(),
+			done: count(sql`case when ${lists.type} = 'done' then 1 end`),
+		})
+		.from(tasks)
+		.innerJoin(lists, eq(tasks.listId, lists.id))
+		.where(eq(lists.projectId, projectId));
+
+	const nextStatus =
+		taskCounts.total > 0 && taskCounts.done === taskCounts.total
+			? "completed"
+			: "active";
+
+	if (nextStatus === project.status) {
+		return;
+	}
+
+	await db
+		.update(projects)
+		.set({ status: nextStatus })
+		.where(eq(projects.id, projectId));
 }
 
 // Will be used for the dashboard.ts queries

@@ -7,6 +7,7 @@ import "./globals.css"; // FIX #2: Creating global.d.ts to declare module for CS
 import { ClerkProvider } from "@clerk/nextjs";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ThemedToaster } from "@/components/themed-toaster";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { ReactQueryProvider } from "./providers/react-query-provider";
 
@@ -37,10 +38,12 @@ export default function RootLayout({
 					className={`${inter.className} min-h-screen overflow-hidden bg-background text-foreground antialiased`}
 				>
 					<ThemeProvider>
-						<ReactQueryProvider>
-							{children}
-							<ThemedToaster />
-						</ReactQueryProvider>
+						<TooltipProvider>
+							<ReactQueryProvider>
+								{children}
+								<ThemedToaster />
+							</ReactQueryProvider>
+						</TooltipProvider>
 					</ThemeProvider>
 				</body>
 			</html>

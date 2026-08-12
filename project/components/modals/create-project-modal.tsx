@@ -1,12 +1,14 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { format, parse } from "date-fns";
 import { useForm } from "react-hook-form";
 import { LabelBadge } from "@/components/labels/label-badge";
+import { OptionalTag } from "@/components/optional-tag";
 import { ProjectColorPicker } from "@/components/project/project-color-picker";
-import { ProjectDatePicker } from "@/components/project/project-date-picker";
 import { ProjectLabelPicker } from "@/components/project/project-label-picker";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
 	Dialog,
 	DialogContent,
@@ -29,12 +31,14 @@ import {
 
 const DESCRIPTION_MAX_LENGTH = 500;
 
-function OptionalTag() {
-	return (
-		<span className="ml-1 text-xs font-normal text-muted-foreground">
-			(optional)
-		</span>
-	);
+const DATE_VALUE_FORMAT = "yyyy-MM-dd";
+
+function toDateValue(value?: string) {
+	if (!value) return null;
+
+	const parsed = parse(value, DATE_VALUE_FORMAT, new Date());
+
+	return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
 type CreateProjectModalProps = {
@@ -86,15 +90,8 @@ export function CreateProjectModal({
 			{ shouldDirty: true, shouldValidate: true },
 		);
 
-	const handleDateChange = (range: {
-		startDate?: string;
-		dueDate?: string;
-	}) => {
-		form.setValue("startDate", range.startDate, {
-			shouldDirty: true,
-			shouldValidate: true,
-		});
-		form.setValue("dueDate", range.dueDate, {
+	const setDateField = (field: "startDate" | "dueDate", date?: Date) => {
+		form.setValue(field, date ? format(date, DATE_VALUE_FORMAT) : undefined, {
 			shouldDirty: true,
 			shouldValidate: true,
 		});
@@ -210,23 +207,44 @@ export function CreateProjectModal({
 							</div>
 						</div>
 
-						<div className="space-y-2">
-							<Label>
-								Date
-								<OptionalTag />
-							</Label>
+						<div className="grid gap-4 sm:grid-cols-2">
+							<div className="space-y-2">
+								<Label htmlFor="project-start-date">
+									Start date
+									<OptionalTag />
+								</Label>
 
-							<ProjectDatePicker
-								startDate={startDate}
-								dueDate={dueDate}
-								onChange={handleDateChange}
-							/>
+								<DatePicker
+									id="project-start-date"
+									value={toDateValue(startDate)}
+									onChange={(date) => setDateField("startDate", date)}
+								/>
 
-							{errors.dueDate && (
-								<p className="text-sm text-destructive">
-									{errors.dueDate.message}
-								</p>
-							)}
+								{errors.startDate && (
+									<p className="text-sm text-destructive">
+										{errors.startDate.message}
+									</p>
+								)}
+							</div>
+
+							<div className="space-y-2">
+								<Label htmlFor="project-due-date">
+									Due date
+									<OptionalTag />
+								</Label>
+
+								<DatePicker
+									id="project-due-date"
+									value={toDateValue(dueDate)}
+									onChange={(date) => setDateField("dueDate", date)}
+								/>
+
+								{errors.dueDate && (
+									<p className="text-sm text-destructive">
+										{errors.dueDate.message}
+									</p>
+								)}
+							</div>
 						</div>
 					</div>
 

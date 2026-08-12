@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/dist/server/web/spec-extension/revalidate";
+import { revalidatePath } from "next/cache";
 import { createActivity } from "../activity";
 import { getCurrentUser } from "../auth";
 import {
@@ -52,7 +52,10 @@ export async function getCommentsByTaskAction(
 
 	return {
 		success: true,
-		data: comments,
+		data: comments.map((comment) => ({
+			...comment,
+			isOwn: comment.authorId === user.id,
+		})),
 	};
 }
 
@@ -92,7 +95,7 @@ export async function createCommentAction(
 
 	const comment = await createComment(taskId, user.id, validatedData.data);
 
-	revalidatePath(`/workspaces/${workspaceSlug}/projects/${projectSlug}`);
+	revalidatePath(`/w/${workspaceSlug}/projects/${projectSlug}`);
 
 	await createActivity({
 		workspaceId: project.workspaceId,
@@ -160,7 +163,7 @@ export async function updateCommentAction(
 		},
 	});
 
-	revalidatePath(`/workspaces/${workspaceSlug}/projects/${projectSlug}`);
+	revalidatePath(`/w/${workspaceSlug}/projects/${projectSlug}`);
 
 	return {
 		success: true,
@@ -194,6 +197,13 @@ export async function deleteCommentAction(
 		};
 	}
 
+	if (comment.authorId !== user.id) {
+		return {
+			success: false,
+			error: "You can only delete your own comments.",
+		};
+	}
+
 	const deletedComment = await deleteComment(commentId);
 
 	await createActivity({
@@ -207,7 +217,7 @@ export async function deleteCommentAction(
 		},
 	});
 
-	revalidatePath(`/workspaces/${workspaceSlug}/projects/${projectSlug}`);
+	revalidatePath(`/w/${workspaceSlug}/projects/${projectSlug}`);
 
 	return {
 		success: true,

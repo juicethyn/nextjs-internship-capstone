@@ -14,7 +14,6 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "../ui/dialog";
-import { ScrollArea } from "../ui/scroll-area";
 import { Separator } from "../ui/separator";
 import { WorkspaceAvatar } from "../workspace-avatar";
 import { MemberAvatarStack } from "./member-avatar-stack";
@@ -46,7 +45,7 @@ export function ProjectDetailsDialog({ project }: ProjectDetailsDialogProps) {
 					</DialogDescription>
 				</DialogHeader>
 
-				<ScrollArea className="max-h-[60vh] min-w-0">
+				<div className="board-scrollbar max-h-[60vh] min-w-0 overflow-y-auto">
 					<div className="min-w-0 space-y-5 pr-3">
 						{/* Project Identity */}
 						<section className="flex min-w-0 justfy-between items-center gap-3">
@@ -179,7 +178,7 @@ export function ProjectDetailsDialog({ project }: ProjectDetailsDialogProps) {
 							/>
 						</section>
 					</div>
-				</ScrollArea>
+				</div>
 			</DialogContent>
 		</Dialog>
 	);

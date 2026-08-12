@@ -29,6 +29,13 @@
 			"when": 1785916757085,
 			"tag": "0003_many_tusk",
 			"breakpoints": true
+		},
+		{
+			"idx": 4,
+			"version": "7",
+			"when": 1786420015631,
+			"tag": "0004_bright_angel",
+			"breakpoints": true
 		}
 	]
 }

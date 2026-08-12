@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useProjects } from "@/hooks/use-projects";
 import {
 	DEFAULT_PROJECT_SORT_KEY,
@@ -14,6 +14,8 @@ import {
 import type { ProjectWithRelations } from "@/types/projects";
 import { CreateProjectModal } from "../modals/create-project-modal";
 import { ProjectGridSkeleton } from "../skeletons/project-grid-skeleton";
+import { ProjectHeaderSkeleton } from "../skeletons/project-header-skeleton";
+import { ProjectToolbarSkeleton } from "../skeletons/project-toolbar-skeleton";
 import { ProjectsEmptyState } from "./project-empty-state";
 import { ProjectGrid } from "./project-grid";
 import { ProjectsHeader } from "./project-header";
@@ -56,7 +58,13 @@ export function ProjectClient({
 	};
 
 	if (isLoading) {
-		return <div>Loading...</div>;
+		return (
+			<div className="space-y-6">
+				<ProjectHeaderSkeleton />
+				<ProjectToolbarSkeleton />
+				<ProjectGridSkeleton />
+			</div>
+		);
 	}
 
 	const activeCount = projects.filter(
@@ -108,10 +116,11 @@ export function ProjectClient({
 				/>
 			)}
 
+			{/* No Suspense here: ProjectGrid is synchronous and receives an already
+			    resolved array, so a boundary could never suspend. The skeleton lives
+			    in the route's loading.tsx, which is what actually fires. */}
 			{visibleItems.length > 0 && (
-				<Suspense fallback={<ProjectGridSkeleton />}>
-					<ProjectGrid items={visibleItems} workspaceSlug={workspaceSlug} />
-				</Suspense>
+				<ProjectGrid items={visibleItems} workspaceSlug={workspaceSlug} />
 			)}
 
 			<CreateProjectModal
