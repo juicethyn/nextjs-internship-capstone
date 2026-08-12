@@ -1,9 +1,9 @@
-import { and, asc, count, eq, sql } from "drizzle-orm";
+import { and, asc, count, eq, isNotNull, sql } from "drizzle-orm";
 import { generateProjectSlug } from "@/lib/utils/slug";
 import type { CreateProjectInput } from "@/lib/validations/project";
 import type { DbClient } from "@/types/db";
 import { db } from "../index";
-import { lists, projects, tasks } from "../schema";
+import { lists, projectMembers, projects, tasks } from "../schema";
 
 // CRUD Operations
 
@@ -184,6 +184,55 @@ export async function restoreProject(projectId: string) {
 		.returning();
 
 	return project;
+}
+
+// A user counts as assigned to a project when they hold a project_members row
+// OR they are the lead — leadId can point at someone with no membership row, so
+// counting memberships alone would report 0 for a lead on their own project.
+export async function getWorkspaceProjectAssignmentCounts(workspaceId: string) {
+	const [memberships, leads] = await Promise.all([
+		db
+			.select({
+				userId: projectMembers.userId,
+				projectId: projects.id,
+			})
+			.from(projectMembers)
+			.innerJoin(projects, eq(projects.id, projectMembers.projectId))
+			.where(eq(projects.workspaceId, workspaceId)),
+
+		db
+			.select({
+				userId: projects.leadId,
+				projectId: projects.id,
+			})
+			.from(projects)
+			.where(
+				and(eq(projects.workspaceId, workspaceId), isNotNull(projects.leadId)),
+			),
+	]);
+
+	const projectIdsByUser = new Map<string, Set<string>>();
+
+	for (const row of [...memberships, ...leads]) {
+		if (!row.userId) continue;
+
+		const existing = projectIdsByUser.get(row.userId);
+
+		if (existing) {
+			existing.add(row.projectId);
+			continue;
+		}
+
+		projectIdsByUser.set(row.userId, new Set([row.projectId]));
+	}
+
+	const counts: Record<string, number> = {};
+
+	for (const [userId, projectIds] of projectIdsByUser) {
+		counts[userId] = projectIds.size;
+	}
+
+	return counts;
 }
 
 // A project is completed once every task it has sits in a "done" list. The

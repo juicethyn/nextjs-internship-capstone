@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "../auth";
+import { getWorkspaceProjectAssignmentCounts } from "../db/queries/projects";
 import {
 	addWorkspaceMember,
 	getWorkspaceMemberById,
@@ -57,6 +58,27 @@ export async function getWorkspaceMembersBySlug(workspaceSlug: string) {
 	return {
 		success: true,
 		data: members,
+	};
+}
+
+export async function getWorkspaceMembersWithStatsBySlug(
+	workspaceSlug: string,
+) {
+	const user = await getCurrentUser();
+
+	const workspace = await requireWorkspaceMember(workspaceSlug, user.id);
+
+	const [members, projectCounts] = await Promise.all([
+		getWorkspaceMembersById(workspace.id),
+		getWorkspaceProjectAssignmentCounts(workspace.id),
+	]);
+
+	return {
+		currentUserId: user.id,
+		members: members.map((member) => ({
+			...member,
+			projectCount: projectCounts[member.userId] ?? 0,
+		})),
 	};
 }
 
