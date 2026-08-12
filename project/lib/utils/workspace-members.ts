@@ -4,13 +4,15 @@ import type { Occupation } from "@/lib/db/schema";
 import type { WorkspaceMemberRole } from "@/types/workspace";
 import { memberDisplayName } from "./project-members";
 
-export type WorkspaceMemberListItem = Awaited<
-	ReturnType<typeof getWorkspaceMembersWithStatsBySlug>
->["members"][number];
+type MembersPayload = Extract<
+	Awaited<ReturnType<typeof getWorkspaceMembersWithStatsBySlug>>,
+	{ success: true }
+>["data"];
 
-export type PendingInvitationListItem = Awaited<
-	ReturnType<typeof getWorkspaceMembersWithStatsBySlug>
->["pendingInvitations"][number];
+export type WorkspaceMemberListItem = MembersPayload["members"][number];
+
+export type PendingInvitationListItem =
+	MembersPayload["pendingInvitations"][number];
 
 export type WorkspaceMemberRoleFilter = "all" | WorkspaceMemberRole;
 

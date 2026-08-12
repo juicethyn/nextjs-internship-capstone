@@ -6,8 +6,6 @@ import { getWorkspaceProjectAssignmentCounts } from "../db/queries/projects";
 import { getUsersByEmails } from "../db/queries/users";
 import { getPendingWorkspaceInvitations } from "../db/queries/workspaceInvitations";
 import {
-	addWorkspaceMember,
-	getWorkspaceMemberById,
 	getWorkspaceMembersById,
 	removeWorkspaceMember,
 	updateWorkspaceMemberRole,
@@ -18,47 +16,21 @@ import {
 	requireWorkspaceOwner,
 } from "../permission";
 
-export async function addWorkspaceMemberAction(
-	workspaceSlug: string,
-	userId: string,
-	role: "admin" | "member",
-) {
-	const user = await getCurrentUser();
-
-	const workspace = await requireWorkspaceAdmin(workspaceSlug, user.id);
-
-	const existingMember = await getWorkspaceMemberById(workspace.id, userId);
-
-	if (existingMember) {
-		return {
-			success: false,
-			error: "User is already a member of this workspace.",
-		};
-	}
-
-	const member = await addWorkspaceMember({
-		workspaceId: workspace.id,
-		userId,
-		role,
-	});
-
-	revalidatePath(`/w/${workspace.slug}`, "layout");
-
-	return {
-		success: true,
-		data: member,
-	};
-}
-
 export async function getWorkspaceMembersBySlug(workspaceSlug: string) {
 	const user = await getCurrentUser();
 
-	const workspace = await requireWorkspaceMember(workspaceSlug, user.id);
+	const access = await requireWorkspaceMember(workspaceSlug, user.id);
+
+	if (!access.success) {
+		return { success: false as const, message: access.message };
+	}
+
+	const workspace = access.data;
 
 	const members = await getWorkspaceMembersById(workspace.id);
 
 	return {
-		success: true,
+		success: true as const,
 		data: members,
 	};
 }
@@ -68,7 +40,13 @@ export async function getWorkspaceMembersWithStatsBySlug(
 ) {
 	const user = await getCurrentUser();
 
-	const workspace = await requireWorkspaceMember(workspaceSlug, user.id);
+	const access = await requireWorkspaceMember(workspaceSlug, user.id);
+
+	if (!access.success) {
+		return { success: false as const, message: access.message };
+	}
+
+	const workspace = access.data;
 
 	const [members, projectCounts] = await Promise.all([
 		getWorkspaceMembersById(workspace.id),
@@ -87,14 +65,17 @@ export async function getWorkspaceMembersWithStatsBySlug(
 		: [];
 
 	return {
-		currentUserId: user.id,
-		workspaceName: workspace.name,
-		viewerRole,
-		pendingInvitations,
-		members: members.map((member) => ({
-			...member,
-			projectCount: projectCounts[member.userId] ?? 0,
-		})),
+		success: true as const,
+		data: {
+			currentUserId: user.id,
+			workspaceName: workspace.name,
+			viewerRole,
+			pendingInvitations,
+			members: members.map((member) => ({
+				...member,
+				projectCount: projectCounts[member.userId] ?? 0,
+			})),
+		},
 	};
 }
 
@@ -134,21 +115,27 @@ export async function updateWorkspaceMemberRoleAction(
 ) {
 	const user = await getCurrentUser();
 
-	const workspace = await requireWorkspaceOwner(workspaceSlug, user.id);
+	const access = await requireWorkspaceOwner(workspaceSlug, user.id);
+
+	if (!access.success) {
+		return { success: false as const, message: access.message };
+	}
+
+	const workspace = access.data;
 
 	const member = await updateWorkspaceMemberRole(workspace.id, userId, role);
 
 	if (!member) {
 		return {
-			success: false,
-			error: "User is not a member of this workspace.",
+			success: false as const,
+			message: "User is not a member of this workspace.",
 		};
 	}
 
 	revalidatePath(`/w/${workspace.slug}`, "layout");
 
 	return {
-		success: true,
+		success: true as const,
 		data: member,
 	};
 }
@@ -159,7 +146,13 @@ export async function removeWorkspaceMemberAction(
 ) {
 	const user = await getCurrentUser();
 
-	const workspace = await requireWorkspaceAdmin(workspaceSlug, user.id);
+	const access = await requireWorkspaceAdmin(workspaceSlug, user.id);
+
+	if (!access.success) {
+		return { success: false as const, message: access.message };
+	}
+
+	const workspace = access.data;
 
 	const members = await getWorkspaceMembersById(workspace.id);
 
@@ -167,15 +160,15 @@ export async function removeWorkspaceMemberAction(
 
 	if (!targetMember) {
 		return {
-			success: false,
-			error: "User is not a member of this workspace.",
+			success: false as const,
+			message: "User is not a member of this workspace.",
 		};
 	}
 
 	if (targetMember.role === "owner") {
 		return {
-			success: false,
-			error: "Cannot remove the owner of the workspace.",
+			success: false as const,
+			message: "Cannot remove the owner of the workspace.",
 		};
 	}
 
@@ -187,7 +180,7 @@ export async function removeWorkspaceMemberAction(
 	revalidatePath(`/w/${workspace.slug}`, "layout");
 
 	return {
-		success: true,
+		success: true as const,
 		data: removed,
 	};
 }

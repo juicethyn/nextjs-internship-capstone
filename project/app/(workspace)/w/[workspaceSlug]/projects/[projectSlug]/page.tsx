@@ -1,9 +1,7 @@
-import { notFound } from "next/navigation";
+import { redirect } from "next/navigation";
 import { KanbanBoard } from "@/components/kanban/kanban-board";
 import { KanbanHeader } from "@/components/kanban/kanban-header";
-import { getCurrentUser } from "@/lib/auth";
-import { getProjectBySlugWithRelations } from "@/lib/db/queries/projects";
-import { isProjectManager, requireProjectMember } from "@/lib/permission";
+import { getProjectBySlug } from "@/lib/actions/projects";
 
 type ProjectPageProps = {
 	params: Promise<{
@@ -15,29 +13,15 @@ type ProjectPageProps = {
 export default async function ProjectPage({ params }: ProjectPageProps) {
 	const { workspaceSlug, projectSlug } = await params;
 
-	const user = await getCurrentUser();
+	const result = await getProjectBySlug(workspaceSlug, projectSlug);
 
-	// Redirects to the workspace dashboard when the project is missing or the
-	// user is not a member of it.
-	const { workspaceId } = await requireProjectMember(
-		workspaceSlug,
-		projectSlug,
-		user.id,
-	);
-
-	// requireProjectMember returns a bare row — refetch with relations.
-	const project = await getProjectBySlugWithRelations(workspaceId, projectSlug);
-
-	if (!project) {
-		notFound();
+	if (!result.success) {
+		redirect(`/w/${workspaceSlug}/dashboard`);
 	}
 
-	// Drives lists, members, settings, and the danger zone.
-	const canManageProject = await isProjectManager(
-		project.workspaceId,
-		project.leadId,
-		user.id,
-	);
+	// canManage rides along with the project: the guard already loaded the
+	// workspace member row to decide access, so gating costs no extra query.
+	const { project, canManage } = result.data;
 
 	return (
 		<div className="flex h-full min-w-0 w-full flex-col">
@@ -46,7 +30,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
 					workspaceSlug={workspaceSlug}
 					projectSlug={projectSlug}
 					initialProject={project}
-					canManageProject={canManageProject}
+					canManageProject={canManage}
 				/>
 			</div>
 
@@ -55,7 +39,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
 					workspaceSlug={workspaceSlug}
 					projectSlug={projectSlug}
 					initialProject={project}
-					canManageLists={canManageProject}
+					canManageLists={canManage}
 				/>
 			</div>
 		</div>

@@ -3,9 +3,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { getWorkspaceMembersWithStatsBySlug } from "@/lib/actions/workspaceMembers";
 
-export type WorkspaceMembersStats = Awaited<
-	ReturnType<typeof getWorkspaceMembersWithStatsBySlug>
->;
+export type WorkspaceMembersStats = Extract<
+	Awaited<ReturnType<typeof getWorkspaceMembersWithStatsBySlug>>,
+	{ success: true }
+>["data"];
 
 interface UseWorkspaceMembersStatsProps {
 	workspaceSlug: string;
@@ -18,7 +19,13 @@ export function useWorkspaceMembersStats({
 }: UseWorkspaceMembersStatsProps) {
 	const query = useQuery({
 		queryKey: ["workspace-members", workspaceSlug, "stats"],
-		queryFn: () => getWorkspaceMembersWithStatsBySlug(workspaceSlug),
+		queryFn: async () => {
+			const result = await getWorkspaceMembersWithStatsBySlug(workspaceSlug);
+
+			if (!result.success) throw new Error(result.message);
+
+			return result.data;
+		},
 		initialData,
 	});
 

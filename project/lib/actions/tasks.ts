@@ -7,7 +7,6 @@ import { syncProjectCompletionStatus } from "../db/queries/projects";
 import {
 	createTask,
 	deleteTask,
-	getTasksByList,
 	rebalanceTaskPositionsIfNeeded,
 	updateTask,
 	updateTaskPosition,
@@ -16,7 +15,6 @@ import {
 	isWorkspaceMember,
 	requireActiveProject,
 	requireList,
-	requireProjectMember,
 	requireTask,
 } from "../permission";
 import {
@@ -25,36 +23,6 @@ import {
 	type UpdateTaskInput,
 	updateTaskSchema,
 } from "../validations/task";
-
-export async function getTasksByListBySlug(
-	workspaceSlug: string,
-	projectSlug: string,
-	listId: string,
-) {
-	const user = await getCurrentUser();
-
-	const project = await requireProjectMember(
-		workspaceSlug,
-		projectSlug,
-		user.id,
-	);
-
-	const list = await requireList(listId);
-
-	if (list.projectId !== project.id) {
-		return {
-			success: false,
-			message: "List does not belong to the project.",
-		};
-	}
-
-	const task = await getTasksByList(listId);
-
-	return {
-		success: true,
-		data: task,
-	};
-}
 
 export async function createTaskAction(
 	workspaceSlug: string,
@@ -68,22 +36,34 @@ export async function createTaskAction(
 
 	if (!validatedData.success) {
 		return {
-			success: false,
+			success: false as const,
 			message: "Invalid task data.",
 		};
 	}
 
-	const project = await requireActiveProject(
+	const access = await requireActiveProject(
 		workspaceSlug,
 		projectSlug,
 		user.id,
 	);
 
-	const list = await requireList(listId);
+	if (!access.success) {
+		return { success: false as const, message: access.message };
+	}
+
+	const { project } = access.data;
+
+	const listResult = await requireList(listId);
+
+	if (!listResult.success) {
+		return { success: false as const, message: listResult.message };
+	}
+
+	const list = listResult.data;
 
 	if (list.projectId !== project.id) {
 		return {
-			success: false,
+			success: false as const,
 			message: "List does not belong to the project.",
 		};
 	}
@@ -96,7 +76,7 @@ export async function createTaskAction(
 
 		if (!assigneeIsMember) {
 			return {
-				success: false,
+				success: false as const,
 				message: "Assignee is not a member of this workspace.",
 			};
 		}
@@ -122,7 +102,7 @@ export async function createTaskAction(
 	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
 	return {
-		success: true,
+		success: true as const,
 		data: task,
 	};
 }
@@ -139,24 +119,42 @@ export async function updateTaskAction(
 
 	if (!validatedData.success) {
 		return {
-			success: false,
+			success: false as const,
 			message: "Invalid task data.",
 		};
 	}
 
-	const project = await requireActiveProject(
+	const access = await requireActiveProject(
 		workspaceSlug,
 		projectSlug,
 		user.id,
 	);
 
-	const task = await requireTask(taskId);
+	if (!access.success) {
+		return { success: false as const, message: access.message };
+	}
 
-	const list = await requireList(task.listId);
+	const { project } = access.data;
 
-	if (list?.projectId !== project.id) {
+	const taskResult = await requireTask(taskId);
+
+	if (!taskResult.success) {
+		return { success: false as const, message: taskResult.message };
+	}
+
+	const task = taskResult.data;
+
+	const listResult = await requireList(task.listId);
+
+	if (!listResult.success) {
+		return { success: false as const, message: listResult.message };
+	}
+
+	const list = listResult.data;
+
+	if (list.projectId !== project.id) {
 		return {
-			success: false,
+			success: false as const,
 			message: "Task does not belong to the project.",
 		};
 	}
@@ -169,7 +167,7 @@ export async function updateTaskAction(
 
 		if (!assigneeIsMember) {
 			return {
-				success: false,
+				success: false as const,
 				message: "Assignee is not a member of this workspace.",
 			};
 		}
@@ -195,7 +193,7 @@ export async function updateTaskAction(
 	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
 	return {
-		success: true,
+		success: true as const,
 		data: updatedTask,
 	};
 }
@@ -207,19 +205,37 @@ export async function deleteTaskAction(
 ) {
 	const user = await getCurrentUser();
 
-	const project = await requireActiveProject(
+	const access = await requireActiveProject(
 		workspaceSlug,
 		projectSlug,
 		user.id,
 	);
 
-	const task = await requireTask(taskId);
+	if (!access.success) {
+		return { success: false as const, message: access.message };
+	}
 
-	const list = await requireList(task.listId);
+	const { project } = access.data;
 
-	if (list?.projectId !== project.id) {
+	const taskResult = await requireTask(taskId);
+
+	if (!taskResult.success) {
+		return { success: false as const, message: taskResult.message };
+	}
+
+	const task = taskResult.data;
+
+	const listResult = await requireList(task.listId);
+
+	if (!listResult.success) {
+		return { success: false as const, message: listResult.message };
+	}
+
+	const list = listResult.data;
+
+	if (list.projectId !== project.id) {
 		return {
-			success: false,
+			success: false as const,
 			message: "Task does not belong to the project.",
 		};
 	}
@@ -244,7 +260,7 @@ export async function deleteTaskAction(
 	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
 	return {
-		success: true,
+		success: true as const,
 		data: deletedTask,
 	};
 }
@@ -260,29 +276,53 @@ export async function moveTaskAction(
 
 	if (!Number.isFinite(newPosition)) {
 		return {
-			success: false,
+			success: false as const,
 			message: "Invalid task position.",
 		};
 	}
 
-	const project = await requireActiveProject(
+	const access = await requireActiveProject(
 		workspaceSlug,
 		projectSlug,
 		user.id,
 	);
 
-	const task = await requireTask(taskId);
+	if (!access.success) {
+		return { success: false as const, message: access.message };
+	}
 
-	const currentList = await requireList(task.listId);
+	const { project } = access.data;
 
-	const destinationList = await requireList(destinationListId);
+	const taskResult = await requireTask(taskId);
+
+	if (!taskResult.success) {
+		return { success: false as const, message: taskResult.message };
+	}
+
+	const task = taskResult.data;
+
+	const currentListResult = await requireList(task.listId);
+
+	if (!currentListResult.success) {
+		return { success: false as const, message: currentListResult.message };
+	}
+
+	const currentList = currentListResult.data;
+
+	const destinationListResult = await requireList(destinationListId);
+
+	if (!destinationListResult.success) {
+		return { success: false as const, message: destinationListResult.message };
+	}
+
+	const destinationList = destinationListResult.data;
 
 	if (
 		currentList.projectId !== project.id ||
 		destinationList.projectId !== project.id
 	) {
 		return {
-			success: false,
+			success: false as const,
 			message: "Task does not belong to the project.",
 		};
 	}
@@ -314,7 +354,7 @@ export async function moveTaskAction(
 	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
 	return {
-		success: true,
+		success: true as const,
 		data: movedTask,
 	};
 }

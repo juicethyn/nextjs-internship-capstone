@@ -26,7 +26,16 @@ export function useTaskLabels({
 
 	const query = useQuery({
 		queryKey,
-		queryFn: () => getTaskLabelsByProjectAction(workspaceSlug, projectSlug),
+		queryFn: async () => {
+			const result = await getTaskLabelsByProjectAction(
+				workspaceSlug,
+				projectSlug,
+			);
+
+			if (!result.success) throw new Error(result.message);
+
+			return result.data;
+		},
 		enabled,
 	});
 
@@ -36,7 +45,7 @@ export function useTaskLabels({
 
 		onSuccess: (result) => {
 			if (!result.success) {
-				toast.error(result.error ?? "Failed to create label.");
+				toast.error(result.message ?? "Failed to create label.");
 				return;
 			}
 
@@ -53,7 +62,7 @@ export function useTaskLabels({
 
 		onSuccess: (result) => {
 			if (!result.success) {
-				toast.error(result.error ?? "Failed to delete label.");
+				toast.error(result.message ?? "Failed to delete label.");
 				return;
 			}
 

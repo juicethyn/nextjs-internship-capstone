@@ -23,9 +23,21 @@ export default async function Layout({ children, params }: LayoutProps) {
 		redirect("/onboarding");
 	}
 
-	// Checks if the user is a member of the workspace, if not, redirects to their own workspace or onboarding
-	const currentWorkspace = await requireWorkspaceMember(workspaceSlug, user.id);
+	const access = await requireWorkspaceMember(workspaceSlug, user.id);
+
 	const workspaces = await getUserWorkspaces(user.id);
+
+	// A signed-in user who landed on someone else's workspace is better served
+	// by being dropped into one of their own than by a dead-end error page.
+	if (!access.success) {
+		redirect(
+			workspaces.length > 0
+				? `/w/${workspaces[0].slug}/dashboard`
+				: "/onboarding",
+		);
+	}
+
+	const currentWorkspace = access.data;
 
 	// getWorkspaceBySlug already loads `members`, so the role costs no extra query.
 	const currentUserRole =

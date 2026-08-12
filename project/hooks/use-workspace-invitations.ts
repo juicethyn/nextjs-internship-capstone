@@ -58,7 +58,7 @@ export function useWorkspaceInvitations(workspaceSlug: string) {
 
 		onSuccess: (result) => {
 			if (!result.success) {
-				toast.error(result.error ?? "Failed to revoke invitation.");
+				toast.error(result.message ?? "Failed to revoke invitation.");
 				return;
 			}
 
@@ -77,7 +77,7 @@ export function useWorkspaceInvitations(workspaceSlug: string) {
 
 		onSuccess: (result) => {
 			if (!result.success) {
-				toast.error(result.error ?? "Failed to resend invitation.");
+				toast.error(result.message ?? "Failed to resend invitation.");
 				return;
 			}
 

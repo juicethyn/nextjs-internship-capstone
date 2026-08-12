@@ -9,6 +9,8 @@ export function useWorkspaceMembers(workspaceSlug: string, enabled = true) {
 		queryFn: async () => {
 			const result = await getWorkspaceMembersBySlug(workspaceSlug);
 
+			if (!result.success) throw new Error(result.message);
+
 			return result.data;
 		},
 		enabled,

@@ -25,8 +25,13 @@ export function useProjects({
 	const query = useQuery({
 		queryKey: ["projects", workspaceSlug],
 		queryFn: async () => {
-			const response = await getProjectsByWorkspaceBySlug(workspaceSlug);
-			return response.projects ?? [];
+			const result = await getProjectsByWorkspaceBySlug(workspaceSlug);
+
+			// Throwing keeps the query in an error state instead of silently
+			// replacing a permission failure with an empty grid.
+			if (!result.success) throw new Error(result.message);
+
+			return result.data;
 		},
 		initialData: initialProjects,
 	});

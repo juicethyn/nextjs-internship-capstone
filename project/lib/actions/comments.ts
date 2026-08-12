@@ -7,9 +7,7 @@ import {
 	createComment,
 	deleteComment,
 	getCommentsByTask,
-	updateComment,
 } from "../db/queries/comments";
-import { getListById } from "../db/queries/lists";
 import {
 	requireActiveProject,
 	requireComment,
@@ -20,8 +18,6 @@ import {
 import {
 	type CreateCommentInput,
 	createCommentSchema,
-	type UpdateCommentInput,
-	updateCommentSchema,
 } from "../validations/comment";
 
 export async function getCommentsByTaskAction(
@@ -31,27 +27,43 @@ export async function getCommentsByTaskAction(
 ) {
 	const user = await getCurrentUser();
 
-	const project = await requireProjectMember(
+	const access = await requireProjectMember(
 		workspaceSlug,
 		projectSlug,
 		user.id,
 	);
 
-	const task = await requireTask(taskId);
+	if (!access.success) {
+		return { success: false as const, message: access.message };
+	}
 
-	const list = await getListById(task.listId);
+	const { project } = access.data;
 
-	if (list?.projectId !== project.id) {
+	const taskResult = await requireTask(taskId);
+
+	if (!taskResult.success) {
+		return { success: false as const, message: taskResult.message };
+	}
+
+	const task = taskResult.data;
+
+	const listResult = await requireList(task.listId);
+
+	if (!listResult.success) {
+		return { success: false as const, message: listResult.message };
+	}
+
+	if (listResult.data.projectId !== project.id) {
 		return {
-			success: false,
-			error: "Task does not belong to the project.",
+			success: false as const,
+			message: "Task does not belong to the project.",
 		};
 	}
 
 	const comments = await getCommentsByTask(taskId);
 
 	return {
-		success: true,
+		success: true as const,
 		data: comments.map((comment) => ({
 			...comment,
 			isOwn: comment.authorId === user.id,
@@ -71,25 +83,41 @@ export async function createCommentAction(
 
 	if (!validatedData.success) {
 		return {
-			success: false,
-			error: "Invalid comment data.",
+			success: false as const,
+			message: "Invalid comment data.",
 		};
 	}
 
-	const project = await requireActiveProject(
+	const access = await requireActiveProject(
 		workspaceSlug,
 		projectSlug,
 		user.id,
 	);
 
-	const task = await requireTask(taskId);
+	if (!access.success) {
+		return { success: false as const, message: access.message };
+	}
 
-	const list = await getListById(task.listId);
+	const { project } = access.data;
 
-	if (list?.projectId !== project.id) {
+	const taskResult = await requireTask(taskId);
+
+	if (!taskResult.success) {
+		return { success: false as const, message: taskResult.message };
+	}
+
+	const task = taskResult.data;
+
+	const listResult = await requireList(task.listId);
+
+	if (!listResult.success) {
+		return { success: false as const, message: listResult.message };
+	}
+
+	if (listResult.data.projectId !== project.id) {
 		return {
-			success: false,
-			error: "Task does not belong to the project.",
+			success: false as const,
+			message: "Task does not belong to the project.",
 		};
 	}
 
@@ -109,65 +137,8 @@ export async function createCommentAction(
 	});
 
 	return {
-		success: true,
+		success: true as const,
 		data: comment,
-	};
-}
-
-export async function updateCommentAction(
-	workspaceSlug: string,
-	projectSlug: string,
-	commentId: string,
-	data: UpdateCommentInput,
-) {
-	const user = await getCurrentUser();
-
-	const validatedData = updateCommentSchema.safeParse(data);
-
-	if (!validatedData.success) {
-		return {
-			success: false,
-			error: "Invalid comment data.",
-		};
-	}
-
-	const project = await requireActiveProject(
-		workspaceSlug,
-		projectSlug,
-		user.id,
-	);
-
-	const comment = await requireComment(commentId);
-
-	const task = await requireTask(comment.taskId);
-
-	const list = await requireList(task.listId);
-
-	if (list?.projectId !== project.id) {
-		return {
-			success: false,
-			error: "Comment does not belong to the project.",
-		};
-	}
-
-	const updatedComment = await updateComment(commentId, validatedData.data);
-
-	await createActivity({
-		workspaceId: project.workspaceId,
-		actorId: user.id,
-		action: "updated",
-		entity: "comment",
-		entityId: comment.id,
-		metadata: {
-			taskTitle: task.title,
-		},
-	});
-
-	revalidatePath(`/w/${workspaceSlug}/projects/${projectSlug}`);
-
-	return {
-		success: true,
-		data: updatedComment,
 	};
 }
 
@@ -178,29 +149,53 @@ export async function deleteCommentAction(
 ) {
 	const user = await getCurrentUser();
 
-	const project = await requireActiveProject(
+	const access = await requireActiveProject(
 		workspaceSlug,
 		projectSlug,
 		user.id,
 	);
 
-	const comment = await requireComment(commentId);
+	if (!access.success) {
+		return { success: false as const, message: access.message };
+	}
 
-	const task = await requireTask(comment.taskId);
+	const { project } = access.data;
 
-	const list = await requireList(task.listId);
+	const commentResult = await requireComment(commentId);
 
-	if (list?.projectId !== project.id) {
+	if (!commentResult.success) {
+		return { success: false as const, message: commentResult.message };
+	}
+
+	const comment = commentResult.data;
+
+	const taskResult = await requireTask(comment.taskId);
+
+	if (!taskResult.success) {
+		return { success: false as const, message: taskResult.message };
+	}
+
+	const task = taskResult.data;
+
+	const listResult = await requireList(task.listId);
+
+	if (!listResult.success) {
+		return { success: false as const, message: listResult.message };
+	}
+
+	const list = listResult.data;
+
+	if (list.projectId !== project.id) {
 		return {
-			success: false,
-			error: "Comment does not belong to the project.",
+			success: false as const,
+			message: "Comment does not belong to the project.",
 		};
 	}
 
 	if (comment.authorId !== user.id) {
 		return {
-			success: false,
-			error: "You can only delete your own comments.",
+			success: false as const,
+			message: "You can only delete your own comments.",
 		};
 	}
 
@@ -220,7 +215,7 @@ export async function deleteCommentAction(
 	revalidatePath(`/w/${workspaceSlug}/projects/${projectSlug}`);
 
 	return {
-		success: true,
+		success: true as const,
 		data: deletedComment,
 	};
 }

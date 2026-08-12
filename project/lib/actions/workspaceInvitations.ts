@@ -10,7 +10,6 @@ import {
 	getWorkspaceInvitationByEmail,
 	getWorkspaceInvitationById,
 	getWorkspaceInvitationByToken,
-	getWorkspaceInvitations,
 	updateWorkspaceInvitation,
 } from "../db/queries/workspaceInvitations";
 import {
@@ -19,18 +18,11 @@ import {
 } from "../db/queries/workspaceMembers";
 import { getWorkspaceById } from "../db/queries/workspaces";
 import { sendWorkspaceInvitationEmail } from "../email/send-workspace-invitation";
-import {
-	isInvitationExpired,
-	isWorkspaceAdmin,
-	requireWorkspaceAdmin,
-	requireWorkspaceMember,
-} from "../permission";
+import { isInvitationExpired, requireWorkspaceAdmin } from "../permission";
 import {
 	type CreateWorkspaceInvitationInput,
 	createWorkspaceInvitationSchema,
 } from "../validations/workspaceInvitation";
-
-const FORBIDDEN_MESSAGE = "Only a workspace owner or admin can invite members.";
 
 const INVITATION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -43,14 +35,13 @@ export async function findWorkspaceInviteeByEmailAction(
 ) {
 	const user = await getCurrentUser();
 
-	const workspace = await requireWorkspaceMember(workspaceSlug, user.id);
+	const access = await requireWorkspaceAdmin(workspaceSlug, user.id);
 
-	if (!(await isWorkspaceAdmin(workspace.id, user.id))) {
-		return {
-			success: false as const,
-			message: FORBIDDEN_MESSAGE,
-		};
+	if (!access.success) {
+		return { success: false as const, message: access.message };
 	}
+
+	const workspace = access.data;
 
 	const normalizedEmail = email.trim().toLowerCase();
 
@@ -113,16 +104,18 @@ export async function createWorkspaceInvitationsAction(
 ) {
 	const user = await getCurrentUser();
 
-	const workspace = await requireWorkspaceMember(workspaceSlug, user.id);
+	const access = await requireWorkspaceAdmin(workspaceSlug, user.id);
 
-	if (!(await isWorkspaceAdmin(workspace.id, user.id))) {
+	if (!access.success) {
 		return {
 			success: false as const,
-			message: FORBIDDEN_MESSAGE,
+			message: access.message,
 			sentCount: 0,
-			results: [],
+			results: [] as { email: string; success: boolean; error?: string }[],
 		};
 	}
+
+	const workspace = access.data;
 
 	const results: { email: string; success: boolean; error?: string }[] = [];
 
@@ -224,42 +217,40 @@ export async function createWorkspaceInvitationsAction(
 	};
 }
 
-export async function getWorkspaceInvitationsAction(workspaceSlug: string) {
-	const user = await getCurrentUser();
-	const workspace = await requireWorkspaceAdmin(workspaceSlug, user.id);
-	const invitations = await getWorkspaceInvitations(workspace.id);
-
-	return invitations;
-}
-
 export async function revokeWorkspaceInvitationAction(
 	workspaceSlug: string,
 	invitationId: string,
 ) {
 	const user = await getCurrentUser();
 
-	const workspace = await requireWorkspaceAdmin(workspaceSlug, user.id);
+	const access = await requireWorkspaceAdmin(workspaceSlug, user.id);
+
+	if (!access.success) {
+		return { success: false as const, message: access.message };
+	}
+
+	const workspace = access.data;
 
 	const invitation = await getWorkspaceInvitationById(invitationId);
 
 	if (!invitation) {
 		return {
-			success: false,
-			error: "Invitation not found.",
+			success: false as const,
+			message: "Invitation not found.",
 		};
 	}
 
 	if (invitation.workspaceId !== workspace.id) {
 		return {
-			success: false,
-			error: "Invitation does not belong to this workspace.",
+			success: false as const,
+			message: "Invitation does not belong to this workspace.",
 		};
 	}
 
 	if (invitation.status !== "pending") {
 		return {
-			success: false,
-			error: "Only pending invitations can be revoked.",
+			success: false as const,
+			message: "Only pending invitations can be revoked.",
 		};
 	}
 
@@ -282,7 +273,7 @@ export async function revokeWorkspaceInvitationAction(
 	revalidatePath(`/w/${workspace.slug}/members`);
 
 	return {
-		success: true,
+		success: true as const,
 		data: updatedInvitation,
 	};
 }
@@ -293,28 +284,34 @@ export async function resendWorkspaceInvitationAction(
 ) {
 	const user = await getCurrentUser();
 
-	const workspace = await requireWorkspaceAdmin(workspaceSlug, user.id);
+	const access = await requireWorkspaceAdmin(workspaceSlug, user.id);
+
+	if (!access.success) {
+		return { success: false as const, message: access.message };
+	}
+
+	const workspace = access.data;
 
 	const invitation = await getWorkspaceInvitationById(invitationId);
 
 	if (!invitation) {
 		return {
-			success: false,
-			error: "Invitation not found.",
+			success: false as const,
+			message: "Invitation not found.",
 		};
 	}
 
 	if (invitation.workspaceId !== workspace.id) {
 		return {
-			success: false,
-			error: "Invitation does not belong to this workspace.",
+			success: false as const,
+			message: "Invitation does not belong to this workspace.",
 		};
 	}
 
 	if (invitation.status !== "pending") {
 		return {
-			success: false,
-			error: "Only pending invitations can be revoked.",
+			success: false as const,
+			message: "Only pending invitations can be revoked.",
 		};
 	}
 
@@ -345,7 +342,7 @@ export async function resendWorkspaceInvitationAction(
 	revalidatePath(`/w/${workspace.slug}/members`);
 
 	return {
-		success: true,
+		success: true as const,
 		data: updatedInvitation,
 	};
 }
@@ -358,21 +355,21 @@ export async function getWorkspaceInvitationByTokenAction(token: string) {
 	if (!invitation) {
 		return {
 			success: false as const,
-			error: "Invitation not found.",
+			message: "Invitation not found.",
 		};
 	}
 
 	if (invitation.status !== "pending") {
 		return {
 			success: false as const,
-			error: "Invitation is no longer active.",
+			message: "Invitation is no longer active.",
 		};
 	}
 
 	if (isInvitationExpired(invitation.expiresAt)) {
 		return {
 			success: false as const,
-			error: "Invitation has expired.",
+			message: "Invitation has expired.",
 		};
 	}
 
@@ -389,29 +386,29 @@ export async function acceptWorkspaceInvitationAction(token: string) {
 
 	if (!invitation) {
 		return {
-			success: false,
-			error: "Invitation not found.",
+			success: false as const,
+			message: "Invitation not found.",
 		};
 	}
 
 	if (invitation.status !== "pending") {
 		return {
-			success: false,
-			error: "Invitation is no longer active.",
+			success: false as const,
+			message: "Invitation is no longer active.",
 		};
 	}
 
 	if (isInvitationExpired(invitation.expiresAt)) {
 		return {
-			success: false,
-			error: "Invitation has expired.",
+			success: false as const,
+			message: "Invitation has expired.",
 		};
 	}
 
 	if (invitation.email.toLowerCase() !== user.email.toLowerCase()) {
 		return {
-			success: false,
-			error: "This invitation was sent to another email address.",
+			success: false as const,
+			message: "This invitation was sent to another email address.",
 		};
 	}
 
@@ -422,8 +419,8 @@ export async function acceptWorkspaceInvitationAction(token: string) {
 
 	if (existingMember) {
 		return {
-			success: false,
-			error: "You are already a member of this workspace.",
+			success: false as const,
+			message: "You are already a member of this workspace.",
 		};
 	}
 
@@ -452,7 +449,7 @@ export async function acceptWorkspaceInvitationAction(token: string) {
 	});
 
 	return {
-		success: true,
+		success: true as const,
 		data: {
 			member,
 			invitation: updatedInvitation,

@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { MembersClient } from "@/components/members/members-client";
 import { getWorkspaceMembersWithStatsBySlug } from "@/lib/actions/workspaceMembers";
 
@@ -10,9 +11,13 @@ type MembersPageProps = {
 export default async function MembersPage({ params }: MembersPageProps) {
 	const { workspaceSlug } = await params;
 
-	const initialData = await getWorkspaceMembersWithStatsBySlug(workspaceSlug);
+	const result = await getWorkspaceMembersWithStatsBySlug(workspaceSlug);
+
+	if (!result.success) {
+		redirect(`/w/${workspaceSlug}/dashboard`);
+	}
 
 	return (
-		<MembersClient workspaceSlug={workspaceSlug} initialData={initialData} />
+		<MembersClient workspaceSlug={workspaceSlug} initialData={result.data} />
 	);
 }

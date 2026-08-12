@@ -20,7 +20,9 @@ export function useProject({
 		queryFn: async () => {
 			const result = await getProjectBySlug(workspaceSlug, projectSlug);
 
-			return result.project ?? initialProject;
+			if (!result.success) throw new Error(result.message);
+
+			return result.data.project;
 		},
 		initialData: initialProject,
 	});

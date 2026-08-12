@@ -7,14 +7,13 @@ import { getCurrentUser } from "../auth";
 import {
 	createList,
 	deleteList,
-	getListsByProject,
 	rebalanceListPositionsIfNeeded,
 	updateList,
 	updateListPosition,
 } from "../db/queries/lists";
 import { syncProjectCompletionStatus } from "../db/queries/projects";
 import {
-	isProjectManager,
+	FORBIDDEN_MESSAGES,
 	requireActiveProject,
 	requireList,
 } from "../permission";
@@ -24,9 +23,6 @@ import {
 	type UpdateListInput,
 	updateListSchema,
 } from "../validations/list";
-
-const FORBIDDEN_MESSAGE =
-	"Only the project lead or a workspace owner/admin can manage lists.";
 
 export async function createListAction(
 	workspaceSlug: string,
@@ -39,27 +35,27 @@ export async function createListAction(
 
 	if (!validatedDate.success) {
 		return {
-			success: false,
+			success: false as const,
 			message: treeifyError(validatedDate.error),
 		};
 	}
 
-	const project = await requireActiveProject(
+	const access = await requireActiveProject(
 		workspaceSlug,
 		projectSlug,
 		user.id,
 	);
 
-	const canManage = await isProjectManager(
-		project.workspaceId,
-		project.leadId,
-		user.id,
-	);
+	if (!access.success) {
+		return { success: false as const, message: access.message };
+	}
+
+	const { project, canManage } = access.data;
 
 	if (!canManage) {
 		return {
-			success: false,
-			message: FORBIDDEN_MESSAGE,
+			success: false as const,
+			message: FORBIDDEN_MESSAGES.projectManager,
 		};
 	}
 
@@ -78,7 +74,7 @@ export async function createListAction(
 
 	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
-	return { success: true, data: list };
+	return { success: true as const, data: list };
 }
 
 export async function updateListAction(
@@ -93,35 +89,41 @@ export async function updateListAction(
 
 	if (!validatedData.success) {
 		return {
-			success: false,
+			success: false as const,
 			message: treeifyError(validatedData.error),
 		};
 	}
 
-	const project = await requireActiveProject(
+	const access = await requireActiveProject(
 		workspaceSlug,
 		projectSlug,
 		user.id,
 	);
 
-	const canManage = await isProjectManager(
-		project.workspaceId,
-		project.leadId,
-		user.id,
-	);
+	if (!access.success) {
+		return { success: false as const, message: access.message };
+	}
+
+	const { project, canManage } = access.data;
 
 	if (!canManage) {
 		return {
-			success: false,
-			message: FORBIDDEN_MESSAGE,
+			success: false as const,
+			message: FORBIDDEN_MESSAGES.projectManager,
 		};
 	}
 
-	const list = await requireList(listId);
+	const listResult = await requireList(listId);
+
+	if (!listResult.success) {
+		return { success: false as const, message: listResult.message };
+	}
+
+	const list = listResult.data;
 
 	if (list.projectId !== project.id) {
 		return {
-			success: false,
+			success: false as const,
 			message: "Invalid list.",
 		};
 	}
@@ -130,7 +132,7 @@ export async function updateListAction(
 
 	if (!updatedList) {
 		return {
-			success: false,
+			success: false as const,
 			message: "Failed to update list.",
 		};
 	}
@@ -152,7 +154,7 @@ export async function updateListAction(
 	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
 	return {
-		success: true,
+		success: true as const,
 		data: updatedList,
 	};
 }
@@ -164,37 +166,43 @@ export async function deleteListAction(
 ) {
 	const user = await getCurrentUser();
 
-	const project = await requireActiveProject(
+	const access = await requireActiveProject(
 		workspaceSlug,
 		projectSlug,
 		user.id,
 	);
 
-	const canManage = await isProjectManager(
-		project.workspaceId,
-		project.leadId,
-		user.id,
-	);
+	if (!access.success) {
+		return { success: false as const, message: access.message };
+	}
+
+	const { project, canManage } = access.data;
 
 	if (!canManage) {
 		return {
-			success: false,
-			message: FORBIDDEN_MESSAGE,
+			success: false as const,
+			message: FORBIDDEN_MESSAGES.projectManager,
 		};
 	}
 
-	const list = await requireList(listId);
+	const listResult = await requireList(listId);
+
+	if (!listResult.success) {
+		return { success: false as const, message: listResult.message };
+	}
+
+	const list = listResult.data;
 
 	if (list.projectId !== project.id) {
 		return {
-			success: false,
+			success: false as const,
 			message: "Invalid list.",
 		};
 	}
 
 	if (list.type === "done") {
 		return {
-			success: false,
+			success: false as const,
 			message: "The Done list cannot be deleted.",
 		};
 	}
@@ -218,7 +226,7 @@ export async function deleteListAction(
 	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
 	return {
-		success: true,
+		success: true as const,
 		data: deletedList,
 	};
 }
@@ -233,35 +241,41 @@ export async function moveListAction(
 
 	if (!Number.isFinite(position)) {
 		return {
-			success: false,
+			success: false as const,
 			message: "Invalid list position.",
 		};
 	}
 
-	const project = await requireActiveProject(
+	const access = await requireActiveProject(
 		workspaceSlug,
 		projectSlug,
 		user.id,
 	);
 
-	const canManage = await isProjectManager(
-		project.workspaceId,
-		project.leadId,
-		user.id,
-	);
+	if (!access.success) {
+		return { success: false as const, message: access.message };
+	}
+
+	const { project, canManage } = access.data;
 
 	if (!canManage) {
 		return {
-			success: false,
-			message: FORBIDDEN_MESSAGE,
+			success: false as const,
+			message: FORBIDDEN_MESSAGES.projectManager,
 		};
 	}
 
-	const list = await requireList(listId);
+	const listResult = await requireList(listId);
+
+	if (!listResult.success) {
+		return { success: false as const, message: listResult.message };
+	}
+
+	const list = listResult.data;
 
 	if (list.projectId !== project.id) {
 		return {
-			success: false,
+			success: false as const,
 			message: "Invalid list.",
 		};
 	}
@@ -274,28 +288,8 @@ export async function moveListAction(
 	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
 	return {
-		success: true,
+		success: true as const,
 		data: movedList,
-	};
-}
-
-export async function getListsByProjectBySlug(
-	workspaceSlug: string,
-	projectSlug: string,
-) {
-	const user = await getCurrentUser();
-
-	const project = await requireActiveProject(
-		workspaceSlug,
-		projectSlug,
-		user.id,
-	);
-
-	const lists = await getListsByProject(project.id);
-
-	return {
-		success: true,
-		data: lists,
 	};
 }
 

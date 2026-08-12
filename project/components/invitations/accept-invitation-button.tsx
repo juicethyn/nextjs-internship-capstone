@@ -21,7 +21,7 @@ export function AcceptInvitationButton({ token }: Props) {
 			const result = await acceptWorkspaceInvitationAction(token);
 
 			if (!result.success) {
-				toast.error(result.error);
+				toast.error(result.message);
 
 				return;
 			}
