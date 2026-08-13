@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
-import { getCurrentUserOwnedWorkspaces } from "@/lib/actions/workspaces";
+import { getCurrentUserOwnedWorkspaces } from "@/features/workspace/actions/workspaces";
 import { getCurrentUser } from "@/lib/auth";
 import { getUserWorkspaces } from "@/lib/db/queries/workspaces";
 import { requireWorkspaceMember } from "@/lib/permission";

@@ -1,6 +1,6 @@
 import { eq, inArray } from "drizzle-orm";
+import type { DbClient } from "@/lib/db/types";
 import type { UpdateUserInput } from "@/lib/validations/user";
-import type { DbClient } from "@/types/db";
 import { db } from "../index";
 import { type Occupation, users } from "../schema";
 

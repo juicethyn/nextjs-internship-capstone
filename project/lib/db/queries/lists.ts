@@ -1,10 +1,7 @@
 import { asc, eq, max } from "drizzle-orm";
-import {
-	buildRebalancedPositions,
-	needsRebalance,
-} from "@/lib/utils/positioning";
+import type { DbClient } from "@/lib/db/types";
+import { buildRebalancedPositions, needsRebalance } from "@/lib/positioning";
 import type { CreateListInput, UpdateListInput } from "@/lib/validations/list";
-import type { DbClient } from "@/types/db";
 import { db } from "../index";
 import { lists } from "../schema";
 

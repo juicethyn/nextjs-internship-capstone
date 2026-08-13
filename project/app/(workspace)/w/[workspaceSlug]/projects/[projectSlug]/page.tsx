@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
-import { KanbanBoard } from "@/components/kanban/kanban-board";
-import { KanbanHeader } from "@/components/kanban/kanban-header";
-import { getProjectBySlug } from "@/lib/actions/projects";
+import { getProjectBySlug } from "@/features/projects/actions/projects";
+import { ProjectPageHeader } from "@/features/projects/components/project-page-header";
+import { KanbanBoard } from "@/features/projects/kanban/components/kanban-board";
 
 type ProjectPageProps = {
 	params: Promise<{
@@ -26,7 +26,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
 	return (
 		<div className="flex h-full min-w-0 w-full flex-col">
 			<div className="shrink-0">
-				<KanbanHeader
+				<ProjectPageHeader
 					workspaceSlug={workspaceSlug}
 					projectSlug={projectSlug}
 					initialProject={project}

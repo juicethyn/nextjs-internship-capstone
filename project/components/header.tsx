@@ -2,7 +2,7 @@
 
 import { Moon, Sun } from "lucide-react";
 import Link from "next/link";
-import { useTheme } from "./theme-provider";
+import { useTheme } from "@/providers/theme-provider";
 
 export function Header() {
 	const { theme, setTheme } = useTheme();

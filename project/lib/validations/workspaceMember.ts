@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { workspaceMemberRoles } from "@/types/workspace";
+import { workspaceMemberRoles } from "@/lib/db/types";
 
 export const createWorkspaceMemberSchema = z.object({
 	workspaceId: z.string().min(1, "Workspace ID is required"),

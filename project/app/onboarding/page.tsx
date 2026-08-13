@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import { OnboardingFlow } from "@/components/onboarding/onboarding-flow";
-import { getCurrentUserOwnedWorkspaces } from "@/lib/actions/workspaces";
+import { OnboardingFlow } from "@/features/onboarding/components/onboarding-flow";
+import { getCurrentUserOwnedWorkspaces } from "@/features/workspace/actions/workspaces";
 
 export default async function OnboardingPage() {
 	const ownedWorkspaces = await getCurrentUserOwnedWorkspaces();

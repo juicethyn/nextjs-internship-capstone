@@ -2,7 +2,7 @@
 
 import { UserButton } from "@clerk/nextjs";
 import { Bell, Menu } from "lucide-react";
-import { ThemeToggle } from "../theme-toggle";
+import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { Button } from "../ui/button";
 import { useSidebar } from "../ui/sidebar";
 

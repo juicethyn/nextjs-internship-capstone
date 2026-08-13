@@ -6,11 +6,11 @@ import "./globals.css"; // FIX #2: Creating global.d.ts to declare module for CS
 // TODO: Task 2.1 - Set up Clerk authentication service - Complete
 import { ClerkProvider } from "@clerk/nextjs";
 import { shadcn } from "@clerk/themes";
-import { ThemeProvider } from "@/components/theme-provider";
-import { ThemedToaster } from "@/components/themed-toaster";
+import { ThemedToaster } from "@/components/shared/themed-toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { ReactQueryProvider } from "./providers/react-query-provider";
+import { ReactQueryProvider } from "@/providers/react-query-provider";
+import { ThemeProvider } from "@/providers/theme-provider";
 
 const geistHeading = Geist({ subsets: ["latin"], variable: "--font-heading" });
 

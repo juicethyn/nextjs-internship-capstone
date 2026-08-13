@@ -1,7 +1,8 @@
 import type React from "react";
-import { PresenceHeartbeat } from "@/components/presence/presence-heartbeat";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import type { WorkspaceItem, WorkspaceMemberRole } from "@/types/workspace";
+import { PresenceHeartbeat } from "@/features/members/components/presence-heartbeat";
+import type { WorkspaceItem } from "@/features/workspace/types";
+import type { WorkspaceMemberRole } from "@/lib/db/types";
 import { AppSidebar } from "./app-side-bar";
 import TopBar from "./top-bar";
 

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import { ProjectClient } from "@/components/project/project-client";
-import { getProjectsByWorkspaceBySlug } from "@/lib/actions/projects";
+import { getProjectsByWorkspaceBySlug } from "@/features/projects/actions/projects";
+import { ProjectClient } from "@/features/projects/components/project-client";
 
 type ProjectsProps = {
 	params: Promise<{

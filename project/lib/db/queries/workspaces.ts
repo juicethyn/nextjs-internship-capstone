@@ -1,10 +1,10 @@
 import { and, eq, exists } from "drizzle-orm";
-import { generateWorkspaceSlug } from "@/lib/utils/slug";
+import type { DbClient } from "@/lib/db/types";
+import { generateWorkspaceSlug } from "@/lib/slug";
 import type {
 	CreateWorkspaceInput,
 	UpdateWorkspaceInput,
 } from "@/lib/validations/workspace";
-import type { DbClient } from "@/types/db";
 import { db } from "../index";
 import { workspaceMembers, workspaces } from "../schema";
 

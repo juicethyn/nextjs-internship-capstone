@@ -1,7 +1,6 @@
 import { and, eq, inArray } from "drizzle-orm";
+import type { DbClient, WorkspaceMemberRole } from "@/lib/db/types";
 import type { CreateWorkspaceMemberInput } from "@/lib/validations/workspaceMember";
-import type { DbClient } from "@/types/db";
-import type { WorkspaceMemberRole } from "@/types/workspace";
 import { db } from "../index";
 import { workspaceMembers, workspaces } from "../schema";
 

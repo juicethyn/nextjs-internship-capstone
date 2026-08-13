@@ -1,8 +1,5 @@
 import { asc, eq, max } from "drizzle-orm";
-import {
-	buildRebalancedPositions,
-	needsRebalance,
-} from "@/lib/utils/positioning";
+import { buildRebalancedPositions, needsRebalance } from "@/lib/positioning";
 import type { CreateTaskInput, UpdateTaskInput } from "../../validations/task";
 import { db } from "../index";
 import { tasks } from "../schema";

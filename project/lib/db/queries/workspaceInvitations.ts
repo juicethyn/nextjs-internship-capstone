@@ -1,9 +1,9 @@
 import { and, eq } from "drizzle-orm";
+import type { DbClient } from "@/lib/db/types";
 import type {
 	CreateWorkspaceInvitationInput,
 	UpdateWorkspaceInvitationInput,
 } from "@/lib/validations/workspaceInvitation";
-import type { DbClient } from "@/types/db";
 import { db } from "../index";
 import { workspaceInvitations } from "../schema";
 

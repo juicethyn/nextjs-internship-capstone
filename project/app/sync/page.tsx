@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import {
 	getCurrentUserOwnedWorkspaces,
 	getCurrentWorkspaceAction,
-} from "@/lib/actions/workspaces";
+} from "@/features/workspace/actions/workspaces";
 import { waitForCurrentUser } from "@/lib/auth";
 
 // Act as a redirect page to the user's current workspace dashboard if they have one, otherwise redirect to onboarding

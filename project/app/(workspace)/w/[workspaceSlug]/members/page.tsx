@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import { MembersClient } from "@/components/members/members-client";
-import { getWorkspaceMembersWithStatsBySlug } from "@/lib/actions/workspaceMembers";
+import { getWorkspaceMembersWithStatsBySlug } from "@/features/members/actions/workspaceMembers";
+import { MembersClient } from "@/features/members/components/members-client";
 
 type MembersPageProps = {
 	params: Promise<{

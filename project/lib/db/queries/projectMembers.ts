@@ -1,5 +1,5 @@
 import { and, eq, inArray } from "drizzle-orm";
-import type { DbClient } from "@/types/db";
+import type { DbClient } from "@/lib/db/types";
 import { db } from "../index";
 import { projectMembers, projects } from "../schema";
 

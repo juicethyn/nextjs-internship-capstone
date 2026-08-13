@@ -1,7 +1,7 @@
-import { MembersGridSkeleton } from "@/components/skeletons/members-grid-skeleton";
-import { MembersHeaderSkeleton } from "@/components/skeletons/members-header-skeleton";
-import { ProjectToolbarSkeleton } from "@/components/skeletons/project-toolbar-skeleton";
+import { ToolbarSkeleton } from "@/components/shared/toolbar-skeleton";
 import { Skeleton } from "@/components/ui/skeleton";
+import { MembersGridSkeleton } from "@/features/members/components/members-grid-skeleton";
+import { MembersHeaderSkeleton } from "@/features/members/components/members-header-skeleton";
 
 export default function Loading() {
 	return (
@@ -9,7 +9,7 @@ export default function Loading() {
 			<MembersHeaderSkeleton />
 
 			{/* Same search + two dropdowns as the projects toolbar */}
-			<ProjectToolbarSkeleton />
+			<ToolbarSkeleton />
 
 			{/* "Members N" count line */}
 			<div className="flex items-center justify-between">

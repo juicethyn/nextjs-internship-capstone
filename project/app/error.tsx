@@ -3,7 +3,7 @@
 import { TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { useEffect } from "react";
-import { ErrorState } from "@/components/error-state";
+import { ErrorState } from "@/components/shared/error-state";
 import { Button } from "@/components/ui/button";
 
 type ErrorPageProps = {

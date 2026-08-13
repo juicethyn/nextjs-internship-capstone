@@ -11,6 +11,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
+import { NAV_LINKS } from "@/components/layout/navigation";
+import { WorkspaceAvatar } from "@/components/shared/workspace-avatar";
 import {
 	Collapsible,
 	CollapsibleContent,
@@ -39,13 +41,12 @@ import {
 	SidebarTrigger,
 	useSidebar,
 } from "@/components/ui/sidebar";
-import { NAV_LINKS } from "@/constants/navigation";
-import { switchWorkspaceAction } from "@/lib/actions/workspaces";
+import { switchWorkspaceAction } from "@/features/workspace/actions/workspaces";
+import { CreateWorkspaceModal } from "@/features/workspace/components/create-workspace-modal";
+import { WorkspaceSettingsModal } from "@/features/workspace/components/settings/workspace-settings-modal";
+import type { WorkspaceItem } from "@/features/workspace/types";
+import type { WorkspaceMemberRole } from "@/lib/db/types";
 import { cn } from "@/lib/utils";
-import type { WorkspaceItem, WorkspaceMemberRole } from "@/types/workspace";
-import { CreateWorkspaceModal } from "../modals/create-workspace-modal";
-import { WorkspaceAvatar } from "../workspace-avatar";
-import { WorkspaceSettingsModal } from "../workspace-settings/workspace-settings-modal";
 
 type AppSidebarProps = {
 	currentWorkspace: WorkspaceItem;

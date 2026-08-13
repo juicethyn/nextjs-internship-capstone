@@ -1,7 +1,7 @@
 import { and, asc, count, eq, isNotNull, sql } from "drizzle-orm";
-import { generateProjectSlug } from "@/lib/utils/slug";
+import type { DbClient } from "@/lib/db/types";
+import { generateProjectSlug } from "@/lib/slug";
 import type { CreateProjectInput } from "@/lib/validations/project";
-import type { DbClient } from "@/types/db";
 import { db } from "../index";
 import { lists, projectMembers, projects, tasks } from "../schema";
 

@@ -1,7 +1,7 @@
-import { ProjectGridSkeleton } from "@/components/skeletons/project-grid-skeleton";
-import { ProjectHeaderSkeleton } from "@/components/skeletons/project-header-skeleton";
-import { ProjectToolbarSkeleton } from "@/components/skeletons/project-toolbar-skeleton";
+import { ToolbarSkeleton } from "@/components/shared/toolbar-skeleton";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ProjectGridSkeleton } from "@/features/projects/components/project-grid-skeleton";
+import { ProjectHeaderSkeleton } from "@/features/projects/components/project-header-skeleton";
 
 // Next renders this automatically while the page awaits its data — no
 // <Suspense> wiring needed, and none is possible from inside ProjectClient
@@ -11,7 +11,7 @@ export default function Loading() {
 		<div className="space-y-6">
 			<ProjectHeaderSkeleton />
 
-			<ProjectToolbarSkeleton />
+			<ToolbarSkeleton />
 
 			{/* "Projects N" count line */}
 			<div className="flex items-center justify-between">

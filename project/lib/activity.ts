@@ -1,4 +1,4 @@
-import type { DbClient } from "@/types/db";
+import type { DbClient } from "@/lib/db/types";
 import { db } from "./db";
 import { activityLogs } from "./db/schema";
 import type { CreateActivityInput } from "./validations/activityLog";

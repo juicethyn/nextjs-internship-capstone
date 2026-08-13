@@ -1,6 +1,6 @@
-import { InvitationCard } from "@/components/invitations/invitation-card";
-import { InvitationError } from "@/components/invitations/invitation-error";
-import { getWorkspaceInvitationByTokenAction } from "@/lib/actions/workspaceInvitations";
+import { getWorkspaceInvitationByTokenAction } from "@/features/members/actions/workspaceInvitations";
+import { InvitationCard } from "@/features/members/components/invitations/invitation-card";
+import { InvitationError } from "@/features/members/components/invitations/invitation-error";
 
 export default async function InvitationPage({
 	params,

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { creatableListTypes } from "../../types/list";
+import { creatableListTypes } from "@/lib/db/types";
 
 export const createListSchema = z.object({
 	name: z.string().min(1, "Name is required").max(100, "Name too long"),

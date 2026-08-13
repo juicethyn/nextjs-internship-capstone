@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { invitationStatus } from "../../types/workspaceInvitation";
+import { invitationStatus } from "@/lib/db/types";
 
 export const createWorkspaceInvitationSchema = z.object({
 	email: z.email("Invalid email address"),
