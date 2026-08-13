@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { WorkspaceInviteDialog } from "@/components/invitations/workspace-invite-dialog";
 import { useWorkspaceInvitations } from "@/hooks/use-workspace-invitations";
 import {
@@ -8,8 +8,19 @@ import {
 	type WorkspaceMembersStats,
 } from "@/hooks/use-workspace-members-stats";
 import { useWorkspacePresence } from "@/hooks/use-workspace-presence";
-import { sortWorkspaceMembers } from "@/lib/utils/workspace-members";
+import { isPresent } from "@/lib/utils/presence";
+import {
+	DEFAULT_MEMBER_ROLE_FILTER,
+	DEFAULT_MEMBER_STATUS_FILTER,
+	filterPendingInvitations,
+	filterWorkspaceMembers,
+	sortWorkspaceMembers,
+	type WorkspaceMemberListItem,
+	type WorkspaceMemberRoleFilter,
+	type WorkspaceMemberStatusFilter,
+} from "@/lib/utils/workspace-members";
 import { useUIStore } from "@/stores/ui-store";
+import { MembersEmptyState } from "./members-empty-state";
 import { MembersGrid } from "./members-grid";
 import { MembersHeader } from "./members-header";
 import { MembersToolbar } from "./members-toolbar";
@@ -37,15 +48,57 @@ export function MembersClient({
 
 	const { lastSeenByUserId } = useWorkspacePresence(workspaceSlug);
 
-	const sortedMembers = useMemo(
-		() => sortWorkspaceMembers(data.members),
-		[data.members],
+	const [search, setSearch] = useState("");
+	const [role, setRole] = useState<WorkspaceMemberRoleFilter>(
+		DEFAULT_MEMBER_ROLE_FILTER,
+	);
+	const [status, setStatus] = useState<WorkspaceMemberStatusFilter>(
+		DEFAULT_MEMBER_STATUS_FILTER,
 	);
 
-	// Derived from query data rather than a server-computed prop, so a refetch
-	// that changes the viewer's role updates the UI with it.
+	const isOnline = useMemo(
+		() => (member: WorkspaceMemberListItem) =>
+			isPresent(lastSeenByUserId.get(member.userId) ?? member.lastSeenAt),
+		[lastSeenByUserId],
+	);
+
+	const visibleMembers = useMemo(
+		() =>
+			sortWorkspaceMembers(
+				filterWorkspaceMembers(data.members, {
+					search,
+					role,
+					status,
+					isOnline,
+				}),
+			),
+		[data.members, search, role, status, isOnline],
+	);
+
+	const visiblePendingInvitations = useMemo(
+		() =>
+			status === "all"
+				? filterPendingInvitations(data.pendingInvitations, { search, role })
+				: [],
+		[data.pendingInvitations, search, role, status],
+	);
+
 	const viewerCanManage =
 		data.viewerRole === "owner" || data.viewerRole === "admin";
+
+	const hasFilters =
+		search.trim() !== "" ||
+		role !== DEFAULT_MEMBER_ROLE_FILTER ||
+		status !== DEFAULT_MEMBER_STATUS_FILTER;
+
+	const clearFilters = () => {
+		setSearch("");
+		setRole(DEFAULT_MEMBER_ROLE_FILTER);
+		setStatus(DEFAULT_MEMBER_STATUS_FILTER);
+	};
+
+	const hasNoResults =
+		visibleMembers.length === 0 && visiblePendingInvitations.length === 0;
 
 	return (
 		<div className="space-y-6">
@@ -54,45 +107,63 @@ export function MembersClient({
 				onInvite={openWorkspaceInvite}
 			/>
 
-			<MembersToolbar />
-
-			<div className="flex items-center justify-between">
-				<h2 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-					Members {sortedMembers.length}
-				</h2>
-			</div>
-
-			<MembersGrid
-				members={sortedMembers}
-				currentUserId={data.currentUserId}
-				viewerRole={data.viewerRole}
-				workspaceSlug={workspaceSlug}
-				lastSeenByUserId={lastSeenByUserId}
+			<MembersToolbar
+				search={search}
+				onSearchChange={setSearch}
+				role={role}
+				onRoleChange={setRole}
+				status={status}
+				onStatusChange={setStatus}
 			/>
 
-			{data.pendingInvitations.length > 0 && (
+			{hasNoResults ? (
+				<MembersEmptyState onClearFilters={clearFilters} />
+			) : (
 				<>
-					<div className="flex items-center justify-between">
-						<h2 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-							Pending {data.pendingInvitations.length}
-						</h2>
-					</div>
+					{visibleMembers.length > 0 && (
+						<>
+							<div className="flex items-center justify-between">
+								<h2 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+									Members {visibleMembers.length}
+									{hasFilters && ` of ${data.members.length}`}
+								</h2>
+							</div>
 
-					<div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-						{data.pendingInvitations.map((invitation) => (
-							<PendingMemberCard
-								key={invitation.id}
-								invitation={invitation}
-								canManage={viewerCanManage}
-								isBusy={
-									revokingInvitationId === invitation.id ||
-									resendingInvitationId === invitation.id
-								}
-								onResend={() => resendInvitation(invitation.id)}
-								onRevoke={() => revokeInvitation(invitation.id)}
+							<MembersGrid
+								members={visibleMembers}
+								currentUserId={data.currentUserId}
+								viewerRole={data.viewerRole}
+								workspaceSlug={workspaceSlug}
+								lastSeenByUserId={lastSeenByUserId}
 							/>
-						))}
-					</div>
+						</>
+					)}
+
+					{visiblePendingInvitations.length > 0 && (
+						<>
+							<div className="flex items-center justify-between">
+								<h2 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+									Pending {visiblePendingInvitations.length}
+								</h2>
+							</div>
+
+							<div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+								{visiblePendingInvitations.map((invitation) => (
+									<PendingMemberCard
+										key={invitation.id}
+										invitation={invitation}
+										canManage={viewerCanManage}
+										isBusy={
+											revokingInvitationId === invitation.id ||
+											resendingInvitationId === invitation.id
+										}
+										onResend={() => resendInvitation(invitation.id)}
+										onRevoke={() => revokeInvitation(invitation.id)}
+									/>
+								))}
+							</div>
+						</>
+					)}
 				</>
 			)}
 

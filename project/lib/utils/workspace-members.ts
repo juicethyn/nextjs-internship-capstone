@@ -73,8 +73,74 @@ export const MEMBER_STATUS_FILTER_OPTIONS = [
 	label: string;
 }[];
 
+export const DEFAULT_MEMBER_ROLE_FILTER: WorkspaceMemberRoleFilter = "all";
+
+export const DEFAULT_MEMBER_STATUS_FILTER: WorkspaceMemberStatusFilter = "all";
+
 export function getWorkspaceRoleLabel(role: WorkspaceMemberRole) {
 	return ROLE_LABELS[role];
+}
+
+function matchesSearch(
+	haystacks: (string | null | undefined)[],
+	normalizedQuery: string,
+) {
+	if (normalizedQuery === "") return true;
+
+	return haystacks.some((value) =>
+		value?.toLowerCase().includes(normalizedQuery),
+	);
+}
+
+type MemberFilters = {
+	search: string;
+	role: WorkspaceMemberRoleFilter;
+	status: WorkspaceMemberStatusFilter;
+	// Presence lives in a separate polled query, so the caller resolves it and
+	// this stays a pure function of its inputs.
+	isOnline: (member: WorkspaceMemberListItem) => boolean;
+};
+
+export function filterWorkspaceMembers(
+	members: WorkspaceMemberListItem[],
+	{ search, role, status, isOnline }: MemberFilters,
+) {
+	const normalizedQuery = search.trim().toLowerCase();
+
+	return members.filter((member) => {
+		if (role !== "all" && member.role !== role) return false;
+
+		if (status !== "all" && isOnline(member) !== (status === "online")) {
+			return false;
+		}
+
+		return matchesSearch(
+			[memberDisplayName(member.user), member.user.email],
+			normalizedQuery,
+		);
+	});
+}
+
+// Pending invitees have no presence, so the status filter can't apply to them —
+// MembersClient hides the whole section when a status is selected rather than
+// pretending an invitation is offline.
+export function filterPendingInvitations(
+	invitations: PendingInvitationListItem[],
+	{ search, role }: Pick<MemberFilters, "search" | "role">,
+) {
+	const normalizedQuery = search.trim().toLowerCase();
+
+	return invitations.filter((invitation) => {
+		if (role !== "all" && invitation.role !== role) return false;
+
+		return matchesSearch(
+			[
+				invitation.email,
+				invitation.user ? memberDisplayName(invitation.user) : null,
+			],
+			normalizedQuery,
+		);
+	});
 }
 
 export function getOccupationLabel(occupation: Occupation | null) {

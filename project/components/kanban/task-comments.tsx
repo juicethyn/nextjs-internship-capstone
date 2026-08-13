@@ -111,7 +111,7 @@ export function TaskComments({
 			)}
 
 			{!isLoading && comments.length === 0 && (
-				<p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+				<p className="rounded-lg p-6 text-center text-sm text-muted-foreground">
 					No comments yet. Start the conversation.
 				</p>
 			)}

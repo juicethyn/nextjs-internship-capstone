@@ -72,7 +72,7 @@ export function LabelsTab({
 			</div>
 
 			{isArchived ? (
-				<p className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
+				<p className="rounded-lg p-3 text-xs text-muted-foreground">
 					This project is archived. Restore it to manage labels.
 				</p>
 			) : (
@@ -144,7 +144,7 @@ export function LabelsTab({
 				)}
 
 				{!isLoading && taskLabels.length === 0 && (
-					<p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+					<p className="rounded-lg p-6 text-center text-sm text-muted-foreground">
 						No labels yet.
 						{isArchived ? "" : " Create one above to start tagging cards."}
 					</p>

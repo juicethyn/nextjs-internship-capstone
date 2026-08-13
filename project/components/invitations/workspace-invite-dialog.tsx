@@ -187,7 +187,7 @@ export function WorkspaceInviteDialog({
 						</h3>
 
 						{staged.length === 0 ? (
-							<p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+							<p className="rounded-lg p-6 text-center text-sm text-muted-foreground">
 								No one added yet. Enter an email above and press Add.
 							</p>
 						) : (
