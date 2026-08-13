@@ -10,7 +10,7 @@ export function ProjectsEmptyState(props: ProjectsEmptyStateProps) {
 	const Icon = isNoResults ? SearchX : FolderPlus;
 
 	return (
-		<div className="flex flex-col items-center rounded-xl border border-dashed px-6 py-12 text-center">
+		<div className="flex flex-col items-center rounded-xl px-6 py-12 text-center">
 			<div className="flex size-10 items-center justify-center rounded-full bg-muted">
 				<Icon className="size-5 text-muted-foreground" />
 			</div>

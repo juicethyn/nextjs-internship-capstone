@@ -14,6 +14,16 @@ export function getWorkspaceInvitations(workspaceId: string) {
 	});
 }
 
+export function getPendingWorkspaceInvitations(workspaceId: string) {
+	return db.query.workspaceInvitations.findMany({
+		where: and(
+			eq(workspaceInvitations.workspaceId, workspaceId),
+			eq(workspaceInvitations.status, "pending"),
+		),
+		orderBy: (invitation, { desc }) => desc(invitation.createdAt),
+	});
+}
+
 export function getWorkspaceInvitationById(id: string) {
 	return db.query.workspaceInvitations.findFirst({
 		where: eq(workspaceInvitations.id, id),
@@ -44,6 +54,10 @@ export function getWorkspaceInvitationByToken(token: string) {
 	});
 }
 
+// (workspaceId, email) is unique, so a revoked or accepted invitation occupies
+// the slot forever and a plain insert would throw on any re-invite. Upserting
+// re-arms the existing row instead, in one statement so concurrent invites to
+// the same address cannot race.
 export async function createWorkspaceInvitation(
 	data: CreateWorkspaceInvitationInput & {
 		workspaceId: string;
@@ -58,6 +72,19 @@ export async function createWorkspaceInvitation(
 		.values({
 			...data,
 			status: "pending",
+		})
+		.onConflictDoUpdate({
+			target: [workspaceInvitations.workspaceId, workspaceInvitations.email],
+			set: {
+				role: data.role,
+				// A fresh token retires the previous link, so a revoked invite's URL
+				// stays dead even though the row is being reused.
+				token: data.token,
+				status: "pending",
+				invitedById: data.invitedById,
+				expiresAt: data.expiresAt,
+				createdAt: new Date(),
+			},
 		})
 		.returning();
 

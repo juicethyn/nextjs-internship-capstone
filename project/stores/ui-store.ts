@@ -10,6 +10,13 @@ type UIStore = {
 	isProjectSettingsOpen: boolean;
 	projectSettingsTab: ProjectSettingsTab;
 
+	// Shared rather than local so the dialog can be rendered once per route and
+	// opened from anywhere — the members header today, the dashboard next.
+	isWorkspaceInviteOpen: boolean;
+	openWorkspaceInvite: () => void;
+	closeWorkspaceInvite: () => void;
+	setWorkspaceInviteOpen: (open: boolean) => void;
+
 	openProjectDetails: () => void;
 	closeProjectDetails: () => void;
 	setProjectDetailsOpen: (open: boolean) => void;
@@ -46,6 +53,23 @@ export const useUIStore = create<UIStore>((set) => ({
 	isProjectInviteOpen: false,
 	isProjectSettingsOpen: false,
 	projectSettingsTab: "general",
+
+	isWorkspaceInviteOpen: false,
+
+	openWorkspaceInvite: () =>
+		set({
+			isWorkspaceInviteOpen: true,
+		}),
+
+	closeWorkspaceInvite: () =>
+		set({
+			isWorkspaceInviteOpen: false,
+		}),
+
+	setWorkspaceInviteOpen: (open) =>
+		set({
+			isWorkspaceInviteOpen: open,
+		}),
 
 	openProjectDetails: () =>
 		set({

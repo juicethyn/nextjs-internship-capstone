@@ -19,7 +19,7 @@ export async function completeOnboardingAction(data: OnboardingPayload) {
 
 	if (!validatedData.success) {
 		return {
-			success: false,
+			success: false as const,
 			message: "Invalid onboarding data",
 		};
 	}
@@ -108,7 +108,7 @@ export async function completeOnboardingAction(data: OnboardingPayload) {
 	revalidatePath(`/w/${workspace.workspace.slug}/dashboard`);
 
 	return {
-		success: true,
+		success: true as const,
 		data: workspace.workspace,
 	};
 }

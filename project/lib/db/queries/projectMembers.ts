@@ -1,7 +1,7 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import type { DbClient } from "@/types/db";
 import { db } from "../index";
-import { projectMembers } from "../schema";
+import { projectMembers, projects } from "../schema";
 
 export async function getProjectMembers(projectId: string) {
 	return db.query.projectMembers.findMany({
@@ -45,6 +45,31 @@ export async function addProjectMembers(
 	return dbClient
 		.insert(projectMembers)
 		.values(userIds.map((userId) => ({ projectId, userId })))
+		.returning();
+}
+
+// Kicking someone from a workspace has to take their project memberships with
+// it — project_members references users, not workspace_members, so the rows
+// would otherwise survive and keep granting project access.
+export async function removeUserFromWorkspaceProjects(
+	workspaceId: string,
+	userId: string,
+	dbClient: DbClient = db,
+) {
+	return dbClient
+		.delete(projectMembers)
+		.where(
+			and(
+				eq(projectMembers.userId, userId),
+				inArray(
+					projectMembers.projectId,
+					dbClient
+						.select({ id: projects.id })
+						.from(projects)
+						.where(eq(projects.workspaceId, workspaceId)),
+				),
+			),
+		)
 		.returning();
 }
 

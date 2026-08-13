@@ -8,13 +8,11 @@ import {
 	deleteWorkspaceLabel,
 	getLabelsByWorkspace,
 	getWorkspaceLabelById,
-	updateWorkspaceLabel,
 } from "../db/queries/workspaceLabels";
 import { requireWorkspaceAdmin, requireWorkspaceMember } from "../permission";
 import {
 	type CreateWorkspaceLabelInput,
 	createWorkspaceLabelSchema,
-	updateWorkspaceLabelSchema,
 } from "../validations/label";
 
 // CREATE
@@ -28,12 +26,18 @@ export async function createWorkspaceLabelAction(
 
 	if (!validatedData.success) {
 		return {
-			success: false,
-			error: "Invalid label data.",
+			success: false as const,
+			message: "Invalid label data.",
 		};
 	}
 
-	const workspace = await requireWorkspaceAdmin(workspaceSlug, user.id);
+	const access = await requireWorkspaceAdmin(workspaceSlug, user.id);
+
+	if (!access.success) {
+		return { success: false as const, message: access.message };
+	}
+
+	const workspace = access.data;
 
 	// The table has unique(workspaceId, name); check first so a duplicate reads as
 	// a form error instead of an uncaught unique violation.
@@ -46,8 +50,8 @@ export async function createWorkspaceLabelAction(
 
 	if (isDuplicate) {
 		return {
-			success: false,
-			error: "A label with that name already exists.",
+			success: false as const,
+			message: "A label with that name already exists.",
 		};
 	}
 
@@ -67,7 +71,7 @@ export async function createWorkspaceLabelAction(
 	revalidatePath(`/w/${workspace.slug}`, "layout");
 
 	return {
-		success: true,
+		success: true as const,
 		data: label,
 	};
 }
@@ -76,61 +80,19 @@ export async function createWorkspaceLabelAction(
 export async function getWorkspaceLabels(workspaceSlug: string) {
 	const user = await getCurrentUser();
 
-	const workspace = await requireWorkspaceMember(workspaceSlug, user.id);
+	const access = await requireWorkspaceMember(workspaceSlug, user.id);
+
+	if (!access.success) {
+		return { success: false as const, message: access.message };
+	}
+
+	const workspace = access.data;
 
 	const labels = await getLabelsByWorkspace(workspace.id);
 
 	return {
-		success: true,
+		success: true as const,
 		data: labels,
-	};
-}
-
-export async function updateWorkspaceLabelAction(
-	workspaceSlug: string,
-	labelId: string,
-	data: CreateWorkspaceLabelInput,
-) {
-	const user = await getCurrentUser();
-
-	const validatedData = updateWorkspaceLabelSchema.safeParse(data);
-
-	if (!validatedData.success) {
-		return {
-			success: false,
-			error: "Invalid label data.",
-		};
-	}
-
-	const workspace = await requireWorkspaceAdmin(workspaceSlug, user.id);
-
-	const label = await getWorkspaceLabelById(labelId);
-
-	if (!label || label.workspaceId !== workspace.id) {
-		return {
-			success: false,
-			error: "Label not found.",
-		};
-	}
-
-	const updatedLabel = await updateWorkspaceLabel(labelId, validatedData.data);
-
-	await createActivity({
-		workspaceId: workspace.id,
-		actorId: user.id,
-		action: "updated",
-		entity: "label",
-		entityId: label.id,
-		metadata: {
-			name: updatedLabel.name,
-		},
-	});
-
-	revalidatePath(`/w/${workspace.slug}`, "layout");
-
-	return {
-		success: true,
-		data: updatedLabel,
 	};
 }
 
@@ -140,14 +102,20 @@ export async function deleteWorkspaceLabelAction(
 ) {
 	const user = await getCurrentUser();
 
-	const workspace = await requireWorkspaceAdmin(workspaceSlug, user.id);
+	const access = await requireWorkspaceAdmin(workspaceSlug, user.id);
+
+	if (!access.success) {
+		return { success: false as const, message: access.message };
+	}
+
+	const workspace = access.data;
 
 	const label = await getWorkspaceLabelById(labelId);
 
 	if (!label || label.workspaceId !== workspace.id) {
 		return {
-			success: false,
-			error: "Label not found.",
+			success: false as const,
+			message: "Label not found.",
 		};
 	}
 
@@ -167,7 +135,7 @@ export async function deleteWorkspaceLabelAction(
 	revalidatePath(`/w/${workspace.slug}`, "layout");
 
 	return {
-		success: true,
+		success: true as const,
 		data: deletedLabel,
 	};
 }

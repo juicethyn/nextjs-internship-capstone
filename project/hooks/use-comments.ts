@@ -112,7 +112,7 @@ export function useComments({
 
 		onSuccess: (result) => {
 			if (!result.success) {
-				toast.error(result.error ?? "Failed to post comment.");
+				toast.error(result.message ?? "Failed to post comment.");
 			}
 		},
 
@@ -145,7 +145,7 @@ export function useComments({
 
 		onSuccess: (result) => {
 			if (!result.success) {
-				toast.error(result.error ?? "Failed to delete comment.");
+				toast.error(result.message ?? "Failed to delete comment.");
 				return;
 			}
 

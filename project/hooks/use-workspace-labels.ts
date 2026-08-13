@@ -19,6 +19,8 @@ export function useWorkspaceLabels(workspaceSlug: string) {
 		queryFn: async () => {
 			const result = await getWorkspaceLabels(workspaceSlug);
 
+			if (!result.success) throw new Error(result.message);
+
 			return result.data;
 		},
 	});
@@ -28,7 +30,7 @@ export function useWorkspaceLabels(workspaceSlug: string) {
 			createWorkspaceLabelAction(workspaceSlug, data),
 		onSuccess: (result) => {
 			if (!result.success) {
-				toast.error(result.error ?? "Failed to create label.");
+				toast.error(result.message ?? "Failed to create label.");
 				return;
 			}
 
@@ -43,7 +45,7 @@ export function useWorkspaceLabels(workspaceSlug: string) {
 			deleteWorkspaceLabelAction(workspaceSlug, labelId),
 		onSuccess: (result) => {
 			if (!result.success) {
-				toast.error(result.error ?? "Failed to delete label.");
+				toast.error(result.message ?? "Failed to delete label.");
 				return;
 			}
 

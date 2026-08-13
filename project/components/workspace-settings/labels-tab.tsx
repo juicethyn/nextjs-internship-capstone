@@ -118,7 +118,7 @@ export function LabelsTab({ workspaceSlug, canEdit }: LabelsTabProps) {
 				)}
 
 				{!isLoading && labels.length === 0 && (
-					<p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+					<p className="rounded-lg p-6 text-center text-sm text-muted-foreground">
 						No labels yet.
 						{canEdit
 							? " Create one above to start organizing your projects."

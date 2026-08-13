@@ -20,7 +20,7 @@ import {
 import { setProjectLabels } from "../db/queries/projectWorkspaceLabels";
 import { getLabelsByWorkspace } from "../db/queries/workspaceLabels";
 import {
-	isProjectManager,
+	FORBIDDEN_MESSAGES,
 	requireActiveProject,
 	requireProjectMember,
 	requireWorkspaceMember,
@@ -32,26 +32,20 @@ import {
 	projectGeneralSettingsSchema,
 } from "../validations/project";
 
-const FORBIDDEN_MESSAGE =
-	"Only the project lead or a workspace owner/admin can manage this project.";
-
 export async function getProjectsByWorkspaceBySlug(workspaceSlug: string) {
 	const user = await getCurrentUser();
 
-	const workspace = await requireWorkspaceMember(workspaceSlug, user.id);
+	const access = await requireWorkspaceMember(workspaceSlug, user.id);
 
-	const projects = await getProjectsByWorkspace(workspace.id);
-
-	if (!projects) {
-		return {
-			success: false,
-			message: "No projects found for this workspace",
-		};
+	if (!access.success) {
+		return { success: false as const, message: access.message };
 	}
 
+	const projects = await getProjectsByWorkspace(access.data.id);
+
 	return {
-		success: true,
-		projects,
+		success: true as const,
+		data: projects,
 	};
 }
 
@@ -61,24 +55,29 @@ export async function getProjectBySlug(
 ) {
 	const user = await getCurrentUser();
 
-	const { workspaceId } = await requireProjectMember(
+	const access = await requireProjectMember(
 		workspaceSlug,
 		projectSlug,
 		user.id,
 	);
 
-	const project = await getProjectBySlugWithRelations(workspaceId, projectSlug);
+	if (!access.success) {
+		return { success: false as const, message: access.message };
+	}
+
+	// The guard returns a bare row; the board needs lists, tasks and members.
+	const project = await getProjectBySlugWithRelations(
+		access.data.project.workspaceId,
+		projectSlug,
+	);
 
 	if (!project) {
-		return {
-			success: false,
-			message: "Project not found",
-		};
+		return { success: false as const, message: "Project not found." };
 	}
 
 	return {
-		success: true,
-		project,
+		success: true as const,
+		data: { project, canManage: access.data.canManage },
 	};
 }
 
@@ -92,12 +91,18 @@ export async function createProjectAction(
 
 	if (!validatedData.success) {
 		return {
-			success: false,
+			success: false as const,
 			message: "Invalid project data",
 		};
 	}
 
-	const workspace = await requireWorkspaceMember(workspaceSlug, user.id);
+	const access = await requireWorkspaceMember(workspaceSlug, user.id);
+
+	if (!access.success) {
+		return { success: false as const, message: access.message };
+	}
+
+	const workspace = access.data;
 
 	// labelIds is not a projects column — keep it out of the insert payload.
 	const { labelIds, ...projectData } = validatedData.data;
@@ -135,7 +140,11 @@ export async function createProjectAction(
 	});
 
 	revalidatePath(`/w/${workspaceSlug}/projects`);
-	return { success: true, project, message: "Project created successfully!" };
+	return {
+		success: true as const,
+		project,
+		message: "Project created successfully!",
+	};
 }
 
 export async function updateProjectAction(
@@ -149,27 +158,27 @@ export async function updateProjectAction(
 
 	if (!validatedData.success) {
 		return {
-			success: false,
+			success: false as const,
 			message: treeifyError(validatedData.error),
 		};
 	}
 
-	const project = await requireActiveProject(
+	const access = await requireActiveProject(
 		workspaceSlug,
 		projectSlug,
 		user.id,
 	);
 
-	const canManage = await isProjectManager(
-		project.workspaceId,
-		project.leadId,
-		user.id,
-	);
+	if (!access.success) {
+		return { success: false as const, message: access.message };
+	}
+
+	const { project, canManage } = access.data;
 
 	if (!canManage) {
 		return {
-			success: false,
-			message: FORBIDDEN_MESSAGE,
+			success: false as const,
+			message: FORBIDDEN_MESSAGES.projectManager,
 		};
 	}
 
@@ -195,7 +204,7 @@ export async function updateProjectAction(
 	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
 	return {
-		success: true,
+		success: true as const,
 		project: updatedProject,
 		message: "Project updated successfully!",
 	};
@@ -207,22 +216,22 @@ export async function archiveProjectAction(
 ) {
 	const user = await getCurrentUser();
 
-	const project = await requireActiveProject(
+	const access = await requireActiveProject(
 		workspaceSlug,
 		projectSlug,
 		user.id,
 	);
 
-	const canManage = await isProjectManager(
-		project.workspaceId,
-		project.leadId,
-		user.id,
-	);
+	if (!access.success) {
+		return { success: false as const, message: access.message };
+	}
+
+	const { project, canManage } = access.data;
 
 	if (!canManage) {
 		return {
-			success: false,
-			message: FORBIDDEN_MESSAGE,
+			success: false as const,
+			message: FORBIDDEN_MESSAGES.projectManager,
 		};
 	}
 
@@ -243,7 +252,7 @@ export async function archiveProjectAction(
 	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
 	return {
-		success: true,
+		success: true as const,
 		project: archivedProject,
 		message: "Project archived.",
 	};
@@ -256,28 +265,28 @@ export async function restoreProjectAction(
 	const user = await getCurrentUser();
 
 	// Not requireActiveProject — the project being archived is the whole point.
-	const project = await requireProjectMember(
+	const access = await requireProjectMember(
 		workspaceSlug,
 		projectSlug,
 		user.id,
 	);
 
-	const canManage = await isProjectManager(
-		project.workspaceId,
-		project.leadId,
-		user.id,
-	);
+	if (!access.success) {
+		return { success: false as const, message: access.message };
+	}
+
+	const { project, canManage } = access.data;
 
 	if (!canManage) {
 		return {
-			success: false,
-			message: FORBIDDEN_MESSAGE,
+			success: false as const,
+			message: FORBIDDEN_MESSAGES.projectManager,
 		};
 	}
 
 	if (!project.isArchived) {
 		return {
-			success: false,
+			success: false as const,
 			message: "Project is not archived.",
 		};
 	}
@@ -303,7 +312,7 @@ export async function restoreProjectAction(
 	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
 	return {
-		success: true,
+		success: true as const,
 		project: restoredProject,
 		message: "Project restored.",
 	};
@@ -316,22 +325,22 @@ export async function deleteProjectAction(
 	const user = await getCurrentUser();
 
 	// Archived projects must stay deletable.
-	const project = await requireProjectMember(
+	const access = await requireProjectMember(
 		workspaceSlug,
 		projectSlug,
 		user.id,
 	);
 
-	const canManage = await isProjectManager(
-		project.workspaceId,
-		project.leadId,
-		user.id,
-	);
+	if (!access.success) {
+		return { success: false as const, message: access.message };
+	}
+
+	const { project, canManage } = access.data;
 
 	if (!canManage) {
 		return {
-			success: false,
-			message: FORBIDDEN_MESSAGE,
+			success: false as const,
+			message: FORBIDDEN_MESSAGES.projectManager,
 		};
 	}
 
@@ -353,7 +362,7 @@ export async function deleteProjectAction(
 	revalidatePath(`/w/${workspaceSlug}/projects`);
 
 	return {
-		success: true,
+		success: true as const,
 		message: "Project deleted.",
 	};
 }

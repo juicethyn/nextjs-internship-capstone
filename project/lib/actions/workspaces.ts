@@ -14,7 +14,6 @@ import {
 } from "../db/queries/workspaceMembers";
 import {
 	createWorkspace,
-	deleteWorkspace,
 	getUserOwnedWorkspaces,
 	getUserWorkspaceById,
 	getUserWorkspaces,
@@ -35,7 +34,7 @@ export async function createWorkspaceAction(data: CreateWorkspacePayload) {
 
 	if (!validatedWorkspace.success) {
 		return {
-			success: false,
+			success: false as const,
 			message: "Invalid workspace data",
 		};
 	}
@@ -128,7 +127,7 @@ export async function createWorkspaceAction(data: CreateWorkspacePayload) {
 	revalidatePath(`/w/${result.workspace.slug}/dashboard`);
 
 	return {
-		success: true,
+		success: true as const,
 		data: result.workspace,
 	};
 }
@@ -146,7 +145,7 @@ export async function getCurrentWorkspaceAction() {
 
 		if (membership?.workspace) {
 			return {
-				success: true,
+				success: true as const,
 				data: membership.workspace,
 			};
 		}
@@ -156,7 +155,7 @@ export async function getCurrentWorkspaceAction() {
 
 	if (workspaces.length === 0) {
 		return {
-			success: true,
+			success: true as const,
 			data: null,
 		};
 	}
@@ -168,7 +167,7 @@ export async function getCurrentWorkspaceAction() {
 	});
 
 	return {
-		success: true,
+		success: true as const,
 		data: workspace,
 	};
 }
@@ -179,7 +178,7 @@ export async function getCurrentUserOwnedWorkspaces() {
 	const workspaces = await getUserOwnedWorkspaces(user.id);
 
 	return {
-		success: true,
+		success: true as const,
 		data: workspaces,
 	};
 }
@@ -196,12 +195,18 @@ export async function updateWorkspaceAction(
 
 	if (!validatedData.success) {
 		return {
-			success: false,
+			success: false as const,
 			message: "Invalid data",
 		};
 	}
 
-	const workspace = await requireWorkspaceOwner(workspaceSlug, user.id);
+	const access = await requireWorkspaceOwner(workspaceSlug, user.id);
+
+	if (!access.success) {
+		return { success: false as const, message: access.message };
+	}
+
+	const workspace = access.data;
 
 	const updatedWorkspace = await updateWorkspace(
 		workspace.id,
@@ -222,7 +227,7 @@ export async function updateWorkspaceAction(
 	revalidatePath(`/w/${updatedWorkspace.slug}`, "layout");
 
 	return {
-		success: true,
+		success: true as const,
 		data: updatedWorkspace,
 	};
 }
@@ -233,11 +238,17 @@ export async function transferWorkspaceOwnershipAction(
 ) {
 	const user = await getCurrentUser();
 
-	const workspace = await requireWorkspaceOwner(workspaceSlug, user.id);
+	const access = await requireWorkspaceOwner(workspaceSlug, user.id);
+
+	if (!access.success) {
+		return { success: false as const, message: access.message };
+	}
+
+	const workspace = access.data;
 
 	if (newOwnerUserId === user.id) {
 		return {
-			success: false,
+			success: false as const,
 			message: "You are already the owner of this workspace.",
 		};
 	}
@@ -246,7 +257,7 @@ export async function transferWorkspaceOwnershipAction(
 
 	if (!newOwner) {
 		return {
-			success: false,
+			success: false as const,
 			message: "That user is not a member of this workspace.",
 		};
 	}
@@ -271,53 +282,21 @@ export async function transferWorkspaceOwnershipAction(
 	revalidatePath(`/w/${workspace.slug}`, "layout");
 
 	return {
-		success: true,
+		success: true as const,
 		data: transferredMember,
-	};
-}
-
-export async function deleteWorkspaceAction(workspaceSlug: string) {
-	const user = await getCurrentUser();
-
-	const workspace = await requireWorkspaceOwner(workspaceSlug, user.id);
-
-	await createActivity({
-		workspaceId: workspace.id,
-		actorId: user.id,
-		action: "deleted",
-		entity: "workspace",
-		entityId: workspace.id,
-		metadata: {
-			name: workspace.name,
-		},
-	});
-
-	await deleteWorkspace(workspace.id);
-
-	const workspaces = await getUserWorkspaces(user.id);
-
-	if (workspaces.length > 0) {
-		await updateUser(user.id, {
-			lastWorkspaceId: workspaces[0].id,
-		});
-	} else {
-		await updateUser(user.id, {
-			lastWorkspaceId: null,
-		});
-	}
-
-	revalidatePath(`/workspaces`);
-
-	return {
-		success: true,
-		message: "Workspace deleted successfully",
 	};
 }
 
 export async function switchWorkspaceAction(workspaceSlug: string) {
 	const user = await getCurrentUser();
 
-	const workspace = await requireWorkspaceMember(workspaceSlug, user.id);
+	const access = await requireWorkspaceMember(workspaceSlug, user.id);
+
+	if (!access.success) {
+		return { success: false as const, message: access.message };
+	}
+
+	const workspace = access.data;
 
 	await updateUser(user.id, {
 		lastWorkspaceId: workspace.id,
@@ -326,7 +305,7 @@ export async function switchWorkspaceAction(workspaceSlug: string) {
 	revalidatePath(`/w/${workspace.slug}/dashboard`);
 
 	return {
-		success: true,
+		success: true as const,
 		message: "Workspace switched successfully",
 	};
 }

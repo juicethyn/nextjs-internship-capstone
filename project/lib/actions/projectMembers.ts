@@ -12,14 +12,11 @@ import {
 } from "../db/queries/projectMembers";
 import { transferProjectLead } from "../db/queries/projects";
 import { getWorkspaceMembersById } from "../db/queries/workspaceMembers";
-import { isProjectManager, requireActiveProject } from "../permission";
+import { FORBIDDEN_MESSAGES, requireActiveProject } from "../permission";
 import {
 	type AddProjectMembersInput,
 	addProjectMembersSchema,
 } from "../validations/projectMember";
-
-const FORBIDDEN_MESSAGE =
-	"Only the project lead or a workspace owner/admin can manage project members.";
 
 export async function addProjectMembersAction(
 	workspaceSlug: string,
@@ -32,27 +29,27 @@ export async function addProjectMembersAction(
 
 	if (!validatedData.success) {
 		return {
-			success: false,
+			success: false as const,
 			message: treeifyError(validatedData.error),
 		};
 	}
 
-	const project = await requireActiveProject(
+	const access = await requireActiveProject(
 		workspaceSlug,
 		projectSlug,
 		user.id,
 	);
 
-	const canManage = await isProjectManager(
-		project.workspaceId,
-		project.leadId,
-		user.id,
-	);
+	if (!access.success) {
+		return { success: false as const, message: access.message };
+	}
+
+	const { project, canManage } = access.data;
 
 	if (!canManage) {
 		return {
-			success: false,
-			message: FORBIDDEN_MESSAGE,
+			success: false as const,
+			message: FORBIDDEN_MESSAGES.projectManager,
 		};
 	}
 
@@ -75,7 +72,7 @@ export async function addProjectMembersAction(
 
 	if (userIdsToAdd.length === 0) {
 		return {
-			success: false,
+			success: false as const,
 			message: "Those members are already part of this project.",
 		};
 	}
@@ -101,7 +98,7 @@ export async function addProjectMembersAction(
 	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
 	return {
-		success: true,
+		success: true as const,
 		data: addedMembers,
 		message:
 			addedMembers.length === 1
@@ -117,28 +114,28 @@ export async function removeProjectMemberAction(
 ) {
 	const user = await getCurrentUser();
 
-	const project = await requireActiveProject(
+	const access = await requireActiveProject(
 		workspaceSlug,
 		projectSlug,
 		user.id,
 	);
 
-	const canManage = await isProjectManager(
-		project.workspaceId,
-		project.leadId,
-		user.id,
-	);
+	if (!access.success) {
+		return { success: false as const, message: access.message };
+	}
+
+	const { project, canManage } = access.data;
 
 	if (!canManage) {
 		return {
-			success: false,
-			message: FORBIDDEN_MESSAGE,
+			success: false as const,
+			message: FORBIDDEN_MESSAGES.projectManager,
 		};
 	}
 
 	if (project.leadId === userId) {
 		return {
-			success: false,
+			success: false as const,
 			message: "Transfer the project lead role before removing this member.",
 		};
 	}
@@ -147,7 +144,7 @@ export async function removeProjectMemberAction(
 
 	if (!member) {
 		return {
-			success: false,
+			success: false as const,
 			message: "User is not a member of this project.",
 		};
 	}
@@ -169,7 +166,7 @@ export async function removeProjectMemberAction(
 	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
 	return {
-		success: true,
+		success: true as const,
 		data: removed,
 		message: "Member removed from the project.",
 	};
@@ -182,28 +179,28 @@ export async function transferProjectLeadAction(
 ) {
 	const user = await getCurrentUser();
 
-	const project = await requireActiveProject(
+	const access = await requireActiveProject(
 		workspaceSlug,
 		projectSlug,
 		user.id,
 	);
 
-	const canManage = await isProjectManager(
-		project.workspaceId,
-		project.leadId,
-		user.id,
-	);
+	if (!access.success) {
+		return { success: false as const, message: access.message };
+	}
+
+	const { project, canManage } = access.data;
 
 	if (!canManage) {
 		return {
-			success: false,
-			message: FORBIDDEN_MESSAGE,
+			success: false as const,
+			message: FORBIDDEN_MESSAGES.projectManager,
 		};
 	}
 
 	if (project.leadId === newLeadUserId) {
 		return {
-			success: false,
+			success: false as const,
 			message: "That member is already the project lead.",
 		};
 	}
@@ -212,7 +209,7 @@ export async function transferProjectLeadAction(
 
 	if (!member) {
 		return {
-			success: false,
+			success: false as const,
 			message: "User is not a member of this project.",
 		};
 	}
@@ -234,7 +231,7 @@ export async function transferProjectLeadAction(
 	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
 	return {
-		success: true,
+		success: true as const,
 		data: updatedProject,
 		message: "Project lead transferred.",
 	};

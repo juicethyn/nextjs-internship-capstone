@@ -10,7 +10,6 @@ import {
 	getWorkspaceInvitationByEmail,
 	getWorkspaceInvitationById,
 	getWorkspaceInvitationByToken,
-	getWorkspaceInvitations,
 	updateWorkspaceInvitation,
 } from "../db/queries/workspaceInvitations";
 import {
@@ -25,27 +24,44 @@ import {
 	createWorkspaceInvitationSchema,
 } from "../validations/workspaceInvitation";
 
+const INVITATION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+// emailSent is separate from success on purpose: the invitation exists and its
+// token link works even when Resend rejects the delivery.
+type InviteResult = {
+	email: string;
+	success: boolean;
+	error?: string;
+	emailSent?: boolean;
+};
+
 // Workspace Invitation Actions
 
-// Used for Sending Individual Invites and not for bulk invites.
-export async function createWorkspaceInvitationAction(
+// Resolves an email before it is staged in the invite dialog, so a duplicate or an existing member is rejected at Add time rather than after Send.
+export async function findWorkspaceInviteeByEmailAction(
 	workspaceSlug: string,
-	data: CreateWorkspaceInvitationInput,
+	email: string,
 ) {
 	const user = await getCurrentUser();
 
-	const workspace = await requireWorkspaceAdmin(workspaceSlug, user.id);
+	const access = await requireWorkspaceAdmin(workspaceSlug, user.id);
 
-	const validatedData = createWorkspaceInvitationSchema.safeParse(data);
+	if (!access.success) {
+		return { success: false as const, message: access.message };
+	}
 
-	if (!validatedData.success) {
+	const workspace = access.data;
+
+	const normalizedEmail = email.trim().toLowerCase();
+
+	if (normalizedEmail === user.email.toLowerCase()) {
 		return {
-			success: false,
-			error: "Invalid invitation data.",
+			success: false as const,
+			message: "You are already a member of this workspace.",
 		};
 	}
 
-	const existingUser = await getUserByEmail(validatedData.data.email);
+	const existingUser = await getUserByEmail(normalizedEmail);
 
 	if (existingUser) {
 		const existingMember = await getWorkspaceMemberById(
@@ -55,68 +71,169 @@ export async function createWorkspaceInvitationAction(
 
 		if (existingMember) {
 			return {
-				success: false,
-				error: "User is already a member of this workspace.",
+				success: false as const,
+				message: "This person is already a member of this workspace.",
 			};
 		}
 	}
 
 	const existingInvitation = await getWorkspaceInvitationByEmail(
 		workspace.id,
-		validatedData.data.email,
+		normalizedEmail,
 	);
 
 	if (existingInvitation) {
 		return {
-			success: false,
-			error: "An invitation has already been sent to this email.",
+			success: false as const,
+			message: "An invitation is already pending for this email.",
 		};
 	}
 
-	const invitation = await createWorkspaceInvitation({
-		...validatedData.data,
-		workspaceId: workspace.id,
-		invitedById: user.id,
-		token: nanoid(32),
-		expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-	});
-
-	const emailResult = await sendWorkspaceInvitationEmail({
-		email: invitation.email,
-		workspaceName: workspace.name,
-		token: invitation.token,
-	});
-
-	if (!emailResult.success) {
-		console.warn(`Failed to send invitation email to ${invitation.email}`);
-	}
-
-	await createActivity({
-		workspaceId: workspace.id,
-		actorId: user.id,
-		action: "created",
-		entity: "workspace_invitation",
-		entityId: invitation.id,
-		metadata: {
-			email: invitation.email,
-			role: invitation.role,
-		},
-	});
-
-	revalidatePath(`/workspaces/${workspace.slug}/settings/members`);
-
 	return {
-		success: true,
-		data: invitation,
+		success: true as const,
+		data: {
+			email: normalizedEmail,
+			// The invitee may not be a registered user yet, so the user object is null if they don't exist.
+			user: existingUser
+				? {
+						firstName: existingUser.firstName,
+						lastName: existingUser.lastName,
+						email: existingUser.email,
+						imageUrl: existingUser.imageUrl,
+					}
+				: null,
+		},
 	};
 }
 
-export async function getWorkspaceInvitationsAction(workspaceSlug: string) {
+// Batches workspace invitations, creating a row for each invite and sending an email. Returns a list of results for each invite, including any errors that occurred.
+export async function createWorkspaceInvitationsAction(
+	workspaceSlug: string,
+	invites: CreateWorkspaceInvitationInput[],
+) {
 	const user = await getCurrentUser();
-	const workspace = await requireWorkspaceAdmin(workspaceSlug, user.id);
-	const invitations = await getWorkspaceInvitations(workspace.id);
 
-	return invitations;
+	const access = await requireWorkspaceAdmin(workspaceSlug, user.id);
+
+	if (!access.success) {
+		return {
+			success: false as const,
+			message: access.message,
+			sentCount: 0,
+			results: [] as InviteResult[],
+		};
+	}
+
+	const workspace = access.data;
+
+	const results: InviteResult[] = [];
+
+	for (const invite of invites) {
+		const validatedData = createWorkspaceInvitationSchema.safeParse({
+			...invite,
+			email: invite.email.trim().toLowerCase(),
+		});
+
+		if (!validatedData.success) {
+			results.push({
+				email: invite.email,
+				success: false,
+				error: "Invalid email address.",
+			});
+			continue;
+		}
+
+		const { email, role } = validatedData.data;
+
+		// Each invite is isolated: one bad row used to throw out of the loop and
+		// take the whole batch down, which is what results[] exists to prevent.
+		try {
+			const existingUser = await getUserByEmail(email);
+
+			if (existingUser) {
+				const existingMember = await getWorkspaceMemberById(
+					workspace.id,
+					existingUser.id,
+				);
+
+				if (existingMember) {
+					results.push({
+						email,
+						success: false,
+						error: "Already a member of this workspace.",
+					});
+					continue;
+				}
+			}
+
+			const existingInvitation = await getWorkspaceInvitationByEmail(
+				workspace.id,
+				email,
+			);
+
+			if (existingInvitation) {
+				results.push({
+					email,
+					success: false,
+					error: "An invitation is already pending.",
+				});
+				continue;
+			}
+
+			const invitation = await createWorkspaceInvitation({
+				email,
+				role,
+				workspaceId: workspace.id,
+				invitedById: user.id,
+				token: nanoid(32),
+				expiresAt: new Date(Date.now() + INVITATION_TTL_MS),
+			});
+
+			const emailResult = await sendWorkspaceInvitationEmail({
+				email: invitation.email,
+				workspaceName: workspace.name,
+				token: invitation.token,
+			});
+
+			if (!emailResult.success) {
+				console.warn(`Failed to send invitation email to ${invitation.email}`);
+			}
+
+			await createActivity({
+				workspaceId: workspace.id,
+				actorId: user.id,
+				action: "invited",
+				entity: "workspace_invitation",
+				entityId: invitation.id,
+				metadata: {
+					email: invitation.email,
+					role: invitation.role,
+				},
+			});
+
+			results.push({ email, success: true, emailSent: emailResult.success });
+		} catch (error) {
+			console.error(`Failed to invite ${email}:`, error);
+
+			results.push({
+				email,
+				success: false,
+				error: "Something went wrong creating this invitation.",
+			});
+		}
+	}
+
+	const sentCount = results.filter((result) => result.success).length;
+
+	if (sentCount > 0) {
+		revalidatePath(`/w/${workspace.slug}/members`);
+	}
+
+	return {
+		success: sentCount > 0,
+		sentCount,
+		results,
+	};
 }
 
 export async function revokeWorkspaceInvitationAction(
@@ -125,28 +242,34 @@ export async function revokeWorkspaceInvitationAction(
 ) {
 	const user = await getCurrentUser();
 
-	const workspace = await requireWorkspaceAdmin(workspaceSlug, user.id);
+	const access = await requireWorkspaceAdmin(workspaceSlug, user.id);
+
+	if (!access.success) {
+		return { success: false as const, message: access.message };
+	}
+
+	const workspace = access.data;
 
 	const invitation = await getWorkspaceInvitationById(invitationId);
 
 	if (!invitation) {
 		return {
-			success: false,
-			error: "Invitation not found.",
+			success: false as const,
+			message: "Invitation not found.",
 		};
 	}
 
 	if (invitation.workspaceId !== workspace.id) {
 		return {
-			success: false,
-			error: "Invitation does not belong to this workspace.",
+			success: false as const,
+			message: "Invitation does not belong to this workspace.",
 		};
 	}
 
 	if (invitation.status !== "pending") {
 		return {
-			success: false,
-			error: "Only pending invitations can be revoked.",
+			success: false as const,
+			message: "Only pending invitations can be revoked.",
 		};
 	}
 
@@ -166,10 +289,10 @@ export async function revokeWorkspaceInvitationAction(
 		},
 	});
 
-	revalidatePath(`/workspaces/${workspace.slug}/settings/members`);
+	revalidatePath(`/w/${workspace.slug}/members`);
 
 	return {
-		success: true,
+		success: true as const,
 		data: updatedInvitation,
 	};
 }
@@ -180,28 +303,34 @@ export async function resendWorkspaceInvitationAction(
 ) {
 	const user = await getCurrentUser();
 
-	const workspace = await requireWorkspaceAdmin(workspaceSlug, user.id);
+	const access = await requireWorkspaceAdmin(workspaceSlug, user.id);
+
+	if (!access.success) {
+		return { success: false as const, message: access.message };
+	}
+
+	const workspace = access.data;
 
 	const invitation = await getWorkspaceInvitationById(invitationId);
 
 	if (!invitation) {
 		return {
-			success: false,
-			error: "Invitation not found.",
+			success: false as const,
+			message: "Invitation not found.",
 		};
 	}
 
 	if (invitation.workspaceId !== workspace.id) {
 		return {
-			success: false,
-			error: "Invitation does not belong to this workspace.",
+			success: false as const,
+			message: "Invitation does not belong to this workspace.",
 		};
 	}
 
 	if (invitation.status !== "pending") {
 		return {
-			success: false,
-			error: "Only pending invitations can be revoked.",
+			success: false as const,
+			message: "Only pending invitations can be revoked.",
 		};
 	}
 
@@ -229,10 +358,10 @@ export async function resendWorkspaceInvitationAction(
 		},
 	});
 
-	revalidatePath(`/workspaces/${workspace.slug}/settings/members`);
+	revalidatePath(`/w/${workspace.slug}/members`);
 
 	return {
-		success: true,
+		success: true as const,
 		data: updatedInvitation,
 	};
 }
@@ -245,21 +374,21 @@ export async function getWorkspaceInvitationByTokenAction(token: string) {
 	if (!invitation) {
 		return {
 			success: false as const,
-			error: "Invitation not found.",
+			message: "Invitation not found.",
 		};
 	}
 
 	if (invitation.status !== "pending") {
 		return {
 			success: false as const,
-			error: "Invitation is no longer active.",
+			message: "Invitation is no longer active.",
 		};
 	}
 
 	if (isInvitationExpired(invitation.expiresAt)) {
 		return {
 			success: false as const,
-			error: "Invitation has expired.",
+			message: "Invitation has expired.",
 		};
 	}
 
@@ -276,29 +405,29 @@ export async function acceptWorkspaceInvitationAction(token: string) {
 
 	if (!invitation) {
 		return {
-			success: false,
-			error: "Invitation not found.",
+			success: false as const,
+			message: "Invitation not found.",
 		};
 	}
 
 	if (invitation.status !== "pending") {
 		return {
-			success: false,
-			error: "Invitation is no longer active.",
+			success: false as const,
+			message: "Invitation is no longer active.",
 		};
 	}
 
 	if (isInvitationExpired(invitation.expiresAt)) {
 		return {
-			success: false,
-			error: "Invitation has expired.",
+			success: false as const,
+			message: "Invitation has expired.",
 		};
 	}
 
 	if (invitation.email.toLowerCase() !== user.email.toLowerCase()) {
 		return {
-			success: false,
-			error: "This invitation was sent to another email address.",
+			success: false as const,
+			message: "This invitation was sent to another email address.",
 		};
 	}
 
@@ -309,8 +438,8 @@ export async function acceptWorkspaceInvitationAction(token: string) {
 
 	if (existingMember) {
 		return {
-			success: false,
-			error: "You are already a member of this workspace.",
+			success: false as const,
+			message: "You are already a member of this workspace.",
 		};
 	}
 
@@ -339,7 +468,7 @@ export async function acceptWorkspaceInvitationAction(token: string) {
 	});
 
 	return {
-		success: true,
+		success: true as const,
 		data: {
 			member,
 			invitation: updatedInvitation,

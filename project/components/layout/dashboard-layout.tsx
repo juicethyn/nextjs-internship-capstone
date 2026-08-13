@@ -1,4 +1,5 @@
 import type React from "react";
+import { PresenceHeartbeat } from "@/components/presence/presence-heartbeat";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import type { WorkspaceItem, WorkspaceMemberRole } from "@/types/workspace";
 import { AppSidebar } from "./app-side-bar";
@@ -19,6 +20,8 @@ export function DashboardLayout({
 }: DashboardLayoutProps) {
 	return (
 		<SidebarProvider>
+			<PresenceHeartbeat workspaceSlug={currentWorkspace.slug} />
+
 			<div className="flex flex-1 min-w-0 h-dvh flex-col">
 				<TopBar />
 				<div className="flex flex-1 min-w-0 min-h-0">

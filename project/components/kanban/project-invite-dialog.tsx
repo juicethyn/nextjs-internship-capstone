@@ -109,13 +109,13 @@ export function ProjectInviteDialog({
 
 				<div className="board-scrollbar min-h-0 flex-1 space-y-5 overflow-y-auto px-4 py-4">
 					{!canManageProject && (
-						<p className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
+						<p className="rounded-lg p-3 text-xs text-muted-foreground">
 							Only the project lead or a workspace owner/admin can add members.
 						</p>
 					)}
 
 					{canManageProject && isArchived && (
-						<p className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
+						<p className="rounded-lg p-3 text-xs text-muted-foreground">
 							This project is archived. Restore it from Settings to add members.
 						</p>
 					)}
@@ -167,7 +167,7 @@ export function ProjectInviteDialog({
 							)}
 
 							{!isLoading && available.length === 0 && (
-								<p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+								<p className="rounded-lg p-6 text-center text-sm text-muted-foreground">
 									Everyone in this workspace is already on this project.
 								</p>
 							)}
@@ -175,7 +175,7 @@ export function ProjectInviteDialog({
 							{!isLoading &&
 								available.length > 0 &&
 								visibleAvailable.length === 0 && (
-									<p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+									<p className="rounded-lg  p-6 text-center text-sm text-muted-foreground">
 										No workspace members match "{search}".
 									</p>
 								)}
@@ -224,7 +224,7 @@ export function ProjectInviteDialog({
 						</h3>
 
 						{roster.length === 0 ? (
-							<p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+							<p className="rounded-lg p-6 text-center text-sm text-muted-foreground">
 								This project has no members yet.
 							</p>
 						) : (

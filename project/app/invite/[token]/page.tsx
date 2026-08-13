@@ -16,7 +16,7 @@ export default async function InvitationPage({
 	if (!result.success) {
 		return (
 			<div className="flex min-h-screen items-center justify-center">
-				<InvitationError message={result.error} />
+				<InvitationError message={result.message} />
 			</div>
 		);
 	}

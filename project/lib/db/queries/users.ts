@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import type { UpdateUserInput } from "@/lib/validations/user";
 import type { DbClient } from "@/types/db";
 import { db } from "../index";
@@ -19,6 +19,14 @@ export function getUserByClerkId(clerkId: string) {
 export async function getUserByEmail(email: string) {
 	return db.query.users.findFirst({
 		where: eq(users.email, email),
+	});
+}
+
+export async function getUsersByEmails(emails: string[]) {
+	if (emails.length === 0) return [];
+
+	return db.query.users.findMany({
+		where: inArray(users.email, emails),
 	});
 }
 

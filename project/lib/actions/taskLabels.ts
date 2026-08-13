@@ -8,15 +8,12 @@ import {
 	deleteTaskLabel,
 	getTaskLabelById,
 	getTaskLabelsByProject,
-	updateTaskLabel,
 } from "@/lib/db/queries/taskLabels";
 
 import { requireActiveProject } from "@/lib/permission";
 import {
 	type CreateTaskLabelInput,
 	createTaskLabelSchema,
-	type UpdateTaskLabelInput,
-	updateTaskLabelSchema,
 } from "@/lib/validations/label";
 
 export async function getTaskLabelsByProjectAction(
@@ -25,15 +22,21 @@ export async function getTaskLabelsByProjectAction(
 ) {
 	const user = await getCurrentUser();
 
-	const project = await requireActiveProject(
+	const access = await requireActiveProject(
 		workspaceSlug,
 		projectSlug,
 		user.id,
 	);
 
+	if (!access.success) {
+		return { success: false as const, message: access.message };
+	}
+
+	const { project } = access.data;
+
 	const labels = await getTaskLabelsByProject(project.id);
 
-	return labels;
+	return { success: true as const, data: labels };
 }
 
 export async function createTaskLabelAction(
@@ -47,16 +50,22 @@ export async function createTaskLabelAction(
 
 	if (!validatedData.success) {
 		return {
-			success: false,
-			error: "Invalid task label data.",
+			success: false as const,
+			message: "Invalid task label data.",
 		};
 	}
 
-	const project = await requireActiveProject(
+	const access = await requireActiveProject(
 		workspaceSlug,
 		projectSlug,
 		user.id,
 	);
+
+	if (!access.success) {
+		return { success: false as const, message: access.message };
+	}
+
+	const { project } = access.data;
 
 	// unique(projectId, name) is enforced in Postgres — check first so a repeat
 	// name reads as a message instead of a constraint violation.
@@ -70,8 +79,8 @@ export async function createTaskLabelAction(
 
 	if (nameTaken) {
 		return {
-			success: false,
-			error: "A label with that name already exists.",
+			success: false as const,
+			message: "A label with that name already exists.",
 		};
 	}
 
@@ -92,61 +101,8 @@ export async function createTaskLabelAction(
 	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
 	return {
-		success: true,
+		success: true as const,
 		data: label,
-	};
-}
-
-export async function updateTaskLabelAction(
-	workspaceSlug: string,
-	projectSlug: string,
-	labelId: string,
-	data: UpdateTaskLabelInput,
-) {
-	const user = await getCurrentUser();
-
-	const validatedData = updateTaskLabelSchema.safeParse(data);
-
-	if (!validatedData.success) {
-		return {
-			success: false,
-			error: "Invalid task label data.",
-		};
-	}
-
-	const project = await requireActiveProject(
-		workspaceSlug,
-		projectSlug,
-		user.id,
-	);
-
-	const label = await getTaskLabelById(labelId);
-
-	if (!label || label.projectId !== project.id) {
-		return {
-			success: false,
-			error: "Task label not found.",
-		};
-	}
-
-	const updatedLabel = await updateTaskLabel(labelId, validatedData.data);
-
-	await createActivity({
-		workspaceId: project.workspaceId,
-		actorId: user.id,
-		action: "updated",
-		entity: "task_label",
-		entityId: label.id,
-		metadata: {
-			name: updatedLabel.name,
-		},
-	});
-
-	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
-
-	return {
-		success: true,
-		data: updatedLabel,
 	};
 }
 
@@ -157,18 +113,24 @@ export async function deleteTaskLabelAction(
 ) {
 	const user = await getCurrentUser();
 
-	const project = await requireActiveProject(
+	const access = await requireActiveProject(
 		workspaceSlug,
 		projectSlug,
 		user.id,
 	);
 
+	if (!access.success) {
+		return { success: false as const, message: access.message };
+	}
+
+	const { project } = access.data;
+
 	const label = await getTaskLabelById(labelId);
 
 	if (!label || label.projectId !== project.id) {
 		return {
-			success: false,
-			error: "Task label not found.",
+			success: false as const,
+			message: "Task label not found.",
 		};
 	}
 
@@ -188,7 +150,7 @@ export async function deleteTaskLabelAction(
 	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
 	return {
-		success: true,
+		success: true as const,
 		data: deletedLabel,
 	};
 }

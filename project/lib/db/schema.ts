@@ -156,6 +156,11 @@ export const workspaceMembers = pgTable(
 			.references(() => users.id, { onDelete: "cascade" }),
 		role: workspaceRoleEnum("role").notNull().default("member"),
 		joinedAt: timestamp("joined_at").notNull().defaultNow(),
+		// Presence lives on the membership row, not the user, so leaving a
+		// workspace for another one lets this one age out on its own. Nullable:
+		// a member who has never been seen must read as offline, not as online
+		// at the moment the column was added.
+		lastSeenAt: timestamp("last_seen_at"),
 	},
 	(table) => [
 		unique().on(table.workspaceId, table.userId),
