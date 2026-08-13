@@ -145,10 +145,6 @@ export function MemberCard({
 									</DropdownMenuSubTrigger>
 
 									<DropdownMenuSubContent>
-										{/* Plain items rather than a radio group: a radio checks
-										    the new value on click, which would sit there lying
-										    if the confirmation is then cancelled. Owner is absent
-										    by design — ownership moves through transfer. */}
 										{ROLE_OPTIONS.map((option) => (
 											<DropdownMenuItem
 												key={option.value}
@@ -169,8 +165,6 @@ export function MemberCard({
 									</DropdownMenuSubContent>
 								</DropdownMenuSub>
 
-								{/* Stays enabled even when they lead projects — the dialog is
-								    what explains why the removal can't go through. */}
 								<DropdownMenuItem
 									variant="destructive"
 									onSelect={() => setPending({ type: "kick" })}

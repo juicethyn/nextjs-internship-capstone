@@ -15,7 +15,9 @@ import { getUsersByEmails } from "../db/queries/users";
 import { getPendingWorkspaceInvitations } from "../db/queries/workspaceInvitations";
 import {
 	getWorkspaceMembersById,
+	getWorkspacePresence,
 	removeWorkspaceMember,
+	touchWorkspaceMemberPresence,
 	updateWorkspaceMemberRole,
 } from "../db/queries/workspaceMembers";
 import { requireWorkspaceMember } from "../permission";
@@ -37,6 +39,32 @@ export async function getWorkspaceMembersBySlug(workspaceSlug: string) {
 		success: true as const,
 		data: members,
 	};
+}
+
+// Fired once a minute per active user, so it deliberately skips the usual
+// permission round trip — touchWorkspaceMemberPresence scopes the write by slug
+// and updates nothing for a non-member. A stale tab beating after someone is
+// removed is expected, not an error worth surfacing.
+export async function heartbeatWorkspacePresenceAction(workspaceSlug: string) {
+	const user = await getCurrentUser();
+
+	const touched = await touchWorkspaceMemberPresence(workspaceSlug, user.id);
+
+	return { success: true as const, data: { active: touched.length > 0 } };
+}
+
+export async function getWorkspacePresenceAction(workspaceSlug: string) {
+	const user = await getCurrentUser();
+
+	const access = await requireWorkspaceMember(workspaceSlug, user.id);
+
+	if (!access.success) {
+		return { success: false as const, message: access.message };
+	}
+
+	const presence = await getWorkspacePresence(access.data.id);
+
+	return { success: true as const, data: presence };
 }
 
 export async function getWorkspaceMembersWithStatsBySlug(

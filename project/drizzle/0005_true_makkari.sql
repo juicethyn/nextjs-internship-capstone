@@ -1,0 +1,1 @@
+ALTER TABLE "workspace_members" ADD COLUMN "last_seen_at" timestamp;

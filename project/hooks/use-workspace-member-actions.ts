@@ -11,8 +11,6 @@ import type { WorkspaceMemberRole } from "@/types/workspace";
 export function useWorkspaceMemberActions(workspaceSlug: string) {
 	const queryClient = useQueryClient();
 
-	// Prefix match: refreshes the members page's ["...", slug, "stats"] query and
-	// the lighter ["workspace-members", slug] list in one call.
 	const refreshMembers = () =>
 		queryClient.invalidateQueries({
 			queryKey: ["workspace-members", workspaceSlug],

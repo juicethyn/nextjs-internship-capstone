@@ -5,6 +5,7 @@ import "./globals.css"; // FIX #2: Creating global.d.ts to declare module for CS
 
 // TODO: Task 2.1 - Set up Clerk authentication service - Complete
 import { ClerkProvider } from "@clerk/nextjs";
+import { shadcn } from "@clerk/themes";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ThemedToaster } from "@/components/themed-toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -28,7 +29,7 @@ export default function RootLayout({
 }) {
 	return (
 		// TODO: Task 2.1 - Wrap with ClerkProvider once Clerk is set up - Complete
-		<ClerkProvider>
+		<ClerkProvider appearance={{ theme: shadcn }}>
 			<html
 				lang="en"
 				suppressHydrationWarning

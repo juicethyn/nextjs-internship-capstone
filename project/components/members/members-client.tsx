@@ -7,6 +7,7 @@ import {
 	useWorkspaceMembersStats,
 	type WorkspaceMembersStats,
 } from "@/hooks/use-workspace-members-stats";
+import { useWorkspacePresence } from "@/hooks/use-workspace-presence";
 import { sortWorkspaceMembers } from "@/lib/utils/workspace-members";
 import { useUIStore } from "@/stores/ui-store";
 import { MembersGrid } from "./members-grid";
@@ -33,6 +34,8 @@ export function MembersClient({
 		resendInvitation,
 		resendingInvitationId,
 	} = useWorkspaceInvitations(workspaceSlug);
+
+	const { lastSeenByUserId } = useWorkspacePresence(workspaceSlug);
 
 	const sortedMembers = useMemo(
 		() => sortWorkspaceMembers(data.members),
@@ -64,6 +67,7 @@ export function MembersClient({
 				currentUserId={data.currentUserId}
 				viewerRole={data.viewerRole}
 				workspaceSlug={workspaceSlug}
+				lastSeenByUserId={lastSeenByUserId}
 			/>
 
 			{data.pendingInvitations.length > 0 && (
