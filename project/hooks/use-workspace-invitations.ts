@@ -42,6 +42,17 @@ export function useWorkspaceInvitations(workspaceSlug: string) {
 				toast.error(`${entry.email}: ${entry.error}`);
 			}
 
+			// Some invitations may have been sent successfully, but the email failed to send. Notify the user of this.
+			const undelivered = result.results
+				.filter((entry) => entry.success && entry.emailSent === false)
+				.map((entry) => entry.email);
+
+			if (undelivered.length > 0) {
+				toast.warning(
+					`Couldn't email ${undelivered.join(", ")}. Share the invite link manually, or verify a sending domain in Resend.`,
+				);
+			}
+
 			if (result.sentCount > 0) {
 				refreshMembers();
 			}

@@ -149,8 +149,15 @@ export async function requireProjectMember(
 		getWorkspaceMemberById(project.workspaceId, userId),
 	]);
 
+	// A project_members row is not sufficient on its own. Removing someone from a
+	// workspace cascades their memberships away, but any row that predates that
+	// cascade would otherwise still grant project access to a non-member.
+	if (!workspaceMember) {
+		return forbidden(FORBIDDEN_MESSAGES.workspaceMember);
+	}
+
 	const isWorkspaceManager =
-		workspaceMember?.role === "owner" || workspaceMember?.role === "admin";
+		workspaceMember.role === "owner" || workspaceMember.role === "admin";
 
 	// Workspace owners/admins oversee every project in their workspace, so they
 	// have access without an explicit project_members row.

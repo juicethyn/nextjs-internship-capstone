@@ -62,7 +62,8 @@ export function MembersClient({
 			<MembersGrid
 				members={sortedMembers}
 				currentUserId={data.currentUserId}
-				viewerCanManage={viewerCanManage}
+				viewerRole={data.viewerRole}
+				workspaceSlug={workspaceSlug}
 			/>
 
 			{data.pendingInvitations.length > 0 && (

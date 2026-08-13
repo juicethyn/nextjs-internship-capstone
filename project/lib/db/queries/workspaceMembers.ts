@@ -70,8 +70,9 @@ export async function transferWorkspaceOwnership(
 export async function removeWorkspaceMember(
 	workspaceId: string,
 	userId: string,
+	dbClient: DbClient = db,
 ) {
-	const [workspaceMember] = await db
+	const [workspaceMember] = await dbClient
 		.delete(workspaceMembers)
 		.where(
 			and(

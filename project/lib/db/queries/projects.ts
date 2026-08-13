@@ -189,7 +189,9 @@ export async function restoreProject(projectId: string) {
 // A user counts as assigned to a project when they hold a project_members row
 // OR they are the lead — leadId can point at someone with no membership row, so
 // counting memberships alone would report 0 for a lead on their own project.
-export async function getWorkspaceProjectAssignmentCounts(workspaceId: string) {
+// The lead rows are also handed back by name, which is what lets the members
+// page block a kick without a second query.
+export async function getWorkspaceProjectAssignments(workspaceId: string) {
 	const [memberships, leads] = await Promise.all([
 		db
 			.select({
@@ -204,6 +206,7 @@ export async function getWorkspaceProjectAssignmentCounts(workspaceId: string) {
 			.select({
 				userId: projects.leadId,
 				projectId: projects.id,
+				projectName: projects.name,
 			})
 			.from(projects)
 			.where(
@@ -232,7 +235,19 @@ export async function getWorkspaceProjectAssignmentCounts(workspaceId: string) {
 		counts[userId] = projectIds.size;
 	}
 
-	return counts;
+	const ledProjects: Record<string, { id: string; name: string }[]> = {};
+
+	for (const row of leads) {
+		if (!row.userId) continue;
+
+		const entry = { id: row.projectId, name: row.projectName };
+
+		ledProjects[row.userId] = ledProjects[row.userId]
+			? [...ledProjects[row.userId], entry]
+			: [entry];
+	}
+
+	return { counts, ledProjects };
 }
 
 // A project is completed once every task it has sits in a "done" list. The

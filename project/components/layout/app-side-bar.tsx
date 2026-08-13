@@ -44,8 +44,8 @@ import { switchWorkspaceAction } from "@/lib/actions/workspaces";
 import { cn } from "@/lib/utils";
 import type { WorkspaceItem, WorkspaceMemberRole } from "@/types/workspace";
 import { CreateWorkspaceModal } from "../modals/create-workspace-modal";
-import { WorkspaceSettingsModal } from "../modals/workspace-settings-modal";
 import { WorkspaceAvatar } from "../workspace-avatar";
+import { WorkspaceSettingsModal } from "../workspace-settings/workspace-settings-modal";
 
 type AppSidebarProps = {
 	currentWorkspace: WorkspaceItem;

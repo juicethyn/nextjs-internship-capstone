@@ -34,7 +34,15 @@ export default function TopBar() {
 				>
 					<Bell size={20} />
 				</button>
-				<UserButton />
+				<UserButton
+					appearance={{
+						elements: {
+							userButtonPopoverActionButton__manageAccount: {
+								display: "none",
+							},
+						},
+					}}
+				/>
 			</div>
 		</div>
 	);

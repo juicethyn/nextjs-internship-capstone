@@ -9,9 +9,9 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { WorkspaceItem, WorkspaceMemberRole } from "@/types/workspace";
-import { DangerTab } from "../workspace-settings/danger-tab";
-import { GeneralTab } from "../workspace-settings/general-tab";
-import { LabelsTab } from "../workspace-settings/labels-tab";
+import { DangerTab } from "./danger-tab";
+import { GeneralTab } from "./general-tab";
+import { LabelsTab } from "./labels-tab";
 
 type WorkspaceSettingsModalProps = {
 	workspace: WorkspaceItem;

@@ -1,8 +1,16 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { memberDisplayName } from "@/lib/utils/project-members";
+import {
+	canManageWorkspaceMember,
+	WORKSPACE_MEMBER_FORBIDDEN_MESSAGE,
+} from "@/lib/utils/workspace-permissions";
+import { createActivity } from "../activity";
 import { getCurrentUser } from "../auth";
-import { getWorkspaceProjectAssignmentCounts } from "../db/queries/projects";
+import { db } from "../db";
+import { removeUserFromWorkspaceProjects } from "../db/queries/projectMembers";
+import { getWorkspaceProjectAssignments } from "../db/queries/projects";
 import { getUsersByEmails } from "../db/queries/users";
 import { getPendingWorkspaceInvitations } from "../db/queries/workspaceInvitations";
 import {
@@ -10,11 +18,7 @@ import {
 	removeWorkspaceMember,
 	updateWorkspaceMemberRole,
 } from "../db/queries/workspaceMembers";
-import {
-	requireWorkspaceAdmin,
-	requireWorkspaceMember,
-	requireWorkspaceOwner,
-} from "../permission";
+import { requireWorkspaceMember } from "../permission";
 
 export async function getWorkspaceMembersBySlug(workspaceSlug: string) {
 	const user = await getCurrentUser();
@@ -48,9 +52,9 @@ export async function getWorkspaceMembersWithStatsBySlug(
 
 	const workspace = access.data;
 
-	const [members, projectCounts] = await Promise.all([
+	const [members, assignments] = await Promise.all([
 		getWorkspaceMembersById(workspace.id),
-		getWorkspaceProjectAssignmentCounts(workspace.id),
+		getWorkspaceProjectAssignments(workspace.id),
 	]);
 
 	const viewerRole =
@@ -73,7 +77,9 @@ export async function getWorkspaceMembersWithStatsBySlug(
 			pendingInvitations,
 			members: members.map((member) => ({
 				...member,
-				projectCount: projectCounts[member.userId] ?? 0,
+				projectCount: assignments.counts[member.userId] ?? 0,
+				// Drives the kick dialog's blocked state without a per-click fetch.
+				ledProjects: assignments.ledProjects[member.userId] ?? [],
 			})),
 		},
 	};
@@ -115,7 +121,7 @@ export async function updateWorkspaceMemberRoleAction(
 ) {
 	const user = await getCurrentUser();
 
-	const access = await requireWorkspaceOwner(workspaceSlug, user.id);
+	const access = await requireWorkspaceMember(workspaceSlug, user.id);
 
 	if (!access.success) {
 		return { success: false as const, message: access.message };
@@ -123,20 +129,68 @@ export async function updateWorkspaceMemberRoleAction(
 
 	const workspace = access.data;
 
-	const member = await updateWorkspaceMemberRole(workspace.id, userId, role);
+	// Ownership moves through transferWorkspaceOwnership, never a role edit.
+	if (role !== "admin" && role !== "member") {
+		return {
+			success: false as const,
+			message: "Members can only be set to admin or member.",
+		};
+	}
 
-	if (!member) {
+	const members = await getWorkspaceMembersById(workspace.id);
+
+	const viewer = members.find((member) => member.userId === user.id);
+	const target = members.find((member) => member.userId === userId);
+
+	if (!target) {
 		return {
 			success: false as const,
 			message: "User is not a member of this workspace.",
 		};
 	}
 
+	if (
+		!viewer ||
+		!canManageWorkspaceMember(
+			viewer.role,
+			target.role,
+			target.userId === user.id,
+		)
+	) {
+		return {
+			success: false as const,
+			message: WORKSPACE_MEMBER_FORBIDDEN_MESSAGE,
+		};
+	}
+
+	if (target.role === role) {
+		return {
+			success: false as const,
+			message: `${memberDisplayName(target.user)} is already ${role === "admin" ? "an admin" : "a member"}.`,
+		};
+	}
+
+	const member = await updateWorkspaceMemberRole(workspace.id, userId, role);
+
+	await createActivity({
+		workspaceId: workspace.id,
+		actorId: user.id,
+		action: "updated",
+		entity: "workspace_member",
+		entityId: target.id,
+		metadata: {
+			userId: target.userId,
+			previousRole: target.role,
+			role,
+		},
+	});
+
 	revalidatePath(`/w/${workspace.slug}`, "layout");
 
 	return {
 		success: true as const,
 		data: member,
+		message: `${memberDisplayName(target.user)} is now ${role === "admin" ? "an admin" : "a member"}.`,
 	};
 }
 
@@ -146,7 +200,7 @@ export async function removeWorkspaceMemberAction(
 ) {
 	const user = await getCurrentUser();
 
-	const access = await requireWorkspaceAdmin(workspaceSlug, user.id);
+	const access = await requireWorkspaceMember(workspaceSlug, user.id);
 
 	if (!access.success) {
 		return { success: false as const, message: access.message };
@@ -156,31 +210,67 @@ export async function removeWorkspaceMemberAction(
 
 	const members = await getWorkspaceMembersById(workspace.id);
 
-	const targetMember = members.find((member) => member.id === memberId);
+	const viewer = members.find((member) => member.userId === user.id);
+	const target = members.find((member) => member.id === memberId);
 
-	if (!targetMember) {
+	if (!target) {
 		return {
 			success: false as const,
 			message: "User is not a member of this workspace.",
 		};
 	}
 
-	if (targetMember.role === "owner") {
+	if (
+		!viewer ||
+		!canManageWorkspaceMember(
+			viewer.role,
+			target.role,
+			target.userId === user.id,
+		)
+	) {
 		return {
 			success: false as const,
-			message: "Cannot remove the owner of the workspace.",
+			message: WORKSPACE_MEMBER_FORBIDDEN_MESSAGE,
 		};
 	}
 
-	const removed = await removeWorkspaceMember(
-		workspace.id,
-		targetMember.userId,
-	);
+	// Re-checked here rather than trusted from the client: the page's ledProjects
+	// is a UI hint that can be stale if a lead moved in another tab.
+	const { ledProjects } = await getWorkspaceProjectAssignments(workspace.id);
+
+	const led = ledProjects[target.userId] ?? [];
+
+	if (led.length > 0) {
+		return {
+			success: false as const,
+			message: `${memberDisplayName(target.user)} leads ${led.length === 1 ? "a project" : `${led.length} projects`}. Transfer the project lead role before removing them.`,
+			ledProjects: led,
+		};
+	}
+
+	const removed = await db.transaction(async (tx) => {
+		await removeUserFromWorkspaceProjects(workspace.id, target.userId, tx);
+
+		return removeWorkspaceMember(workspace.id, target.userId, tx);
+	});
+
+	await createActivity({
+		workspaceId: workspace.id,
+		actorId: user.id,
+		action: "deleted",
+		entity: "workspace_member",
+		entityId: target.id,
+		metadata: {
+			userId: target.userId,
+			role: target.role,
+		},
+	});
 
 	revalidatePath(`/w/${workspace.slug}`, "layout");
 
 	return {
 		success: true as const,
 		data: removed,
+		message: `${memberDisplayName(target.user)} was removed from the workspace.`,
 	};
 }
