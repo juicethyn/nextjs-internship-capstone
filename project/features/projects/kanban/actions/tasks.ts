@@ -327,10 +327,16 @@ export async function moveTaskAction(
 		};
 	}
 
+	const enteringDone =
+		destinationList.type === "done" && currentList.type !== "done";
+	const leavingDone =
+		currentList.type === "done" && destinationList.type !== "done";
+
 	const movedTask = await updateTaskPosition(
 		task.id,
 		destinationListId,
 		newPosition,
+		enteringDone ? new Date() : leavingDone ? null : undefined,
 	);
 
 	// Self-heals if repeated midpoint splits ever collapse a gap.
@@ -341,7 +347,7 @@ export async function moveTaskAction(
 	await createActivity({
 		workspaceId: project.workspaceId,
 		actorId: user.id,
-		action: "moved",
+		action: enteringDone ? "completed" : "moved",
 		entity: "task",
 		entityId: task.id,
 		metadata: {
