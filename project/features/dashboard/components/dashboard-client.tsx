@@ -6,6 +6,7 @@ import { WorkspaceInviteDialog } from "@/features/members/components/invitations
 import { useMemberUIStore } from "@/features/members/store";
 import { CreateProjectModal } from "@/features/projects/components/create-project-modal";
 import { DashboardHeader } from "./dashboard-header";
+import { DashboardInsights } from "./dashboard-insights";
 import { WorkspaceOverview } from "./workspace-overview";
 
 type DashboardClientProps = {
@@ -36,6 +37,8 @@ export function DashboardClient({
 			/>
 
 			<WorkspaceOverview workspaceSlug={workspaceSlug} />
+
+			<DashboardInsights workspaceSlug={workspaceSlug} />
 
 			<CreateProjectModal
 				workspaceSlug={workspaceSlug}

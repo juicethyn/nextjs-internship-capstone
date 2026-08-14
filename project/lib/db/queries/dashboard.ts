@@ -9,13 +9,18 @@ import {
 	workspaceMembers,
 } from "../schema";
 
+const utc = (date: Date) => sql`${date.toISOString()}::timestamp`;
+
 export async function getWorkspaceOverviewStats(
 	workspaceId: string,
 	ranges: OverviewRanges,
 	includePendingInvites: boolean,
 ) {
-	const { todayStart, yesterdayStart, dayBeforeStart, weekStart, weekEnd } =
-		ranges;
+	const todayStart = utc(ranges.todayStart);
+	const yesterdayStart = utc(ranges.yesterdayStart);
+	const dayBeforeStart = utc(ranges.dayBeforeStart);
+	const weekStart = utc(ranges.weekStart);
+	const weekEnd = utc(ranges.weekEnd);
 
 	const [projectCounts, memberCounts, inviteCounts, taskCounts] =
 		await Promise.all([
@@ -94,5 +99,33 @@ export async function getWorkspaceOverviewStats(
 			total: taskCounts[0]?.dueThisWeek ?? 0,
 			overdue: taskCounts[0]?.overdue ?? 0,
 		},
+	};
+}
+
+export async function getWorkspaceTaskStatusDistribution(workspaceId: string) {
+	const [row] = await db
+		.select({
+			todo: count(sql`case when ${lists.type} = 'todo' then 1 end`),
+			inProgress: count(
+				sql`case when ${lists.type} = 'in_progress' then 1 end`,
+			),
+			done: count(sql`case when ${lists.type} = 'done' then 1 end`),
+			total: count(),
+		})
+		.from(tasks)
+		.innerJoin(lists, eq(tasks.listId, lists.id))
+		.innerJoin(projects, eq(lists.projectId, projects.id))
+		.where(
+			and(
+				eq(projects.workspaceId, workspaceId),
+				eq(projects.isArchived, false),
+			),
+		);
+
+	return {
+		todo: row?.todo ?? 0,
+		inProgress: row?.inProgress ?? 0,
+		done: row?.done ?? 0,
+		total: row?.total ?? 0,
 	};
 }

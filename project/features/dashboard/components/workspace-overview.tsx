@@ -57,6 +57,7 @@ export function WorkspaceOverview({ workspaceSlug }: WorkspaceOverviewProps) {
 					title="Active Projects"
 					value={activeProjects.total}
 					icon={FolderKanban}
+					iconClassName="text-chart-1"
 					hint={
 						activeProjects.newThisWeek > 0
 							? `+${activeProjects.newThisWeek} new this week`
@@ -68,6 +69,7 @@ export function WorkspaceOverview({ workspaceSlug }: WorkspaceOverviewProps) {
 					title="Team Members"
 					value={teamMembers.total}
 					icon={Users}
+					iconClassName="text-chart-2"
 					hint={
 						teamMembers.pendingInvites
 							? `+${teamMembers.pendingInvites} pending invites`
@@ -79,6 +81,7 @@ export function WorkspaceOverview({ workspaceSlug }: WorkspaceOverviewProps) {
 					title="Completed Yesterday"
 					value={completedYesterday.total}
 					icon={CircleCheckBig}
+					iconClassName="text-chart-3"
 					hint={formatCompletionDelta(
 						completedYesterday.total,
 						completedYesterday.previousDay,
@@ -89,6 +92,7 @@ export function WorkspaceOverview({ workspaceSlug }: WorkspaceOverviewProps) {
 					title="Due This Week"
 					value={dueThisWeek.total}
 					icon={CalendarClock}
+					iconClassName="text-chart-4"
 					hint={
 						dueThisWeek.overdue > 0
 							? `${dueThisWeek.overdue} overdue`

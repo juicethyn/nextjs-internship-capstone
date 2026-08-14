@@ -64,6 +64,7 @@ export async function createListAction(
 	await createActivity({
 		workspaceId: project.workspaceId,
 		actorId: user.id,
+		projectId: project.id,
 		action: "created",
 		entity: "list",
 		entityId: list.id,
@@ -143,6 +144,7 @@ export async function updateListAction(
 	await createActivity({
 		workspaceId: project.workspaceId,
 		actorId: user.id,
+		projectId: project.id,
 		action: "updated",
 		entity: "list",
 		entityId: list.id,
@@ -215,6 +217,7 @@ export async function deleteListAction(
 	await createActivity({
 		workspaceId: project.workspaceId,
 		actorId: user.id,
+		projectId: project.id,
 		action: "deleted",
 		entity: "list",
 		entityId: list.id,

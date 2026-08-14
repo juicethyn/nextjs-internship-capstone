@@ -448,6 +448,9 @@ export const activityLogs = pgTable(
 		actorId: uuid("actor_id")
 			.notNull()
 			.references(() => users.id, { onDelete: "cascade" }),
+		projectId: uuid("project_id").references(() => projects.id, {
+			onDelete: "cascade",
+		}),
 		action: activityActionEnum("action").notNull(),
 		entity: activityEntityEnum("entity").notNull(),
 		entityId: uuid("entity_id").notNull(),
@@ -457,6 +460,7 @@ export const activityLogs = pgTable(
 	(table) => [
 		index("activityLogs_workspace_id_index").on(table.workspaceId),
 		index("activityLogs_actor_id_index").on(table.actorId),
+		index("activityLogs_project_id_index").on(table.projectId),
 		index("activityLogs_entity_index").on(table.entity, table.entityId),
 	],
 );

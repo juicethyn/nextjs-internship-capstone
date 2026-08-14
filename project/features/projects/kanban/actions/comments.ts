@@ -128,6 +128,7 @@ export async function createCommentAction(
 	await createActivity({
 		workspaceId: project.workspaceId,
 		actorId: user.id,
+		projectId: project.id,
 		action: "created",
 		entity: "comment",
 		entityId: comment.id,
@@ -204,6 +205,7 @@ export async function deleteCommentAction(
 	await createActivity({
 		workspaceId: project.workspaceId,
 		actorId: user.id,
+		projectId: project.id,
 		action: "deleted",
 		entity: "comment",
 		entityId: comment.id,

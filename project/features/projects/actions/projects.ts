@@ -131,6 +131,7 @@ export async function createProjectAction(
 	await createActivity({
 		workspaceId: workspace.id,
 		actorId: user.id,
+		projectId: project.id,
 		action: "created",
 		entity: "project",
 		entityId: project.id,
@@ -192,6 +193,7 @@ export async function updateProjectAction(
 	await createActivity({
 		workspaceId: project.workspaceId,
 		actorId: user.id,
+		projectId: project.id,
 		action: "updated",
 		entity: "project",
 		entityId: project.id,
@@ -240,6 +242,7 @@ export async function archiveProjectAction(
 	await createActivity({
 		workspaceId: project.workspaceId,
 		actorId: user.id,
+		projectId: project.id,
 		action: "archived",
 		entity: "project",
 		entityId: project.id,
@@ -300,6 +303,7 @@ export async function restoreProjectAction(
 	await createActivity({
 		workspaceId: project.workspaceId,
 		actorId: user.id,
+		projectId: project.id,
 		action: "restored",
 		entity: "project",
 		entityId: project.id,
@@ -349,6 +353,7 @@ export async function deleteProjectAction(
 	await createActivity({
 		workspaceId: project.workspaceId,
 		actorId: user.id,
+		projectId: project.id,
 		action: "deleted",
 		entity: "project",
 		entityId: project.id,

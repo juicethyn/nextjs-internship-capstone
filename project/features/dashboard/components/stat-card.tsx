@@ -6,24 +6,34 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 type StatCardProps = {
 	title: string;
 	value: number;
 	icon: LucideIcon;
 	hint?: string;
+	iconClassName?: string;
 };
 
-export function StatCard({ title, value, icon: Icon, hint }: StatCardProps) {
+export function StatCard({
+	title,
+	value,
+	icon: Icon,
+	hint,
+	iconClassName,
+}: StatCardProps) {
 	return (
 		<Card size="sm">
 			<CardHeader>
-				<CardTitle className="text-sm font-medium text-muted-foreground">
+				<CardTitle className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
 					{title}
 				</CardTitle>
 
 				<CardAction>
-					<Icon className="size-4 text-muted-foreground" />
+					<Icon
+						className={cn("size-4", iconClassName ?? "text-muted-foreground")}
+					/>
 				</CardAction>
 			</CardHeader>
 

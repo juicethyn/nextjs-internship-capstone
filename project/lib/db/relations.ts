@@ -191,5 +191,9 @@ export const activityLogsRelations = relations(
 			fields: [schema.activityLogs.actorId],
 			references: [schema.users.id],
 		}),
+		project: one(schema.projects, {
+			fields: [schema.activityLogs.projectId],
+			references: [schema.projects.id],
+		}),
 	}),
 );

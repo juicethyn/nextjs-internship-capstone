@@ -84,6 +84,7 @@ export async function addProjectMembersAction(
 			createActivity({
 				workspaceId: project.workspaceId,
 				actorId: user.id,
+				projectId: project.id,
 				action: "created",
 				entity: "project_member",
 				entityId: member.id,
@@ -154,6 +155,7 @@ export async function removeProjectMemberAction(
 	await createActivity({
 		workspaceId: project.workspaceId,
 		actorId: user.id,
+		projectId: project.id,
 		action: "deleted",
 		entity: "project_member",
 		entityId: member.id,
@@ -219,6 +221,7 @@ export async function transferProjectLeadAction(
 	await createActivity({
 		workspaceId: project.workspaceId,
 		actorId: user.id,
+		projectId: project.id,
 		action: "transferred",
 		entity: "project",
 		entityId: project.id,

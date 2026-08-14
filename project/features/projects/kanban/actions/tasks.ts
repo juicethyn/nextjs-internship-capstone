@@ -89,6 +89,7 @@ export async function createTaskAction(
 	await createActivity({
 		workspaceId: project.workspaceId,
 		actorId: user.id,
+		projectId: project.id,
 		action: "created",
 		entity: "task",
 		entityId: task.id,
@@ -178,6 +179,7 @@ export async function updateTaskAction(
 	await createActivity({
 		workspaceId: project.workspaceId,
 		actorId: user.id,
+		projectId: project.id,
 		action: "updated",
 		entity: "task",
 		entityId: task.id,
@@ -247,6 +249,7 @@ export async function deleteTaskAction(
 	await createActivity({
 		workspaceId: project.workspaceId,
 		actorId: user.id,
+		projectId: project.id,
 		action: "deleted",
 		entity: "task",
 		entityId: task.id,
@@ -347,6 +350,7 @@ export async function moveTaskAction(
 	await createActivity({
 		workspaceId: project.workspaceId,
 		actorId: user.id,
+		projectId: project.id,
 		action: enteringDone ? "completed" : "moved",
 		entity: "task",
 		entityId: task.id,

@@ -57,7 +57,7 @@ export function formatCommentTimestamp(date: Date | string) {
 	if (elapsed < WEEK) {
 		const days = Math.floor(elapsed / DAY);
 
-		return `${days}${days === 1 ? "day" : "days"} ago`;
+		return `${days} ${days === 1 ? "day" : "days"} ago`;
 	}
 
 	const day = parsedDate.toLocaleDateString("en-US", {
