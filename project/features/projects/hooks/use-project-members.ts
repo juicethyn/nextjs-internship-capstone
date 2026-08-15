@@ -25,10 +25,15 @@ export function useProjectMembers({
 
 	// The roster lives inside the cached ProjectDetail, so invalidating the
 	// project refreshes the header stack, the invite dialog and the members tab.
-	const invalidateProject = () =>
+	const invalidateProject = () => {
 		queryClient.invalidateQueries({
 			queryKey: ["project", workspaceSlug, projectSlug],
 		});
+
+		return queryClient.invalidateQueries({
+			queryKey: ["dashboard", workspaceSlug],
+		});
+	};
 
 	const addMutation = useMutation({
 		mutationFn: (userIds: string[]) =>

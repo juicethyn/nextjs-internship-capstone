@@ -26,7 +26,13 @@ export function useLists({ workspaceSlug, projectSlug }: UseListsProps) {
 
 	const queryKey = ["project", workspaceSlug, projectSlug];
 
-	const invalidateProject = () => queryClient.invalidateQueries({ queryKey });
+	const invalidateProject = () => {
+		queryClient.invalidateQueries({ queryKey });
+
+		return queryClient.invalidateQueries({
+			queryKey: ["dashboard", workspaceSlug],
+		});
+	};
 
 	const createMutation = useMutation({
 		mutationFn: (data: CreateListInput) =>

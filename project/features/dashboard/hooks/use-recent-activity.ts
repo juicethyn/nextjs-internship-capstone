@@ -24,6 +24,7 @@ export function useRecentActivity({ workspaceSlug }: UseRecentActivityProps) {
 
 			return result.data;
 		},
+		refetchOnMount: "always",
 	});
 
 	return {

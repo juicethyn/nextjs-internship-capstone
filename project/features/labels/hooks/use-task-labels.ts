@@ -50,6 +50,10 @@ export function useTaskLabels({
 			}
 
 			queryClient.invalidateQueries({ queryKey });
+			queryClient.invalidateQueries({
+				queryKey: ["dashboard", workspaceSlug],
+			});
+
 			toast.success("Label created.");
 		},
 
@@ -71,6 +75,9 @@ export function useTaskLabels({
 			queryClient.invalidateQueries({ queryKey });
 			queryClient.invalidateQueries({
 				queryKey: ["project", workspaceSlug, projectSlug],
+			});
+			queryClient.invalidateQueries({
+				queryKey: ["dashboard", workspaceSlug],
 			});
 
 			toast.success("Label deleted.");

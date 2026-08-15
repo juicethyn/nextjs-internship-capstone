@@ -22,6 +22,7 @@ export function useWorkspaceHealth({ workspaceSlug }: UseWorkspaceHealthProps) {
 
 			return result.data;
 		},
+		refetchOnMount: "always",
 	});
 
 	return {

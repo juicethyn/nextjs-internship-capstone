@@ -18,6 +18,7 @@ export function ActivityItem({ activity }: ActivityItemProps) {
 	const { actor, project } = activity;
 
 	const name = memberDisplayName(actor);
+	const displayName = activity.isOwn ? "You" : name;
 	const phrase = activityPhrase(activity.action, activity.entity);
 	const title = activityTitle(activity.metadata);
 	const createdAt = new Date(activity.createdAt);
@@ -35,7 +36,7 @@ export function ActivityItem({ activity }: ActivityItemProps) {
 			<div className="min-w-0 flex-1 space-y-1">
 				<div className="flex min-w-0 items-start justify-between gap-3">
 					<p className="min-w-0 text-sm leading-snug">
-						<span className="font-medium">{name}</span>{" "}
+						<span className="font-medium">{displayName}</span>{" "}
 						<span className="text-muted-foreground">{phrase}</span>
 						{title && <span className="font-medium"> “{title}”</span>}
 					</p>

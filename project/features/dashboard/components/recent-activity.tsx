@@ -20,9 +20,7 @@ export function RecentActivity({ workspaceSlug }: RecentActivityProps) {
 	return (
 		<Card className="flex h-full flex-col overflow-hidden">
 			<CardHeader className="border-b pb-3">
-				<CardTitle className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-					Recent Activity
-				</CardTitle>
+				<CardTitle>Recent Activity</CardTitle>
 			</CardHeader>
 
 			<CardContent className="min-h-0 flex-1 overflow-y-auto">

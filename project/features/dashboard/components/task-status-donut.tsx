@@ -9,8 +9,8 @@ import {
 } from "@/components/ui/chart";
 
 export const STATUS_CHART_CONFIG = {
-	todo: { label: "To Do", color: "var(--chart-1)" },
-	in_progress: { label: "In Progress", color: "var(--chart-4)" },
+	todo: { label: "To Do", color: "var(--muted-foreground)" },
+	in_progress: { label: "In Progress", color: "var(--chart-1)" },
 	done: { label: "Done", color: "var(--chart-3)" },
 } satisfies ChartConfig;
 

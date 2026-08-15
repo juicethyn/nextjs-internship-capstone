@@ -36,7 +36,13 @@ export function useTasks({ workspaceSlug, projectSlug }: UseTasksProps) {
 
 	const queryKey = ["project", workspaceSlug, projectSlug];
 
-	const invalidateProject = () => queryClient.invalidateQueries({ queryKey });
+	const invalidateProject = () => {
+		queryClient.invalidateQueries({ queryKey });
+
+		return queryClient.invalidateQueries({
+			queryKey: ["dashboard", workspaceSlug],
+		});
+	};
 
 	const createMutation = useMutation({
 		mutationFn: ({ listId, data }: { listId: string; data: CreateTaskInput }) =>

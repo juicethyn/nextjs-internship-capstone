@@ -24,6 +24,7 @@ export function useWorkspaceOverview({
 
 			return result.data;
 		},
+		refetchOnMount: "always",
 	});
 
 	return {

@@ -33,10 +33,8 @@ export function WorkspaceHealth({ workspaceSlug }: WorkspaceHealthProps) {
 	if (isError || !data) {
 		return (
 			<Card className="h-full">
-				<CardHeader>
-					<CardTitle className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-						Workspace Health
-					</CardTitle>
+				<CardHeader className="border-b pb-3">
+					<CardTitle>Workspace Health</CardTitle>
 				</CardHeader>
 
 				<CardContent className="flex items-center gap-3 text-sm text-muted-foreground">
@@ -59,10 +57,8 @@ export function WorkspaceHealth({ workspaceSlug }: WorkspaceHealthProps) {
 
 	return (
 		<Card className="h-full">
-			<CardHeader>
-				<CardTitle className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-					Workspace Health
-				</CardTitle>
+			<CardHeader className="border-b pb-3">
+				<CardTitle>Workspace Health</CardTitle>
 
 				<CardDescription>Task Status Distribution</CardDescription>
 			</CardHeader>
@@ -79,7 +75,7 @@ export function WorkspaceHealth({ workspaceSlug }: WorkspaceHealthProps) {
 							<div className="flex min-w-0 items-center gap-2">
 								<span
 									aria-hidden="true"
-									className="size-2.5 shrink-0 rounded-[2px]"
+									className="size-2.5 shrink-0 rounded-xs"
 									style={{ backgroundColor: STATUS_CHART_CONFIG[status].color }}
 								/>
 

@@ -95,7 +95,10 @@ export async function getRecentActivity(workspaceSlug: string) {
 
 	return {
 		success: true as const,
-		data: activity,
+		data: activity.map((entry) => ({
+			...entry,
+			isOwn: entry.actorId === user.id,
+		})),
 	};
 }
 
