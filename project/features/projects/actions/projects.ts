@@ -13,6 +13,7 @@ import {
 	deleteProject,
 	getProjectBySlugWithRelations,
 	getProjectsByWorkspace,
+	getVisibleProjectIds,
 	restoreProject,
 	syncProjectCompletionStatus,
 	updateProject,
@@ -41,7 +42,20 @@ export async function getProjectsByWorkspaceBySlug(workspaceSlug: string) {
 		return { success: false as const, message: access.message };
 	}
 
-	const projects = await getProjectsByWorkspace(access.data.id);
+	const viewerRole =
+		access.data.members.find((member) => member.userId === user.id)?.role ??
+		"member";
+
+	const isWorkspaceManager = viewerRole === "owner" || viewerRole === "admin";
+
+	const visibleProjectIds = isWorkspaceManager
+		? undefined
+		: await getVisibleProjectIds(access.data.id, user.id, false);
+
+	const projects = await getProjectsByWorkspace(
+		access.data.id,
+		visibleProjectIds,
+	);
 
 	return {
 		success: true as const,

@@ -1,4 +1,4 @@
-import { and, asc, count, eq, isNotNull, sql } from "drizzle-orm";
+import { and, asc, count, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import type { DbClient } from "@/lib/db/types";
 import { generateProjectSlug } from "@/lib/slug";
 import type { CreateProjectInput } from "@/lib/validations/project";
@@ -32,9 +32,50 @@ export async function createProject(
 }
 
 // READ
-export function getProjectsByWorkspace(workspaceId: string) {
+
+// Mirrors requireProjectMember: workspace owners/admins oversee every project,
+// everyone else sees only the ones they hold a project_members row for.
+export async function getVisibleProjectIds(
+	workspaceId: string,
+	userId: string,
+	isWorkspaceManager: boolean,
+) {
+	if (isWorkspaceManager) {
+		const rows = await db
+			.select({ id: projects.id })
+			.from(projects)
+			.where(eq(projects.workspaceId, workspaceId));
+
+		return rows.map((row) => row.id);
+	}
+
+	const rows = await db
+		.select({ id: projects.id })
+		.from(projects)
+		.innerJoin(projectMembers, eq(projectMembers.projectId, projects.id))
+		.where(
+			and(
+				eq(projects.workspaceId, workspaceId),
+				eq(projectMembers.userId, userId),
+			),
+		);
+
+	return rows.map((row) => row.id);
+}
+
+export async function getProjectsByWorkspace(
+	workspaceId: string,
+	restrictToProjectIds?: string[],
+) {
+	if (restrictToProjectIds?.length === 0) return [];
+
 	return db.query.projects.findMany({
-		where: eq(projects.workspaceId, workspaceId),
+		where: restrictToProjectIds
+			? and(
+					eq(projects.workspaceId, workspaceId),
+					inArray(projects.id, restrictToProjectIds),
+				)
+			: eq(projects.workspaceId, workspaceId),
 		with: {
 			lists: { with: { tasks: true } },
 			members: {

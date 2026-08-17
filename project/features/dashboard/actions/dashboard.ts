@@ -3,16 +3,14 @@
 import { getOverviewRanges } from "@/features/dashboard/lib/date-range";
 import { PRIORITY_RANK } from "@/features/projects/kanban/lib/task-sort";
 import { getCurrentUser } from "@/lib/auth";
-import {
-	getRecentProjectActivity,
-	getVisibleProjectIds,
-} from "@/lib/db/queries/activityLogs";
+import { getRecentProjectActivity } from "@/lib/db/queries/activityLogs";
 import {
 	getContinueWorking as getContinueWorkingQuery,
 	getMyTasks as getMyTasksQuery,
 	getWorkspaceOverviewStats,
 	getWorkspaceTaskStatusDistribution,
 } from "@/lib/db/queries/dashboard";
+import { getVisibleProjectIds } from "@/lib/db/queries/projects";
 import { requireWorkspaceMember } from "@/lib/permission";
 
 export async function getDashboardHeaderData(workspaceSlug: string) {
