@@ -20,15 +20,22 @@ const FULL_DAY_NAMES = [
 type DeadlineColumnsProps = {
 	days: Date[];
 	events: CalendarEvent[];
+	anchorDate?: Date | null;
 	onSelectEvent?: (event: CalendarEvent) => void;
+	onSelectDay?: (day: Date) => void;
 };
 
 export function DeadlineColumns({
 	days,
 	events,
+	anchorDate,
 	onSelectEvent,
+	onSelectDay,
 }: DeadlineColumnsProps) {
 	const today = new Date();
+
+	const isSelected = (day: Date) =>
+		Boolean(anchorDate && isSameLocalDay(day, anchorDate));
 
 	const names = days.length === 1 ? FULL_DAY_NAMES : SHORT_DAY_NAMES;
 
@@ -45,7 +52,11 @@ export function DeadlineColumns({
 					return (
 						<div
 							key={day.toISOString()}
-							className="border-r py-3 text-center last:border-r-0"
+							className={cn(
+								"border-r py-3 text-center last:border-r-0",
+								isSelected(day) &&
+									"bg-primary/10 ring-2 ring-primary ring-inset",
+							)}
 						>
 							<p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
 								{names[day.getDay()]}
@@ -71,11 +82,17 @@ export function DeadlineColumns({
 					);
 
 					return (
+						// biome-ignore lint/a11y/noStaticElementInteractions: day cells mirror the month grid, where react-big-calendar owns the same interaction
+						// biome-ignore lint/a11y/useKeyWithClickEvents: keyboard users reach the same dates through the toolbar navigation
 						<div
 							key={day.toISOString()}
+							onClick={() => onSelectDay?.(day)}
 							className={cn(
 								"flex flex-col gap-1.5 border-r p-2 last:border-r-0",
+								onSelectDay && "cursor-pointer",
 								isSameLocalDay(day, today) && "bg-primary/5",
+								isSelected(day) &&
+									"bg-primary/10 ring-2 ring-primary ring-inset",
 							)}
 						>
 							{dayEvents.map((event) => (

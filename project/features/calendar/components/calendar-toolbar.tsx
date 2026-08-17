@@ -38,7 +38,6 @@ const PRIORITY_OPTIONS: { value: PriorityFilter; label: string }[] = [
 const VIEW_OPTIONS: { value: CalendarViewMode; label: string }[] = [
 	{ value: "month", label: "Month" },
 	{ value: "week", label: "Week" },
-	{ value: "day", label: "Day" },
 ];
 
 const TRIGGER_STYLES = "h-9 gap-2 px-3 text-[13px]";
@@ -90,11 +89,7 @@ export function CalendarToolbar({ projects }: CalendarToolbarProps) {
 	);
 
 	const label =
-		view === "month"
-			? format(date, "MMMM yyyy")
-			: view === "week"
-				? DeadlineWeekView.title(date)
-				: format(date, "EEEE, MMM d, yyyy");
+		view === "month" ? format(date, "MMMM yyyy") : DeadlineWeekView.title(date);
 
 	return (
 		<div className="flex shrink-0 flex-col gap-5">

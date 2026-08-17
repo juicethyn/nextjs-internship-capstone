@@ -1,5 +1,4 @@
-.fora-calendar .rbc-month-view,
-.fora-calendar .rbc-time-view {
+.fora-calendar .rbc-month-view {
 	border: none;
 }
 
@@ -33,6 +32,10 @@
 	border-top: none;
 }
 
+.fora-calendar .rbc-day-bg {
+	cursor: pointer;
+}
+
 .fora-calendar .rbc-day-bg + .rbc-day-bg {
 	border-left: 1px solid var(--border);
 }
@@ -45,6 +48,11 @@
 	background-color: color-mix(in oklab, var(--primary) 7%, transparent);
 }
 
+.fora-calendar .rbc-day-bg.fora-selected-day {
+	background-color: color-mix(in oklab, var(--primary) 12%, transparent);
+	box-shadow: inset 0 0 0 2px var(--primary);
+}
+
 .fora-calendar .rbc-date-cell {
 	padding: 0.5rem 0.5rem 0;
 	text-align: left;
@@ -55,8 +63,7 @@
 }
 
 .fora-calendar .rbc-event,
-.fora-calendar .rbc-event.rbc-selected,
-.fora-calendar .rbc-day-slot .rbc-background-event {
+.fora-calendar .rbc-event.rbc-selected {
 	background: none;
 	border: none;
 	border-radius: 0;
@@ -90,51 +97,6 @@
 	border-radius: var(--radius-md);
 	box-shadow: 0 10px 30px oklch(0 0 0 / 25%);
 	padding: 0.5rem;
-}
-
-.fora-calendar .rbc-time-header.rbc-overflowing,
-.fora-calendar .rbc-time-header-content,
-.fora-calendar .rbc-time-content > * + * > *,
-.fora-calendar .rbc-day-slot .rbc-time-slot,
-.fora-calendar .rbc-time-header-content > .rbc-row.rbc-row-resource {
-	border-color: var(--border);
-}
-
-.fora-calendar .rbc-time-content {
-	border-top: 1px solid var(--border);
-}
-
-.fora-calendar .rbc-timeslot-group {
-	border-bottom: 1px solid var(--border);
-	min-height: 3rem;
-}
-
-.fora-calendar .rbc-time-gutter .rbc-timeslot-group {
-	border-bottom: none;
-}
-
-.fora-calendar .rbc-label {
-	color: var(--muted-foreground);
-	font-size: 0.6875rem;
-	padding: 0 0.5rem;
-}
-
-.fora-calendar .rbc-time-view .rbc-allday-cell {
-	background-color: color-mix(in oklab, var(--muted) 40%, transparent);
-}
-
-.fora-calendar .rbc-time-view .rbc-header {
-	padding: 0.5rem 0;
-}
-
-.fora-calendar .rbc-current-time-indicator {
-	background-color: var(--primary);
-	height: 2px;
-}
-
-.fora-calendar .rbc-today.rbc-day-slot,
-.fora-calendar .rbc-time-view .rbc-today {
-	background-color: color-mix(in oklab, var(--primary) 7%, transparent);
 }
 
 .fora-calendar .rbc-overlay-header {

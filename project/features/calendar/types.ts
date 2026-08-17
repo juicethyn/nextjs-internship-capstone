@@ -18,7 +18,7 @@ export type CalendarEvent = CalendarDeadline & {
 	allDay: true;
 };
 
-export type CalendarViewMode = "month" | "week" | "day";
+export type CalendarViewMode = "month" | "week";
 
 export type PriorityFilter = "all" | "high" | "medium" | "low";
 

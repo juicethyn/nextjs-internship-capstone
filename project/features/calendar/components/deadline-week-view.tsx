@@ -7,6 +7,7 @@ import {
 	getWeekRange,
 	startOfWeekLocal,
 } from "@/features/calendar/lib/calendar-utils";
+import { useCalendarUIStore } from "@/features/calendar/store";
 import type { CalendarEvent } from "@/features/calendar/types";
 import { DeadlineColumns } from "./deadline-columns";
 
@@ -21,11 +22,16 @@ export function DeadlineWeekView({
 	events,
 	onSelectEvent,
 }: DeadlineWeekViewProps) {
+	const anchorDate = useCalendarUIStore((state) => state.anchorDate);
+	const setAnchorDate = useCalendarUIStore((state) => state.setAnchorDate);
+
 	return (
 		<DeadlineColumns
 			days={getWeekRange(date)}
 			events={events}
+			anchorDate={anchorDate}
 			onSelectEvent={onSelectEvent}
+			onSelectDay={setAnchorDate}
 		/>
 	);
 }

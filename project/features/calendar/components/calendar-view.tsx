@@ -2,6 +2,7 @@
 
 import { format, getDay, parse, startOfWeek } from "date-fns";
 import { enUS } from "date-fns/locale";
+import { useCallback } from "react";
 import {
 	Calendar,
 	type DateHeaderProps,
@@ -10,6 +11,8 @@ import {
 	type HeaderProps,
 	type ShowMoreProps,
 } from "react-big-calendar";
+import { CALENDAR_SURFACE } from "@/features/calendar/constants";
+import { isSameLocalDay } from "@/features/calendar/lib/calendar-utils";
 import { useCalendarUIStore } from "@/features/calendar/store";
 import type {
 	CalendarEvent,
@@ -79,7 +82,6 @@ const CALENDAR_COMPONENTS = {
 const CALENDAR_VIEWS = {
 	month: true,
 	week: DeadlineWeekView,
-	day: true,
 };
 
 type CalendarViewProps = {
@@ -90,12 +92,26 @@ type CalendarViewProps = {
 export function CalendarView({ events, onSelectEvent }: CalendarViewProps) {
 	const date = useCalendarUIStore((state) => state.date);
 	const view = useCalendarUIStore((state) => state.view);
+	const anchorDate = useCalendarUIStore((state) => state.anchorDate);
 	const setDate = useCalendarUIStore((state) => state.setDate);
 	const setView = useCalendarUIStore((state) => state.setView);
 	const setAnchorDate = useCalendarUIStore((state) => state.setAnchorDate);
 
+	const dayPropGetter = useCallback(
+		(day: Date) =>
+			anchorDate && isSameLocalDay(day, anchorDate)
+				? { className: "fora-selected-day" }
+				: {},
+		[anchorDate],
+	);
+
 	return (
-		<div className="fora-calendar flex min-h-130 flex-1 flex-col overflow-hidden rounded-xl border bg-card">
+		<div
+			className={cn(
+				"fora-calendar flex flex-col overflow-hidden rounded-xl border bg-card",
+				CALENDAR_SURFACE,
+			)}
+		>
 			<Calendar<CalendarEvent>
 				localizer={localizer}
 				events={events}
@@ -106,6 +122,8 @@ export function CalendarView({ events, onSelectEvent }: CalendarViewProps) {
 				toolbar={false}
 				popup
 				selectable="ignoreEvents"
+				drilldownView={null}
+				dayPropGetter={dayPropGetter}
 				startAccessor="start"
 				endAccessor="end"
 				onNavigate={(newDate) => setDate(newDate)}

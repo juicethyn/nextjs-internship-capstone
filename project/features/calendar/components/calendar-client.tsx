@@ -3,6 +3,7 @@
 import { TriangleAlert } from "lucide-react";
 import { useCallback, useMemo } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CALENDAR_SURFACE } from "@/features/calendar/constants";
 import { useCalendarDeadlines } from "@/features/calendar/hooks/use-calendar-deadlines";
 import {
 	filterDeadlines,
@@ -12,6 +13,7 @@ import {
 import { useCalendarUIStore } from "@/features/calendar/store";
 import type { CalendarDeadline } from "@/features/calendar/types";
 import { useProjectUIStore } from "@/features/projects/store";
+import { cn } from "@/lib/utils";
 import { CalendarTaskDialog } from "./calendar-task-dialog";
 import { CalendarToolbar } from "./calendar-toolbar";
 import { CalendarView } from "./calendar-view";
@@ -68,7 +70,12 @@ export function CalendarClient({ workspaceSlug }: CalendarClientProps) {
 				<CalendarToolbar projects={projects} />
 
 				{isError ? (
-					<div className="flex min-h-130 flex-1 flex-col items-center justify-center gap-3 rounded-xl border bg-card text-center">
+					<div
+						className={cn(
+							"flex flex-col items-center justify-center gap-3 rounded-xl border bg-card text-center",
+							CALENDAR_SURFACE,
+						)}
+					>
 						<TriangleAlert className="size-8 text-muted-foreground" />
 
 						<div className="space-y-1">
@@ -80,7 +87,7 @@ export function CalendarClient({ workspaceSlug }: CalendarClientProps) {
 						</div>
 					</div>
 				) : isLoading ? (
-					<Skeleton className="min-h-130 flex-1 rounded-xl" />
+					<Skeleton className={cn("rounded-xl", CALENDAR_SURFACE)} />
 				) : (
 					<CalendarView events={events} onSelectEvent={openTask} />
 				)}

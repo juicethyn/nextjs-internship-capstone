@@ -73,10 +73,6 @@ export const useCalendarUIStore = create<CalendarUIStore>((set) => ({
 
 	shift: (direction) =>
 		set((state) => {
-			if (state.view === "day") {
-				return { date: addDays(state.date, direction) };
-			}
-
 			if (state.view === "week") {
 				return { date: addDays(startOfWeekLocal(state.date), direction * 7) };
 			}
