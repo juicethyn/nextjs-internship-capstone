@@ -287,7 +287,7 @@ export const tasks = pgTable(
 	{
 		id: uuid("id").defaultRandom().primaryKey(),
 		title: text("title").notNull(),
-		description: text("description"),
+		description: jsonb("description"),
 		listId: uuid("list_id")
 			.notNull()
 			.references(() => lists.id, { onDelete: "cascade" }),

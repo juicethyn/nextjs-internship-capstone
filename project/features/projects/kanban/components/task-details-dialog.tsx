@@ -1,5 +1,6 @@
 "use client";
 
+import type { JSONContent } from "@tiptap/react";
 import { Flag, MessageSquare, Tag, Trash2, UserRound } from "lucide-react";
 import { useEffect, useState } from "react";
 import { OptionalTag } from "@/components/shared/optional-tag";
@@ -93,7 +94,7 @@ export function TaskDetailsDialog({
 	const [priority, setPriority] = useState<TaskPriority>("none");
 	const [startDate, setStartDate] = useState<Date | null>(null);
 	const [dueDate, setDueDate] = useState<Date | null>(null);
-	const [description, setDescription] = useState("");
+	const [description, setDescription] = useState<JSONContent | null>(null);
 	const [selectedLabelIds, setSelectedLabelIds] = useState<string[]>([]);
 	const [confirmDelete, setConfirmDelete] = useState(false);
 	const [assigneeOpen, setAssigneeOpen] = useState(false);
@@ -107,7 +108,7 @@ export function TaskDetailsDialog({
 		setPriority((task.priority as TaskPriority) ?? "none");
 		setStartDate(task.startDate ?? null);
 		setDueDate(task.dueDate ?? null);
-		setDescription(task.description ?? "");
+		setDescription((task.description as JSONContent | null) ?? null);
 		setSelectedLabelIds(
 			(task.taskLabels ?? []).map(({ taskLabel }) => taskLabel.id),
 		);

@@ -1,5 +1,6 @@
 import { DashboardHeaderSkeleton } from "@/features/dashboard/components/dashboard-header-skeleton";
 import { DashboardInsightsSkeleton } from "@/features/dashboard/components/dashboard-insights-skeleton";
+import { DashboardWorkSkeleton } from "@/features/dashboard/components/dashboard-work-skeleton";
 import { WorkspaceOverviewSkeleton } from "@/features/dashboard/components/workspace-overview-skeleton";
 
 export default function Loading() {
@@ -8,6 +9,7 @@ export default function Loading() {
 			<DashboardHeaderSkeleton />
 			<WorkspaceOverviewSkeleton />
 			<DashboardInsightsSkeleton />
+			<DashboardWorkSkeleton />
 		</div>
 	);
 }

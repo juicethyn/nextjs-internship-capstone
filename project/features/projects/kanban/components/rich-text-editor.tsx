@@ -1,21 +1,21 @@
 "use client";
 
-import { EditorContent, useEditor } from "@tiptap/react";
+import { EditorContent, type JSONContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Bold, Italic, List, ListOrdered } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 type RichTextEditorProps = {
-	content: string;
-	onChange?: (html: string) => void;
+	content: JSONContent | null;
+	onChange?: (value: JSONContent) => void;
 	placeholder?: string;
 };
 
 export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
 	const editor = useEditor({
 		extensions: [StarterKit],
-		content,
+		content: content ?? undefined,
 		immediatelyRender: false,
 		editorProps: {
 			attributes: {
@@ -23,7 +23,7 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
 					"min-h-32 w-full max-w-none wrap-break-word px-3 py-2 text-sm outline-none [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-1",
 			},
 		},
-		onUpdate: ({ editor: instance }) => onChange?.(instance.getHTML()),
+		onUpdate: ({ editor: instance }) => onChange?.(instance.getJSON()),
 	});
 
 	if (!editor) {

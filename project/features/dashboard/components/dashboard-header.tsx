@@ -10,6 +10,7 @@ type DashboardHeaderProps = {
 	workspaceName: string;
 	canInvite: boolean;
 	onInvite: () => void;
+	onCreateTask: () => void;
 	onCreateProject: () => void;
 };
 
@@ -17,6 +18,7 @@ export function DashboardHeader({
 	workspaceName,
 	canInvite,
 	onInvite,
+	onCreateTask,
 	onCreateProject,
 }: DashboardHeaderProps) {
 	const [today, setToday] = useState<Date | null>(null);
@@ -63,7 +65,7 @@ export function DashboardHeader({
 					type="button"
 					variant="outline"
 					size="lg"
-					disabled
+					onClick={onCreateTask}
 					className="w-full sm:w-auto"
 				>
 					<Plus className="size-4" />

@@ -57,6 +57,13 @@
 			"when": 1786693377237,
 			"tag": "0007_mature_menace",
 			"breakpoints": true
+		},
+		{
+			"idx": 8,
+			"version": "7",
+			"when": 1786929661903,
+			"tag": "0008_mean_tombstone",
+			"breakpoints": true
 		}
 	]
 }

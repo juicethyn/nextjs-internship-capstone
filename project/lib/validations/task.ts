@@ -1,9 +1,26 @@
+import type { JSONContent } from "@tiptap/react";
 import z from "zod";
 import { taskPriorities } from "@/lib/db/types";
 
+const DESCRIPTION_MAX_LENGTH = 100_000;
+
+const descriptionSchema = z
+	.custom<JSONContent>(
+		(value) =>
+			typeof value === "object" && value !== null && !Array.isArray(value),
+		"Invalid description",
+	)
+	.nullable()
+	.optional()
+	.refine(
+		(value) =>
+			value == null || JSON.stringify(value).length <= DESCRIPTION_MAX_LENGTH,
+		"Description too long",
+	);
+
 const taskFields = z.object({
 	title: z.string().min(1, "Title is required").max(200, "Title too long"),
-	description: z.string().max(1000, "Description too long").optional(),
+	description: descriptionSchema,
 	assigneeId: z.uuid().nullable().optional(),
 	priority: z.enum(taskPriorities).default("none"),
 	startDate: z.coerce.date().nullable().optional(),

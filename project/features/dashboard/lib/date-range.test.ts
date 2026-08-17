@@ -33,6 +33,25 @@ describe("getOverviewRanges", () => {
 		expect(iso(ranges.dayBeforeStart)).toBe("2026-08-12T00:00:00.000Z");
 	});
 
+	it("puts tomorrowStart one UTC day after todayStart", () => {
+		const ranges = getOverviewRanges(new Date("2026-08-14T09:30:00.000Z"));
+
+		expect(iso(ranges.todayStart)).toBe("2026-08-14T00:00:00.000Z");
+		expect(iso(ranges.tomorrowStart)).toBe("2026-08-15T00:00:00.000Z");
+	});
+
+	it("rolls tomorrowStart forward across a month end", () => {
+		const ranges = getOverviewRanges(new Date("2026-08-31T18:00:00.000Z"));
+
+		expect(iso(ranges.tomorrowStart)).toBe("2026-09-01T00:00:00.000Z");
+	});
+
+	it("rolls tomorrowStart forward across a year end", () => {
+		const ranges = getOverviewRanges(new Date("2026-12-31T23:00:00.000Z"));
+
+		expect(iso(ranges.tomorrowStart)).toBe("2027-01-01T00:00:00.000Z");
+	});
+
 	it("rolls back across a month boundary", () => {
 		const ranges = getOverviewRanges(new Date("2026-09-01T06:00:00.000Z"));
 

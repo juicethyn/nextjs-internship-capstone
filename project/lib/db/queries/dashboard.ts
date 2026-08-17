@@ -1,7 +1,22 @@
-import { and, count, eq, gt, sql } from "drizzle-orm";
+import {
+	and,
+	asc,
+	count,
+	desc,
+	eq,
+	gt,
+	inArray,
+	isNotNull,
+	isNull,
+	max,
+	ne,
+	notInArray,
+	sql,
+} from "drizzle-orm";
 import type { OverviewRanges } from "@/features/dashboard/lib/date-range";
 import { db } from "../index";
 import {
+	activityLogs,
 	lists,
 	projects,
 	tasks,
@@ -128,4 +143,124 @@ export async function getWorkspaceTaskStatusDistribution(workspaceId: string) {
 		done: row?.done ?? 0,
 		total: row?.total ?? 0,
 	};
+}
+
+export async function getMyTasks(workspaceId: string, userId: string) {
+	return db
+		.select({
+			id: tasks.id,
+			title: tasks.title,
+			priority: tasks.priority,
+			dueDate: tasks.dueDate,
+			projectName: projects.name,
+			projectSlug: projects.slug,
+			projectColor: projects.color,
+		})
+		.from(tasks)
+		.innerJoin(lists, eq(tasks.listId, lists.id))
+		.innerJoin(projects, eq(lists.projectId, projects.id))
+		.where(
+			and(
+				eq(projects.workspaceId, workspaceId),
+				eq(projects.isArchived, false),
+				eq(tasks.assigneeId, userId),
+				isNotNull(tasks.dueDate),
+				isNull(tasks.completedAt),
+				ne(lists.type, "done"),
+			),
+		)
+		.orderBy(asc(tasks.dueDate));
+}
+
+export async function getContinueWorking(
+	workspaceId: string,
+	userId: string,
+	visibleProjectIds: string[],
+	limit = 3,
+) {
+	if (visibleProjectIds.length === 0) return [];
+
+	const active = await db
+		.select({ projectId: activityLogs.projectId })
+		.from(activityLogs)
+		.where(
+			and(
+				eq(activityLogs.workspaceId, workspaceId),
+				eq(activityLogs.actorId, userId),
+				isNotNull(activityLogs.projectId),
+				inArray(activityLogs.projectId, visibleProjectIds),
+			),
+		)
+		.groupBy(activityLogs.projectId)
+		.orderBy(desc(max(activityLogs.createdAt)))
+		.limit(limit);
+
+	const rankedIds = active
+		.map((row) => row.projectId)
+		.filter((id): id is string => Boolean(id));
+
+	if (rankedIds.length < limit) {
+		const fill = await db
+			.select({ id: projects.id })
+			.from(projects)
+			.where(
+				and(
+					eq(projects.workspaceId, workspaceId),
+					eq(projects.isArchived, false),
+					inArray(projects.id, visibleProjectIds),
+					rankedIds.length > 0 ? notInArray(projects.id, rankedIds) : undefined,
+				),
+			)
+			.orderBy(desc(projects.updatedAt))
+			.limit(limit - rankedIds.length);
+
+		rankedIds.push(...fill.map((row) => row.id));
+	}
+
+	if (rankedIds.length === 0) return [];
+
+	const [rows, stats] = await Promise.all([
+		db
+			.select({
+				id: projects.id,
+				name: projects.name,
+				slug: projects.slug,
+				color: projects.color,
+				dueDate: projects.dueDate,
+			})
+			.from(projects)
+			.where(
+				and(inArray(projects.id, rankedIds), eq(projects.isArchived, false)),
+			),
+
+		db
+			.select({
+				projectId: lists.projectId,
+				total: count(),
+				done: count(sql`case when ${lists.type} = 'done' then 1 end`),
+			})
+			.from(tasks)
+			.innerJoin(lists, eq(tasks.listId, lists.id))
+			.where(inArray(lists.projectId, rankedIds))
+			.groupBy(lists.projectId),
+	]);
+
+	const statsByProject = new Map(stats.map((row) => [row.projectId, row]));
+	const rowsById = new Map(rows.map((row) => [row.id, row]));
+
+	return rankedIds
+		.map((id) => rowsById.get(id))
+		.filter((row): row is NonNullable<typeof row> => Boolean(row))
+		.map((row) => {
+			const stat = statsByProject.get(row.id);
+			const total = stat?.total ?? 0;
+			const done = stat?.done ?? 0;
+
+			return {
+				...row,
+				total,
+				remaining: total - done,
+				progress: total === 0 ? 0 : Math.round((done / total) * 100),
+			};
+		});
 }

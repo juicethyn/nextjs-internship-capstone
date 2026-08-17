@@ -5,8 +5,10 @@ import type { DashboardHeaderData } from "@/features/dashboard/types";
 import { WorkspaceInviteDialog } from "@/features/members/components/invitations/workspace-invite-dialog";
 import { useMemberUIStore } from "@/features/members/store";
 import { CreateProjectModal } from "@/features/projects/components/create-project-modal";
+import { CreateTaskModal } from "./create-task-modal";
 import { DashboardHeader } from "./dashboard-header";
 import { DashboardInsights } from "./dashboard-insights";
+import { DashboardWork } from "./dashboard-work";
 import { WorkspaceOverview } from "./workspace-overview";
 
 type DashboardClientProps = {
@@ -19,6 +21,7 @@ export function DashboardClient({
 	initialData,
 }: DashboardClientProps) {
 	const [isCreateProjectOpen, setCreateProjectOpen] = useState(false);
+	const [isCreateTaskOpen, setCreateTaskOpen] = useState(false);
 
 	const openWorkspaceInvite = useMemberUIStore(
 		(state) => state.openWorkspaceInvite,
@@ -33,6 +36,7 @@ export function DashboardClient({
 				workspaceName={initialData.workspaceName}
 				canInvite={canInvite}
 				onInvite={openWorkspaceInvite}
+				onCreateTask={() => setCreateTaskOpen(true)}
 				onCreateProject={() => setCreateProjectOpen(true)}
 			/>
 
@@ -40,10 +44,18 @@ export function DashboardClient({
 
 			<DashboardInsights workspaceSlug={workspaceSlug} />
 
+			<DashboardWork workspaceSlug={workspaceSlug} />
+
 			<CreateProjectModal
 				workspaceSlug={workspaceSlug}
 				open={isCreateProjectOpen}
 				onOpenChange={setCreateProjectOpen}
+			/>
+
+			<CreateTaskModal
+				workspaceSlug={workspaceSlug}
+				open={isCreateTaskOpen}
+				onOpenChange={setCreateTaskOpen}
 			/>
 
 			{canInvite && (

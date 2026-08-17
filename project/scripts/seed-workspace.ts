@@ -22,6 +22,15 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const HOUR_MS = 60 * 60 * 1000;
 const TASK_POSITION_STEP = 1000;
 
+function toRichTextDoc(text: string) {
+	if (!text) return null;
+
+	return {
+		type: "doc",
+		content: [{ type: "paragraph", content: [{ type: "text", text }] }],
+	};
+}
+
 const UUID_PATTERN =
 	/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -471,7 +480,7 @@ async function main() {
 
 				return {
 					title: task.title,
-					description: task.description,
+					description: toRichTextDoc(task.description),
 					listId,
 					createdById: user.id,
 					assigneeId: user.id,

@@ -2,6 +2,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 export type OverviewRanges = {
 	todayStart: Date;
+	tomorrowStart: Date;
 	yesterdayStart: Date;
 	dayBeforeStart: Date;
 	weekStart: Date;
@@ -18,6 +19,7 @@ export function getOverviewRanges(now: Date): OverviewRanges {
 
 	return {
 		todayStart,
+		tomorrowStart: new Date(todayStart.getTime() + DAY_MS),
 		yesterdayStart: new Date(todayStart.getTime() - DAY_MS),
 		dayBeforeStart: new Date(todayStart.getTime() - 2 * DAY_MS),
 		weekStart,
