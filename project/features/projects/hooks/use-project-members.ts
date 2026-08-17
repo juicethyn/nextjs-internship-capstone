@@ -30,6 +30,8 @@ export function useProjectMembers({
 			queryKey: ["project", workspaceSlug, projectSlug],
 		});
 
+		queryClient.invalidateQueries({ queryKey: ["calendar", workspaceSlug] });
+
 		return queryClient.invalidateQueries({
 			queryKey: ["dashboard", workspaceSlug],
 		});

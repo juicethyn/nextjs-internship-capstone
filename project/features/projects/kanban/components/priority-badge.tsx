@@ -17,7 +17,7 @@ export const PRIORITY_ICON_STYLES: Record<TaskPriority, string> = {
 	high: "text-red-600 dark:text-red-400",
 };
 
-const PRIORITY_STYLES: Record<TaskPriority, string> = {
+export const PRIORITY_STYLES: Record<TaskPriority, string> = {
 	none: "border-border bg-muted text-muted-foreground",
 	low: "border-sky-200 bg-sky-100 text-sky-700 dark:border-sky-500/20 dark:bg-sky-500/15 dark:text-sky-400",
 	medium:

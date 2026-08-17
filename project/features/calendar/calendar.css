@@ -1,0 +1,147 @@
+.fora-calendar .rbc-month-view,
+.fora-calendar .rbc-time-view {
+	border: none;
+}
+
+.fora-calendar .rbc-month-header {
+	border-bottom: 1px solid var(--border);
+}
+
+.fora-calendar .rbc-header {
+	border-bottom: none;
+	padding: 0;
+}
+
+.fora-calendar .rbc-header + .rbc-header {
+	border-left: none;
+}
+
+.fora-calendar .rbc-row-bg {
+	right: 0;
+}
+
+.fora-calendar .rbc-month-row {
+	border-bottom: 1px solid var(--border);
+	overflow: visible;
+}
+
+.fora-calendar .rbc-month-row:last-child {
+	border-bottom: none;
+}
+
+.fora-calendar .rbc-month-row + .rbc-month-row {
+	border-top: none;
+}
+
+.fora-calendar .rbc-day-bg + .rbc-day-bg {
+	border-left: 1px solid var(--border);
+}
+
+.fora-calendar .rbc-off-range-bg {
+	background-color: color-mix(in oklab, var(--secondary) 35%, transparent);
+}
+
+.fora-calendar .rbc-today {
+	background-color: color-mix(in oklab, var(--primary) 7%, transparent);
+}
+
+.fora-calendar .rbc-date-cell {
+	padding: 0.5rem 0.5rem 0;
+	text-align: left;
+}
+
+.fora-calendar .rbc-row-segment {
+	padding: 0 0.375rem 0.125rem;
+}
+
+.fora-calendar .rbc-event,
+.fora-calendar .rbc-event.rbc-selected,
+.fora-calendar .rbc-day-slot .rbc-background-event {
+	background: none;
+	border: none;
+	border-radius: 0;
+	color: inherit;
+	padding: 0;
+	outline: none;
+	width: 100%;
+}
+
+.fora-calendar .rbc-event:focus-visible {
+	outline: 2px solid var(--ring);
+	outline-offset: 1px;
+}
+
+.fora-calendar .rbc-show-more {
+	background: transparent;
+	color: var(--muted-foreground);
+	font-size: 0.625rem;
+	font-weight: 400;
+	padding-left: 0.125rem;
+}
+
+.fora-calendar .rbc-show-more:hover,
+.fora-calendar .rbc-show-more:focus {
+	color: var(--foreground);
+}
+
+.fora-calendar .rbc-overlay {
+	background-color: var(--popover);
+	border: 1px solid var(--border);
+	border-radius: var(--radius-md);
+	box-shadow: 0 10px 30px oklch(0 0 0 / 25%);
+	padding: 0.5rem;
+}
+
+.fora-calendar .rbc-time-header.rbc-overflowing,
+.fora-calendar .rbc-time-header-content,
+.fora-calendar .rbc-time-content > * + * > *,
+.fora-calendar .rbc-day-slot .rbc-time-slot,
+.fora-calendar .rbc-time-header-content > .rbc-row.rbc-row-resource {
+	border-color: var(--border);
+}
+
+.fora-calendar .rbc-time-content {
+	border-top: 1px solid var(--border);
+}
+
+.fora-calendar .rbc-timeslot-group {
+	border-bottom: 1px solid var(--border);
+	min-height: 3rem;
+}
+
+.fora-calendar .rbc-time-gutter .rbc-timeslot-group {
+	border-bottom: none;
+}
+
+.fora-calendar .rbc-label {
+	color: var(--muted-foreground);
+	font-size: 0.6875rem;
+	padding: 0 0.5rem;
+}
+
+.fora-calendar .rbc-time-view .rbc-allday-cell {
+	background-color: color-mix(in oklab, var(--muted) 40%, transparent);
+}
+
+.fora-calendar .rbc-time-view .rbc-header {
+	padding: 0.5rem 0;
+}
+
+.fora-calendar .rbc-current-time-indicator {
+	background-color: var(--primary);
+	height: 2px;
+}
+
+.fora-calendar .rbc-today.rbc-day-slot,
+.fora-calendar .rbc-time-view .rbc-today {
+	background-color: color-mix(in oklab, var(--primary) 7%, transparent);
+}
+
+.fora-calendar .rbc-overlay-header {
+	border-bottom: 1px solid var(--border);
+	color: var(--foreground);
+	font-size: 0.75rem;
+	font-weight: 600;
+	margin: -0.5rem -0.5rem 0.5rem;
+	padding: 0.5rem;
+}
