@@ -13,10 +13,15 @@ import type { CreateWorkspaceInvitationInput } from "@/lib/validations/workspace
 export function useWorkspaceInvitations(workspaceSlug: string) {
 	const queryClient = useQueryClient();
 
-	const refreshMembers = () =>
+	const refreshMembers = () => {
 		queryClient.invalidateQueries({
 			queryKey: ["workspace-members", workspaceSlug],
 		});
+
+		queryClient.invalidateQueries({
+			queryKey: ["dashboard", workspaceSlug],
+		});
+	};
 
 	const sendMutation = useMutation({
 		mutationFn: (invites: CreateWorkspaceInvitationInput[]) =>

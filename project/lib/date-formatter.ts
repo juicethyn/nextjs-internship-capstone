@@ -16,6 +16,18 @@ export function formatProjectDate(
 	});
 }
 
+// Local time, unlike formatProjectDate above. This renders "today" for the
+// person reading the screen, so pinning it to UTC would show them the wrong
+// weekday for several hours a day.
+export function formatFullDate(date: Date) {
+	return date.toLocaleDateString("en-US", {
+		weekday: "long",
+		month: "long",
+		day: "numeric",
+		year: "numeric",
+	});
+}
+
 const SECOND = 1000;
 const MINUTE = 60 * SECOND;
 const HOUR = 60 * MINUTE;
@@ -45,7 +57,7 @@ export function formatCommentTimestamp(date: Date | string) {
 	if (elapsed < WEEK) {
 		const days = Math.floor(elapsed / DAY);
 
-		return `${days}${days === 1 ? "day" : "days"} ago`;
+		return `${days} ${days === 1 ? "day" : "days"} ago`;
 	}
 
 	const day = parsedDate.toLocaleDateString("en-US", {

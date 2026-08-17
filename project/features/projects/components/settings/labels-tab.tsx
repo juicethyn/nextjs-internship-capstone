@@ -33,8 +33,6 @@ export function LabelsTab({
 	} = useTaskLabels({
 		workspaceSlug,
 		projectSlug,
-		// getTaskLabelsByProjectAction goes through requireActiveProject, which
-		// redirects on an archived project — never fire it in that state.
 		enabled: !isArchived,
 	});
 
@@ -42,7 +40,6 @@ export function LabelsTab({
 	const [color, setColor] = useState(LABEL_COLORS[0]);
 	const [error, setError] = useState<string | null>(null);
 
-	// Labels create immediately — there is no Save button on this tab.
 	const handleCreate = async () => {
 		const result = createTaskLabelSchema.safeParse({ name, color });
 

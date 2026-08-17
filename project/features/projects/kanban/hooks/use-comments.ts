@@ -59,6 +59,9 @@ export function useComments({
 			queryClient.invalidateQueries({
 				queryKey: ["project", workspaceSlug, projectSlug],
 			}),
+			queryClient.invalidateQueries({
+				queryKey: ["dashboard", workspaceSlug],
+			}),
 		]);
 
 	// createComment returns a bare row with no author join, so the placeholder is

@@ -54,6 +54,10 @@ export function useProjects({
 				queryKey: ["projects", workspaceSlug],
 			});
 
+			queryClient.invalidateQueries({
+				queryKey: ["dashboard", workspaceSlug],
+			});
+
 			router.push(`/w/${workspaceSlug}/projects/${result.project?.slug}`);
 		},
 

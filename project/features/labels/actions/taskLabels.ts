@@ -89,6 +89,7 @@ export async function createTaskLabelAction(
 	await createActivity({
 		workspaceId: project.workspaceId,
 		actorId: user.id,
+		projectId: project.id,
 		action: "created",
 		entity: "task_label",
 		entityId: label.id,
@@ -139,6 +140,7 @@ export async function deleteTaskLabelAction(
 	await createActivity({
 		workspaceId: project.workspaceId,
 		actorId: user.id,
+		projectId: project.id,
 		action: "deleted",
 		entity: "task_label",
 		entityId: label.id,

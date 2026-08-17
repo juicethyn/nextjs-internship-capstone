@@ -95,7 +95,7 @@ export function ListCard({
 	const { createTask } = useTasks({ workspaceSlug, projectSlug });
 
 	const [optimisticTasks, addOptimisticTask] = useOptimistic(
-		tasks as { id: string; title: string; description?: string | null }[],
+		tasks as { id: string; title: string; description?: unknown }[],
 		(current, pending: { id: string; title: string }) => [
 			...current,
 			{ ...pending, description: null },

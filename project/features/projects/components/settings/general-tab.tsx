@@ -54,7 +54,6 @@ export function GeneralTab({
 
 	const { reset } = form;
 
-	// Keep the form in step with refetched project data while it is untouched.
 	useEffect(() => {
 		if (!form.formState.isDirty) {
 			reset(toFormValues(project));

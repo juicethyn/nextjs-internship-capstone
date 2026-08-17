@@ -89,6 +89,7 @@ export async function createTaskAction(
 	await createActivity({
 		workspaceId: project.workspaceId,
 		actorId: user.id,
+		projectId: project.id,
 		action: "created",
 		entity: "task",
 		entityId: task.id,
@@ -178,6 +179,7 @@ export async function updateTaskAction(
 	await createActivity({
 		workspaceId: project.workspaceId,
 		actorId: user.id,
+		projectId: project.id,
 		action: "updated",
 		entity: "task",
 		entityId: task.id,
@@ -247,6 +249,7 @@ export async function deleteTaskAction(
 	await createActivity({
 		workspaceId: project.workspaceId,
 		actorId: user.id,
+		projectId: project.id,
 		action: "deleted",
 		entity: "task",
 		entityId: task.id,
@@ -327,10 +330,16 @@ export async function moveTaskAction(
 		};
 	}
 
+	const enteringDone =
+		destinationList.type === "done" && currentList.type !== "done";
+	const leavingDone =
+		currentList.type === "done" && destinationList.type !== "done";
+
 	const movedTask = await updateTaskPosition(
 		task.id,
 		destinationListId,
 		newPosition,
+		enteringDone ? new Date() : leavingDone ? null : undefined,
 	);
 
 	// Self-heals if repeated midpoint splits ever collapse a gap.
@@ -341,7 +350,8 @@ export async function moveTaskAction(
 	await createActivity({
 		workspaceId: project.workspaceId,
 		actorId: user.id,
-		action: "moved",
+		projectId: project.id,
+		action: enteringDone ? "completed" : "moved",
 		entity: "task",
 		entityId: task.id,
 		metadata: {

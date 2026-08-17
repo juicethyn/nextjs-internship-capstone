@@ -107,10 +107,10 @@
 	--ring: oklch(0.55 0.25 302);
 
 	/* Charts */
-	--chart-1: oklch(0.44 0.26 302); /* primary purple   */
+	--chart-1: oklch(0.6 0.22 302); /* primary purple   */
 	--chart-2: oklch(0.62 0.19 232); /* sky blue         */
 	--chart-3: oklch(0.64 0.17 162); /* emerald          */
-	--chart-4: oklch(0.77 0.16 84); /* amber            */
+	--chart-4: oklch(0.66 0.16 84); /* amber            */
 	--chart-5: oklch(0.67 0.22 352); /* pink             */
 	--chart-6: oklch(0.56 0.22 264); /* indigo           */
 	--chart-7: oklch(0.63 0.18 188); /* teal             */

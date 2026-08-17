@@ -41,6 +41,7 @@
 		"react-day-picker": "^10.0.1",
 		"react-dom": "^19",
 		"react-hook-form": "^7.84.0",
+		"recharts": "3.8.0",
 		"resend": "^6.18.1",
 		"shadcn": "^4.13.1",
 		"slugify": "^1.6.9",
@@ -64,6 +65,7 @@
 		"autoprefixer": "^10.0.1",
 		"postcss": "^8.5",
 		"tailwindcss": "^4.3.3",
+		"tsx": "^4.23.1",
 		"typescript": "^5.1",
 		"vitest": "^4.1.10"
 	},

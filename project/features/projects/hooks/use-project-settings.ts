@@ -32,6 +32,7 @@ export function useProjectSettings({
 			queryKey: ["project", workspaceSlug, projectSlug],
 		});
 		queryClient.invalidateQueries({ queryKey: ["projects", workspaceSlug] });
+		queryClient.invalidateQueries({ queryKey: ["dashboard", workspaceSlug] });
 	};
 
 	const updateMutation = useMutation({

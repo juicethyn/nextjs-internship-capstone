@@ -16,7 +16,7 @@ export async function sendWorkspaceInvitationEmail({
 
 	try {
 		const { error } = await resend.emails.send({
-			from: "Fora <onboarding@resend.dev>",
+			from: "Fora <fora@contact.foraapp.me>",
 			to: email,
 			subject: `You've been invited to ${workspaceName}`,
 			react: WorkspaceInvitationEmail({

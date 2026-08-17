@@ -86,10 +86,15 @@ export async function updateTaskPosition(
 	taskId: string,
 	destinationListId: string,
 	newPosition: number,
+	completedAt?: Date | null,
 ) {
 	const [task] = await db
 		.update(tasks)
-		.set({ listId: destinationListId, position: newPosition })
+		.set({
+			listId: destinationListId,
+			position: newPosition,
+			...(completedAt !== undefined && { completedAt }),
+		})
 		.where(eq(tasks.id, taskId))
 		.returning();
 	return task;

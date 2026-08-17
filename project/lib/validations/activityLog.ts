@@ -6,5 +6,6 @@ export type CreateActivityInput = {
 	action: ActivityAction;
 	entity: EntityType;
 	entityId: string;
+	projectId?: string;
 	metadata?: unknown;
 };

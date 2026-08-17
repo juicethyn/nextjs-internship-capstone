@@ -217,7 +217,6 @@ export function MembersTab({
 							variant="destructive"
 							disabled={isBusy}
 							onClick={(event) => {
-								// Keep the dialog mounted until the mutation resolves.
 								event.preventDefault();
 								handleConfirm();
 							}}

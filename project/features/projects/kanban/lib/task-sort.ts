@@ -17,7 +17,7 @@ export const TASK_SORT_OPTIONS = [
 
 export const DEFAULT_TASK_SORT: TaskSortKey = "manual";
 
-const PRIORITY_RANK: Record<TaskPriority, number> = {
+export const PRIORITY_RANK: Record<TaskPriority, number> = {
 	high: 3,
 	medium: 2,
 	low: 1,
