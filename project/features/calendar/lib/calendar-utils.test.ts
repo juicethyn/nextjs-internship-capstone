@@ -1,26 +1,42 @@
 import { describe, expect, it } from "vitest";
+import { combineDateAndTime } from "../../../lib/date-formatter";
 import {
 	addDays,
-	combineDateAndTime,
 	countByPriority,
+	countEvents,
 	filterDeadlines,
 	formatCalendarDay,
-	getUpcomingDeadlines,
+	getUpcomingItems,
 	getWeekRange,
-	groupDeadlinesByDay,
+	groupItemsByDay,
 	isCompleted,
 	isSameLocalDay,
 	startOfWeekLocal,
+	taskDeadlines,
 	toCalendarDay,
+	toEventItem,
 	toTaskItem,
 } from "./calendar-utils";
 
 type Deadline = Parameters<typeof toTaskItem>[0];
+type Event = Parameters<typeof toEventItem>[0];
 
 const dayFromToday = (offset: number) => {
 	const now = new Date();
 
 	return new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset);
+};
+
+const at = (offset: number, hours: number, minutes = 0) => {
+	const now = new Date();
+
+	return new Date(
+		now.getFullYear(),
+		now.getMonth(),
+		now.getDate() + offset,
+		hours,
+		minutes,
+	);
 };
 
 const deadline = (
@@ -41,6 +57,34 @@ const deadline = (
 	priority,
 });
 
+const event = (
+	id: string,
+	offset: number,
+	hours = 14,
+	projectId = "p-a",
+): Event => ({
+	id,
+	title: `Event ${id}`,
+	description: null,
+	startAt: at(offset, hours),
+	endAt: at(offset, hours + 1),
+	allDay: false,
+	eventType: "meeting",
+	createdById: "u-1",
+	createdBy: {
+		id: "u-1",
+		firstName: "Ada",
+		lastName: "Lovelace",
+		email: "ada@example.com",
+		imageUrl: null,
+	},
+	canManage: true,
+	projectId,
+	projectName: "Project A",
+	projectSlug: "project-a",
+	projectColor: "#7C3AED",
+});
+
 const FIXTURE: Deadline[] = [
 	deadline("a", 0, "high"),
 	deadline("b", 1, "medium", "p-b"),
@@ -48,6 +92,8 @@ const FIXTURE: Deadline[] = [
 	deadline("d", 5, "high", "p-b"),
 	deadline("e", 20, "low"),
 ];
+
+const ITEMS = FIXTURE.map(toTaskItem);
 
 describe("toTaskItem", () => {
 	it("normalises a due date to local midnight of its own day", () => {
@@ -158,9 +204,9 @@ describe("filterDeadlines", () => {
 	});
 });
 
-describe("getUpcomingDeadlines", () => {
+describe("getUpcomingItems", () => {
 	it("drops anything past the 14 day window and sorts by date", () => {
-		expect(getUpcomingDeadlines(FIXTURE).map((d) => d.id)).toEqual([
+		expect(getUpcomingItems(ITEMS).map((i) => i.id)).toEqual([
 			"a",
 			"b",
 			"c",
@@ -169,75 +215,127 @@ describe("getUpcomingDeadlines", () => {
 	});
 
 	it("excludes overdue deadlines", () => {
-		expect(getUpcomingDeadlines([deadline("past", -1, "high")])).toHaveLength(
-			0,
-		);
+		expect(
+			getUpcomingItems([toTaskItem(deadline("past", -1, "high"))]),
+		).toHaveLength(0);
 	});
 
 	it("includes the boundary day", () => {
-		expect(getUpcomingDeadlines([deadline("edge", 14, "low")])).toHaveLength(1);
+		expect(
+			getUpcomingItems([toTaskItem(deadline("edge", 14, "low"))]),
+		).toHaveLength(1);
 	});
 
 	it("treats a null anchor as today", () => {
-		expect(getUpcomingDeadlines(FIXTURE, null).map((d) => d.id)).toEqual(
-			getUpcomingDeadlines(FIXTURE).map((d) => d.id),
+		expect(getUpcomingItems(ITEMS, null).map((i) => i.id)).toEqual(
+			getUpcomingItems(ITEMS).map((i) => i.id),
 		);
 	});
 
 	it("anchors the window on a picked date", () => {
-		const now = new Date();
+		const anchor = dayFromToday(5);
 
-		const anchor = new Date(
-			now.getFullYear(),
-			now.getMonth(),
-			now.getDate() + 5,
-		);
-
-		expect(getUpcomingDeadlines(FIXTURE, anchor).map((d) => d.id)).toEqual([
-			"d",
-		]);
+		expect(getUpcomingItems(ITEMS, anchor).map((i) => i.id)).toEqual(["d"]);
 	});
 
 	it("brings far-future deadlines into range once anchored", () => {
-		const now = new Date();
+		const anchor = dayFromToday(10);
 
-		const anchor = new Date(
-			now.getFullYear(),
-			now.getMonth(),
-			now.getDate() + 10,
-		);
-
-		expect(getUpcomingDeadlines(FIXTURE, anchor).map((d) => d.id)).toEqual([
-			"e",
-		]);
+		expect(getUpcomingItems(ITEMS, anchor).map((i) => i.id)).toEqual(["e"]);
 	});
 
 	it("excludes deadlines before the anchor", () => {
-		const now = new Date();
+		const anchor = dayFromToday(2);
 
-		const anchor = new Date(
-			now.getFullYear(),
-			now.getMonth(),
-			now.getDate() + 2,
-		);
-
-		const ids = getUpcomingDeadlines(FIXTURE, anchor).map((d) => d.id);
+		const ids = getUpcomingItems(ITEMS, anchor).map((i) => i.id);
 
 		expect(ids).not.toContain("a");
 		expect(ids).not.toContain("b");
 		expect(ids).not.toContain("c");
 	});
 
-	it("excludes completed deadlines", () => {
-		const done = deadline("done", 2, "high", "p-a", new Date());
+	it("excludes completed tasks but never filters events", () => {
+		const done = toTaskItem(deadline("done", 2, "high", "p-a", new Date()));
 
-		expect(getUpcomingDeadlines([done])).toHaveLength(0);
-		expect(getUpcomingDeadlines([...FIXTURE, done]).map((d) => d.id)).toEqual([
+		expect(getUpcomingItems([done])).toHaveLength(0);
+		expect(getUpcomingItems([toEventItem(event("ev", 2))])).toHaveLength(1);
+	});
+
+	it("interleaves events and deadlines in date order", () => {
+		const mixed = [
+			...ITEMS,
+			toEventItem(event("ev-today", 0, 15)),
+			toEventItem(event("ev-far", 30)),
+		];
+
+		expect(getUpcomingItems(mixed).map((i) => i.id)).toEqual([
 			"a",
+			"ev-today",
 			"b",
 			"c",
 			"d",
 		]);
+	});
+
+	it("puts an all-day task above a timed event on the same day", () => {
+		const mixed = [
+			toEventItem(event("ev", 3, 9)),
+			toTaskItem(deadline("t", 3, "low")),
+		];
+
+		expect(getUpcomingItems(mixed).map((i) => i.id)).toEqual(["t", "ev"]);
+	});
+
+	it("windows events by their start date", () => {
+		expect(getUpcomingItems([toEventItem(event("late", 20))])).toHaveLength(0);
+		expect(getUpcomingItems([toEventItem(event("past", -1))])).toHaveLength(0);
+	});
+});
+
+describe("footer counts", () => {
+	const mixed = [
+		...ITEMS,
+		toEventItem(event("ev1", 0)),
+		toEventItem(event("ev2", 1)),
+	];
+
+	const upcoming = getUpcomingItems(mixed);
+
+	it("counts events separately from task priorities", () => {
+		expect(countEvents(upcoming)).toBe(2);
+	});
+
+	it("priority totals sum to the number of task rows", () => {
+		const tasks = taskDeadlines(upcoming);
+
+		const summed = countByPriority(tasks).reduce(
+			(total, entry) => total + entry.total,
+			0,
+		);
+
+		expect(tasks).toHaveLength(4);
+		expect(summed).toBe(4);
+	});
+
+	it("counts add up to every visible row", () => {
+		const summed =
+			countByPriority(taskDeadlines(upcoming)).reduce(
+				(total, entry) => total + entry.total,
+				0,
+			) + countEvents(upcoming);
+
+		expect(summed).toBe(upcoming.length);
+	});
+
+	it("reports zero priorities for an events-only period", () => {
+		const eventsOnly = getUpcomingItems([toEventItem(event("solo", 2))]);
+
+		expect(countEvents(eventsOnly)).toBe(1);
+		expect(
+			countByPriority(taskDeadlines(eventsOnly)).every(
+				(entry) => entry.total === 0,
+			),
+		).toBe(true);
 	});
 });
 
@@ -269,26 +367,38 @@ describe("isCompleted", () => {
 	});
 });
 
-describe("groupDeadlinesByDay", () => {
+describe("groupItemsByDay", () => {
 	it("labels the first two buckets Today and Tomorrow", () => {
-		const groups = groupDeadlinesByDay(getUpcomingDeadlines(FIXTURE));
+		const groups = groupItemsByDay(getUpcomingItems(ITEMS));
 
 		expect(groups[0].label).toBe("Today");
 		expect(groups[1].label).toBe("Tomorrow");
 		expect(groups[2].label).not.toMatch(/Today|Tomorrow/);
 	});
 
-	it("buckets same-day deadlines together", () => {
-		const groups = groupDeadlinesByDay(FIXTURE);
+	it("buckets same-day items together", () => {
+		const groups = groupItemsByDay(ITEMS);
 
-		expect(groups[1].deadlines.map((d) => d.id)).toEqual(["b", "c"]);
+		expect(groups[1].items.map((i) => i.id)).toEqual(["b", "c"]);
 	});
 
-	it("preserves every deadline exactly once", () => {
-		const flat = groupDeadlinesByDay(FIXTURE).flatMap((g) => g.deadlines);
+	it("preserves every item exactly once", () => {
+		const flat = groupItemsByDay(ITEMS).flatMap((g) => g.items);
 
-		expect(flat).toHaveLength(FIXTURE.length);
-		expect(new Set(flat.map((d) => d.id)).size).toBe(FIXTURE.length);
+		expect(flat).toHaveLength(ITEMS.length);
+		expect(new Set(flat.map((i) => i.id)).size).toBe(ITEMS.length);
+	});
+
+	it("puts a deadline and an event on the same day under one heading", () => {
+		const mixed = [
+			toTaskItem(deadline("t", 3, "high")),
+			toEventItem(event("ev", 3)),
+		];
+
+		const groups = groupItemsByDay(getUpcomingItems(mixed));
+
+		expect(groups).toHaveLength(1);
+		expect(groups[0].items.map((i) => i.id)).toEqual(["t", "ev"]);
 	});
 });
 

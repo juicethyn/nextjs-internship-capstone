@@ -45,7 +45,13 @@ export async function getCalendarData(workspaceSlug: string) {
 				...row,
 				dueDate: row.dueDate as Date,
 			})),
-			events,
+			events: events.map(({ projectLeadId, ...row }) => ({
+				...row,
+				canManage:
+					row.createdById === user.id ||
+					isWorkspaceManager ||
+					projectLeadId === user.id,
+			})),
 			projects,
 		},
 	};

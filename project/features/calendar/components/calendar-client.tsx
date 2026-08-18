@@ -7,7 +7,7 @@ import { CALENDAR_SURFACE } from "@/features/calendar/constants";
 import { useCalendarDeadlines } from "@/features/calendar/hooks/use-calendar-deadlines";
 import {
 	filterDeadlines,
-	getUpcomingDeadlines,
+	getUpcomingItems,
 	toEventItem,
 	toTaskItem,
 } from "@/features/calendar/lib/calendar-utils";
@@ -19,7 +19,8 @@ import { CalendarTaskDialog } from "./calendar-task-dialog";
 import { CalendarToolbar } from "./calendar-toolbar";
 import { CalendarView } from "./calendar-view";
 import { CreateEventModal } from "./create-event-modal";
-import { UpcomingDeadlines } from "./upcoming-deadlines";
+import { EventDetailsDialog } from "./event-details-dialog";
+import { UpcomingPanel } from "./upcoming-panel";
 
 const EMPTY_DEADLINES: never[] = [];
 
@@ -43,6 +44,10 @@ export function CalendarClient({ workspaceSlug }: CalendarClientProps) {
 	const openTaskDetails = useProjectUIStore((state) => state.openTaskDetails);
 
 	const [createEventOpen, setCreateEventOpen] = useState(false);
+
+	const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+
+	const [editingEventId, setEditingEventId] = useState<string | null>(null);
 
 	const { data, isLoading, isError } = useCalendarDeadlines({ workspaceSlug });
 
@@ -71,13 +76,22 @@ export function CalendarClient({ workspaceSlug }: CalendarClientProps) {
 	);
 
 	const upcoming = useMemo(
-		() => getUpcomingDeadlines(filtered, anchorDate),
-		[filtered, anchorDate],
+		() => getUpcomingItems(items, anchorDate),
+		[items, anchorDate],
 	);
+
+	const selectedEvent =
+		events.find((candidate) => candidate.id === selectedEventId) ?? null;
+
+	const editingEvent =
+		events.find((candidate) => candidate.id === editingEventId) ?? null;
 
 	const openItem = useCallback(
 		(item: CalendarItem) => {
-			if (item.kind !== "task") return;
+			if (item.kind === "event") {
+				setSelectedEventId(item.event.id);
+				return;
+			}
 
 			setOpenTaskProjectSlug(item.deadline.projectSlug);
 			openTaskDetails(item.deadline.id);
@@ -117,11 +131,11 @@ export function CalendarClient({ workspaceSlug }: CalendarClientProps) {
 				)}
 			</div>
 
-			<UpcomingDeadlines
-				deadlines={upcoming}
+			<UpcomingPanel
+				items={upcoming}
 				anchorDate={anchorDate}
 				isLoading={isLoading}
-				onSelect={(deadline) => openItem(toTaskItem(deadline))}
+				onSelect={openItem}
 				onClearAnchor={() => setAnchorDate(null)}
 			/>
 
@@ -129,8 +143,23 @@ export function CalendarClient({ workspaceSlug }: CalendarClientProps) {
 
 			<CreateEventModal
 				workspaceSlug={workspaceSlug}
-				open={createEventOpen}
-				onOpenChange={setCreateEventOpen}
+				open={createEventOpen || Boolean(editingEvent)}
+				event={editingEvent}
+				onOpenChange={(next) => {
+					if (next) return;
+
+					setCreateEventOpen(false);
+					setEditingEventId(null);
+				}}
+			/>
+
+			<EventDetailsDialog
+				event={editingEvent ? null : selectedEvent}
+				workspaceSlug={workspaceSlug}
+				onOpenChange={(next) => {
+					if (!next) setSelectedEventId(null);
+				}}
+				onEdit={(target) => setEditingEventId(target.id)}
 			/>
 		</div>
 	);

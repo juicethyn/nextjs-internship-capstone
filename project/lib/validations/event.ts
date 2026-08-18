@@ -1,13 +1,13 @@
 import z from "zod";
 import { eventTypes } from "@/lib/db/types";
 
-const DESCRIPTION_MAX_LENGTH = 5_000;
+export const EVENT_DESCRIPTION_MAX_LENGTH = 500;
 
 const eventFields = z.object({
 	title: z.string().min(1, "Title is required").max(200, "Title too long"),
 	description: z
 		.string()
-		.max(DESCRIPTION_MAX_LENGTH, "Description too long")
+		.max(EVENT_DESCRIPTION_MAX_LENGTH, "Description too long")
 		.nullable()
 		.optional(),
 	eventType: z.enum(eventTypes).default("meeting"),
@@ -16,9 +16,16 @@ const eventFields = z.object({
 	endAt: z.coerce.date(),
 });
 
-export const createEventSchema = eventFields.refine(
-	(value) => value.endAt >= value.startAt,
-	{ message: "End must be on or after the start", path: ["endAt"] },
-);
+const withOrderedRange = <T extends typeof eventFields>(schema: T) =>
+	schema.refine((value) => value.endAt >= value.startAt, {
+		message: "End must be on or after the start",
+		path: ["endAt"],
+	});
+
+export const createEventSchema = withOrderedRange(eventFields);
+
+export const updateEventSchema = withOrderedRange(eventFields);
 
 export type CreateEventInput = z.infer<typeof createEventSchema>;
+
+export type UpdateEventInput = z.infer<typeof updateEventSchema>;

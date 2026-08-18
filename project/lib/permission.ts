@@ -1,3 +1,4 @@
+import { getEventById } from "./db/queries/calendar";
 import { getCommentById } from "./db/queries/comments";
 import { getListById } from "./db/queries/lists";
 import { getProjectMember } from "./db/queries/projectMembers";
@@ -238,6 +239,18 @@ export async function requireComment(commentId: string) {
 	}
 
 	return granted(comment);
+}
+
+// Event Permissions
+
+export async function requireEvent(eventId: string) {
+	const event = await getEventById(eventId);
+
+	if (!event) {
+		return notFound("This event no longer exists.");
+	}
+
+	return granted(event);
 }
 
 // Workspace Invitation Permissions

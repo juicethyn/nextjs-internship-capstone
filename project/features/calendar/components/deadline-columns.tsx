@@ -98,7 +98,14 @@ export function DeadlineColumns({
 						>
 							{dayEvents.map((item) =>
 								item.kind === "event" ? (
-									<EventChip key={item.id} event={item.event} showProject />
+									<EventChip
+										key={item.id}
+										event={item.event}
+										showProject
+										onSelect={
+											onSelectEvent ? () => onSelectEvent(item) : undefined
+										}
+									/>
 								) : (
 									<TaskPill
 										key={item.id}

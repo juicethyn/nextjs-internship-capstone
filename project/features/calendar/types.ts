@@ -20,6 +20,15 @@ export type CalendarEvent = {
 	endAt: Date;
 	allDay: boolean;
 	eventType: EventType;
+	createdById: string;
+	createdBy: {
+		id: string;
+		firstName: string;
+		lastName: string;
+		email: string;
+		imageUrl: string | null;
+	};
+	canManage: boolean;
 	projectId: string;
 	projectName: string;
 	projectSlug: string;
@@ -50,9 +59,9 @@ export type CalendarViewMode = "month" | "week";
 
 export type PriorityFilter = "all" | "high" | "medium" | "low";
 
-export type DeadlineGroup = {
+export type CalendarGroup = {
 	label: string;
-	deadlines: CalendarDeadline[];
+	items: CalendarItem[];
 };
 
 export type CalendarProject = {

@@ -1,6 +1,6 @@
 import { and, asc, eq, inArray, isNotNull } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { events, lists, projects, tasks } from "@/lib/db/schema";
+import { events, lists, projects, tasks, users } from "@/lib/db/schema";
 
 export async function getWorkspaceDeadlines(
 	workspaceId: string,
@@ -49,13 +49,23 @@ export async function getWorkspaceEvents(
 			endAt: events.endAt,
 			allDay: events.allDay,
 			eventType: events.eventType,
+			createdById: events.createdById,
+			createdBy: {
+				id: users.id,
+				firstName: users.firstName,
+				lastName: users.lastName,
+				email: users.email,
+				imageUrl: users.imageUrl,
+			},
 			projectId: projects.id,
+			projectLeadId: projects.leadId,
 			projectName: projects.name,
 			projectSlug: projects.slug,
 			projectColor: projects.color,
 		})
 		.from(events)
 		.innerJoin(projects, eq(events.projectId, projects.id))
+		.innerJoin(users, eq(events.createdById, users.id))
 		.where(
 			and(
 				eq(projects.workspaceId, workspaceId),
@@ -68,6 +78,34 @@ export async function getWorkspaceEvents(
 
 export async function createEvent(data: typeof events.$inferInsert) {
 	const [event] = await db.insert(events).values(data).returning();
+
+	return event;
+}
+
+export async function getEventById(eventId: string) {
+	return db.query.events.findFirst({
+		where: eq(events.id, eventId),
+	});
+}
+
+export async function updateEvent(
+	eventId: string,
+	data: Partial<typeof events.$inferInsert>,
+) {
+	const [event] = await db
+		.update(events)
+		.set(data)
+		.where(eq(events.id, eventId))
+		.returning();
+
+	return event;
+}
+
+export async function deleteEvent(eventId: string) {
+	const [event] = await db
+		.delete(events)
+		.where(eq(events.id, eventId))
+		.returning();
 
 	return event;
 }

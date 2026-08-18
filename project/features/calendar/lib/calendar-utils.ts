@@ -1,8 +1,8 @@
 import type {
 	CalendarDeadline,
 	CalendarEvent,
+	CalendarGroup,
 	CalendarItem,
-	DeadlineGroup,
 	PriorityFilter,
 } from "@/features/calendar/types";
 import type { TaskPriority } from "@/lib/db/types";
@@ -35,18 +35,6 @@ export function formatCalendarDay(stamp: Date) {
 	});
 }
 
-export function combineDateAndTime(date: Date, time: string) {
-	const [hours, minutes] = time.split(":").map(Number);
-
-	return new Date(
-		date.getFullYear(),
-		date.getMonth(),
-		date.getDate(),
-		Number.isFinite(hours) ? hours : 0,
-		Number.isFinite(minutes) ? minutes : 0,
-	);
-}
-
 export function toTaskItem(deadline: CalendarDeadline): CalendarItem {
 	const day = toCalendarDay(deadline.dueDate);
 
@@ -71,6 +59,37 @@ export function toEventItem(event: CalendarEvent): CalendarItem {
 		allDay: event.allDay,
 		event,
 	};
+}
+
+export function formatEventRange(event: CalendarEvent) {
+	const dayOptions: Intl.DateTimeFormatOptions = {
+		weekday: "short",
+		month: "short",
+		day: "numeric",
+		year: "numeric",
+	};
+
+	const startDay = event.startAt.toLocaleDateString("en-US", dayOptions);
+	const endDay = event.endAt.toLocaleDateString("en-US", dayOptions);
+
+	const sameDay = startDay === endDay;
+
+	if (event.allDay) {
+		return sameDay ? `${startDay} · All day` : `${startDay} → ${endDay}`;
+	}
+
+	const timeOptions: Intl.DateTimeFormatOptions = {
+		hour: "numeric",
+		minute: "2-digit",
+		hour12: true,
+	};
+
+	const startTime = event.startAt.toLocaleTimeString("en-US", timeOptions);
+	const endTime = event.endAt.toLocaleTimeString("en-US", timeOptions);
+
+	return sameDay
+		? `${startDay} · ${startTime} – ${endTime}`
+		: `${startDay} ${startTime} → ${endDay} ${endTime}`;
 }
 
 export function formatEventTime(event: CalendarEvent) {
@@ -104,37 +123,42 @@ export function filterDeadlines(
 	});
 }
 
-export function getUpcomingDeadlines(
-	deadlines: CalendarDeadline[],
-	anchor?: Date | null,
-) {
+export function getUpcomingItems(items: CalendarItem[], anchor?: Date | null) {
 	const start = anchor ? dayIndex(anchor) : todayDayIndex();
 
-	return deadlines
-		.filter((deadline) => {
-			if (isCompleted(deadline)) return false;
+	return items
+		.filter((item) => {
+			if (item.kind === "task" && isCompleted(item.deadline)) return false;
 
-			const offset = dayIndex(deadline.dueDate) - start;
+			const offset = dayIndex(item.start) - start;
 
 			return offset >= 0 && offset <= UPCOMING_WINDOW_DAYS;
 		})
-		.sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
+		.sort((a, b) => a.start.getTime() - b.start.getTime());
 }
 
-export function groupDeadlinesByDay(
-	deadlines: CalendarDeadline[],
-): DeadlineGroup[] {
+export function taskDeadlines(items: CalendarItem[]) {
+	return items
+		.filter((item) => item.kind === "task")
+		.map((item) => item.deadline);
+}
+
+export function countEvents(items: CalendarItem[]) {
+	return items.filter((item) => item.kind === "event").length;
+}
+
+export function groupItemsByDay(items: CalendarItem[]): CalendarGroup[] {
 	const today = todayDayIndex();
 
-	const groups = new Map<number, DeadlineGroup>();
+	const groups = new Map<number, CalendarGroup>();
 
-	for (const deadline of deadlines) {
-		const index = dayIndex(deadline.dueDate);
+	for (const item of items) {
+		const index = dayIndex(item.start);
 
 		const existing = groups.get(index);
 
 		if (existing) {
-			existing.deadlines.push(deadline);
+			existing.items.push(item);
 			continue;
 		}
 
@@ -145,9 +169,9 @@ export function groupDeadlinesByDay(
 				? "Today"
 				: offset === 1
 					? "Tomorrow"
-					: formatCalendarDay(deadline.dueDate);
+					: formatCalendarDay(item.start);
 
-		groups.set(index, { label, deadlines: [deadline] });
+		groups.set(index, { label, items: [item] });
 	}
 
 	return [...groups.entries()]
