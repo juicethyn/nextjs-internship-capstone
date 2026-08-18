@@ -1,4 +1,4 @@
-import { and, count, eq, sql } from "drizzle-orm";
+import { and, count, eq, inArray, sql } from "drizzle-orm";
 import {
 	ANALYTICS_PERIOD_DAYS,
 	type AnalyticsRanges,
@@ -25,6 +25,7 @@ const rate = (completed: number, created: number) =>
 export async function getAnalyticsOverviewStats(
 	workspaceId: string,
 	ranges: AnalyticsRanges,
+	projectId?: string | null,
 ) {
 	const currentStart = utc(ranges.currentStart);
 	const currentEnd = utc(ranges.currentEnd);
@@ -66,6 +67,7 @@ export async function getAnalyticsOverviewStats(
 				and(
 					eq(projects.workspaceId, workspaceId),
 					eq(projects.isArchived, false),
+					projectId ? eq(projects.id, projectId) : undefined,
 				),
 			),
 
@@ -75,7 +77,12 @@ export async function getAnalyticsOverviewStats(
 				previous: sql<string>`count(distinct case when ${activityLogs.createdAt} >= ${previousStart} and ${activityLogs.createdAt} < ${previousEnd} then ${activityLogs.actorId} end)`,
 			})
 			.from(activityLogs)
-			.where(eq(activityLogs.workspaceId, workspaceId)),
+			.where(
+				and(
+					eq(activityLogs.workspaceId, workspaceId),
+					projectId ? eq(activityLogs.projectId, projectId) : undefined,
+				),
+			),
 
 		db
 			.select({ total: count() })
@@ -115,5 +122,98 @@ export async function getAnalyticsOverviewStats(
 			current: toNullableNumber(taskRow?.cycleDaysCurrent ?? null),
 			previous: toNullableNumber(taskRow?.cycleDaysPrevious ?? null),
 		},
+	};
+}
+
+export async function getTaskPriorityDistribution(
+	workspaceId: string,
+	projectId?: string | null,
+) {
+	const [row] = await db
+		.select({
+			none: count(sql`case when ${tasks.priority} = 'none' then 1 end`),
+			low: count(sql`case when ${tasks.priority} = 'low' then 1 end`),
+			medium: count(sql`case when ${tasks.priority} = 'medium' then 1 end`),
+			high: count(sql`case when ${tasks.priority} = 'high' then 1 end`),
+			total: count(),
+		})
+		.from(tasks)
+		.innerJoin(lists, eq(tasks.listId, lists.id))
+		.innerJoin(projects, eq(lists.projectId, projects.id))
+		.where(
+			and(
+				eq(projects.workspaceId, workspaceId),
+				eq(projects.isArchived, false),
+				projectId ? eq(projects.id, projectId) : undefined,
+			),
+		);
+
+	return {
+		none: row?.none ?? 0,
+		low: row?.low ?? 0,
+		medium: row?.medium ?? 0,
+		high: row?.high ?? 0,
+		total: row?.total ?? 0,
+	};
+}
+
+export async function getProjectProgressRows(
+	workspaceId: string,
+	visibleProjectIds: string[],
+	limit = 8,
+) {
+	if (visibleProjectIds.length === 0) return { rows: [], totalProjects: 0 };
+
+	const stats = await db
+		.select({
+			id: projects.id,
+			name: projects.name,
+			color: projects.color,
+			total: count(),
+			done: count(sql`case when ${lists.type} = 'done' then 1 end`),
+		})
+		.from(tasks)
+		.innerJoin(lists, eq(tasks.listId, lists.id))
+		.innerJoin(projects, eq(lists.projectId, projects.id))
+		.where(
+			and(
+				eq(projects.workspaceId, workspaceId),
+				eq(projects.isArchived, false),
+				inArray(projects.id, visibleProjectIds),
+			),
+		)
+		.groupBy(projects.id, projects.name, projects.color);
+
+	const ranked = stats
+		.map((row) => ({
+			id: row.id,
+			name: row.name,
+			color: row.color,
+			progress: Math.round((row.done / row.total) * 100),
+		}))
+		.sort((a, b) => b.progress - a.progress || a.name.localeCompare(b.name));
+
+	return { rows: ranked.slice(0, limit), totalProjects: ranked.length };
+}
+
+export async function getProjectStatusDistribution(projectId: string) {
+	const [row] = await db
+		.select({
+			todo: count(sql`case when ${lists.type} = 'todo' then 1 end`),
+			inProgress: count(
+				sql`case when ${lists.type} = 'in_progress' then 1 end`,
+			),
+			done: count(sql`case when ${lists.type} = 'done' then 1 end`),
+			total: count(),
+		})
+		.from(tasks)
+		.innerJoin(lists, eq(tasks.listId, lists.id))
+		.where(eq(lists.projectId, projectId));
+
+	return {
+		todo: row?.todo ?? 0,
+		inProgress: row?.inProgress ?? 0,
+		done: row?.done ?? 0,
+		total: row?.total ?? 0,
 	};
 }

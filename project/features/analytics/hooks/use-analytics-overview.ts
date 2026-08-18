@@ -10,15 +10,17 @@ export type AnalyticsOverview = Extract<
 
 interface UseAnalyticsOverviewProps {
 	workspaceSlug: string;
+	projectId: string | null;
 }
 
 export function useAnalyticsOverview({
 	workspaceSlug,
+	projectId,
 }: UseAnalyticsOverviewProps) {
 	const query = useQuery({
-		queryKey: ["analytics", workspaceSlug, "overview"],
+		queryKey: ["analytics", workspaceSlug, "overview", projectId],
 		queryFn: async () => {
-			const result = await getAnalyticsOverview(workspaceSlug);
+			const result = await getAnalyticsOverview(workspaceSlug, projectId);
 
 			if (!result.success) throw new Error(result.message);
 

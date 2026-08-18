@@ -1,4 +1,5 @@
 import { AnalyticsHeaderSkeleton } from "@/features/analytics/components/analytics-header-skeleton";
+import { AnalyticsInsightsSkeleton } from "@/features/analytics/components/analytics-insights-skeleton";
 import { AnalyticsOverviewSkeleton } from "@/features/analytics/components/analytics-overview-skeleton";
 
 export default function Loading() {
@@ -6,6 +7,7 @@ export default function Loading() {
 		<div className="space-y-6">
 			<AnalyticsHeaderSkeleton />
 			<AnalyticsOverviewSkeleton />
+			<AnalyticsInsightsSkeleton />
 		</div>
 	);
 }
