@@ -16,9 +16,6 @@ export function formatProjectDate(
 	});
 }
 
-// Local time, unlike formatProjectDate above. This renders "today" for the
-// person reading the screen, so pinning it to UTC would show them the wrong
-// weekday for several hours a day.
 export function formatFullDate(date: Date) {
 	return date.toLocaleDateString("en-US", {
 		weekday: "long",
@@ -46,10 +43,6 @@ const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
 const WEEK = 7 * DAY;
 
-// Deliberately LOCAL time, unlike formatProjectDate above. Due dates are
-// date-only values that render as UTC to dodge an off-by-one; a comment is a
-// real instant, so pinning it to UTC would show someone at UTC+8 7:33am for a
-// comment they posted at 3:33pm. Do not "fix" this to match the others.
 export function formatCommentTimestamp(date: Date | string) {
 	const parsedDate = date instanceof Date ? date : new Date(date);
 
@@ -57,7 +50,6 @@ export function formatCommentTimestamp(date: Date | string) {
 
 	const elapsed = Date.now() - parsedDate.getTime();
 
-	// Clock skew or an optimistic row stamped a hair in the future.
 	if (elapsed < SECOND) return "1s ago";
 
 	if (elapsed < MINUTE) return `${Math.floor(elapsed / SECOND)}s ago`;
@@ -90,9 +82,6 @@ export function formatCommentTimestamp(date: Date | string) {
 	return `${day} at ${time}`;
 }
 
-// Compared on the same UTC calendar-day basis formatProjectDate renders with,
-// so the styling can never contradict the date printed on screen. Whole days,
-// not instants — a task due today is not yet overdue.
 export function isOverdue(date: Date | string | null | undefined) {
 	if (!date) return false;
 

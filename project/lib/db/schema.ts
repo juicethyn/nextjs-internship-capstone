@@ -165,10 +165,7 @@ export const workspaceMembers = pgTable(
 			.references(() => users.id, { onDelete: "cascade" }),
 		role: workspaceRoleEnum("role").notNull().default("member"),
 		joinedAt: timestamp("joined_at").notNull().defaultNow(),
-		// Presence lives on the membership row, not the user, so leaving a
-		// workspace for another one lets this one age out on its own. Nullable:
-		// a member who has never been seen must read as offline, not as online
-		// at the moment the column was added.
+
 		lastSeenAt: timestamp("last_seen_at"),
 	},
 	(table) => [
@@ -504,41 +501,3 @@ export const activityLogs = pgTable(
 		index("activityLogs_entity_index").on(table.entity, table.entityId),
 	],
 );
-
-// TODO: Task 3.1 - Design database schema for users, projects, lists, and tasks
-// TODO: Task 3.3 - Set up Drizzle ORM with type-safe schema definitions
-
-/*
-TODO: Implementation Notes for Interns:
-
-1. Install Drizzle ORM dependencies:
-   - drizzle-orm
-   - drizzle-kit
-   - @vercel/postgres (if using Vercel Postgres)
-   - OR pg + @types/pg (if using regular PostgreSQL)
-
-2. Define schemas for:
-   - users (id, clerkId, email, name, createdAt, updatedAt)
-   - projects (id, name, description, ownerId, createdAt, updatedAt, dueDate)
-   - lists (id, name, projectId, position, createdAt, updatedAt)
-   - tasks (id, title, description, listId, assigneeId, priority, dueDate, position, createdAt, updatedAt)
-   - comments (id, content, taskId, authorId, createdAt, updatedAt)
-
-3. Set up proper relationships between tables
-4. Add indexes for performance
-5. Configure migrations
-
-Example structure:
-import { pgTable, text, timestamp, integer, uuid } from 'drizzle-orm/pg-core'
-
-export const users = pgTable('users', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  clerkId: text('clerk_id').notNull().unique(),
-  email: text('email').notNull(),
-  name: text('name').notNull(),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
-})
-
-// ... other tables
-*/

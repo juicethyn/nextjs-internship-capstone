@@ -41,10 +41,6 @@ export async function getWorkspaceMembersBySlug(workspaceSlug: string) {
 	};
 }
 
-// Fired once a minute per active user, so it deliberately skips the usual
-// permission round trip — touchWorkspaceMemberPresence scopes the write by slug
-// and updates nothing for a non-member. A stale tab beating after someone is
-// removed is expected, not an error worth surfacing.
 export async function heartbeatWorkspacePresenceAction(workspaceSlug: string) {
 	const user = await getCurrentUser();
 
@@ -90,8 +86,6 @@ export async function getWorkspaceMembersWithStatsBySlug(
 
 	const canManage = viewerRole === "owner" || viewerRole === "admin";
 
-	// Pending invitations are admin-only information — a plain member gets an
-	// empty list rather than a hidden section they could read off the payload.
 	const pendingInvitations = canManage
 		? await getPendingInvitationsWithUsers(workspace.id)
 		: [];
@@ -106,7 +100,6 @@ export async function getWorkspaceMembersWithStatsBySlug(
 			members: members.map((member) => ({
 				...member,
 				projectCount: assignments.counts[member.userId] ?? 0,
-				// Drives the kick dialog's blocked state without a per-click fetch.
 				ledProjects: assignments.ledProjects[member.userId] ?? [],
 			})),
 		},
@@ -157,7 +150,6 @@ export async function updateWorkspaceMemberRoleAction(
 
 	const workspace = access.data;
 
-	// Ownership moves through transferWorkspaceOwnership, never a role edit.
 	if (role !== "admin" && role !== "member") {
 		return {
 			success: false as const,
@@ -262,8 +254,6 @@ export async function removeWorkspaceMemberAction(
 		};
 	}
 
-	// Re-checked here rather than trusted from the client: the page's ledProjects
-	// is a UI hint that can be stale if a lead moved in another tab.
 	const { ledProjects } = await getWorkspaceProjectAssignments(workspace.id);
 
 	const led = ledProjects[target.userId] ?? [];

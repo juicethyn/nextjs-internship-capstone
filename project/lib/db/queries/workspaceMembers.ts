@@ -25,9 +25,6 @@ export async function getWorkspaceMemberById(
 	});
 }
 
-// Authorization and write in one statement: the slug subquery means a caller
-// who is not a member of that workspace updates zero rows, so no separate
-// permission round trip is needed on a query that runs once a minute per user.
 export async function touchWorkspaceMemberPresence(
 	workspaceSlug: string,
 	userId: string,

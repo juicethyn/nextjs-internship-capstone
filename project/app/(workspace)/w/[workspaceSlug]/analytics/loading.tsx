@@ -1,0 +1,11 @@
+import { AnalyticsHeaderSkeleton } from "@/features/analytics/components/analytics-header-skeleton";
+import { AnalyticsOverviewSkeleton } from "@/features/analytics/components/analytics-overview-skeleton";
+
+export default function Loading() {
+	return (
+		<div className="space-y-6">
+			<AnalyticsHeaderSkeleton />
+			<AnalyticsOverviewSkeleton />
+		</div>
+	);
+}

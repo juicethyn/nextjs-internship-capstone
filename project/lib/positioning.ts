@@ -4,8 +4,6 @@ export const POSITION_STEP = 1000;
 // the owning list gets renumbered before the move is applied.
 const MIN_GAP = 0.001;
 
-// Fractional positioning: a moved row takes the midpoint of its new neighbours,
-// so a reorder rewrites one row instead of renumbering the whole list.
 export function calculatePosition(prev?: number, next?: number) {
 	if (prev === undefined && next === undefined) {
 		return POSITION_STEP;

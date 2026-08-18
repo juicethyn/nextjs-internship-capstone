@@ -21,20 +21,16 @@ export async function setProjectLabels(
 		return [];
 	}
 
-	return (
-		dbClient
-			.insert(projectWorkspaceLabels)
-			.values(
-				workspaceLabelIds.map((workspaceLabelId) => ({
-					projectId,
-					workspaceLabelId,
-				})),
-			)
-			// The table has unique(projectId, workspaceLabelId); a duplicate in the
-			// payload should be a no-op, not a unique violation.
-			.onConflictDoNothing()
-			.returning()
-	);
+	return dbClient
+		.insert(projectWorkspaceLabels)
+		.values(
+			workspaceLabelIds.map((workspaceLabelId) => ({
+				projectId,
+				workspaceLabelId,
+			})),
+		)
+		.onConflictDoNothing()
+		.returning();
 }
 
 export async function removeLabelFromProject(

@@ -82,9 +82,6 @@ export async function updateListPosition(id: string, position: number) {
 	return list;
 }
 
-// Escape hatch for when repeated midpoint splits exhaust the gap between two
-// lists. Runs after a move: if any adjacent pair has collapsed, renumber the
-// project's lists to clean 1000-steps, preserving the current order.
 export async function rebalanceListPositionsIfNeeded(projectId: string) {
 	const current = await db
 		.select({ id: lists.id, position: lists.position })

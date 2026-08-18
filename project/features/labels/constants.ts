@@ -1,5 +1,3 @@
-// A tighter palette than WORKSPACE_COLORS — labels render small, so fewer and
-// more distinguishable hues read better in a list.
 export const LABEL_COLORS = [
 	"#7C3AED", // Purple
 	"#2563EB", // Blue

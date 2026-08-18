@@ -26,8 +26,6 @@ import {
 
 const INVITATION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
-// emailSent is separate from success on purpose: the invitation exists and its
-// token link works even when Resend rejects the delivery.
 type InviteResult = {
 	email: string;
 	success: boolean;
@@ -93,7 +91,6 @@ export async function findWorkspaceInviteeByEmailAction(
 		success: true as const,
 		data: {
 			email: normalizedEmail,
-			// The invitee may not be a registered user yet, so the user object is null if they don't exist.
 			user: existingUser
 				? {
 						firstName: existingUser.firstName,
@@ -106,7 +103,6 @@ export async function findWorkspaceInviteeByEmailAction(
 	};
 }
 
-// Batches workspace invitations, creating a row for each invite and sending an email. Returns a list of results for each invite, including any errors that occurred.
 export async function createWorkspaceInvitationsAction(
 	workspaceSlug: string,
 	invites: CreateWorkspaceInvitationInput[],
@@ -145,8 +141,7 @@ export async function createWorkspaceInvitationsAction(
 
 		const { email, role } = validatedData.data;
 
-		// Each invite is isolated: one bad row used to throw out of the loop and
-		// take the whole batch down, which is what results[] exists to prevent.
+		// Each invite is isolated so that one failure doesn't block the others. The results array is returned to the caller for display.
 		try {
 			const existingUser = await getUserByEmail(email);
 
