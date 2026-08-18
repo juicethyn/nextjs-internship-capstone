@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import {
 	getCalendarProjects,
 	getWorkspaceDeadlines,
+	getWorkspaceEvents,
 } from "@/lib/db/queries/calendar";
 import { getVisibleProjectIds } from "@/lib/db/queries/projects";
 import { requireWorkspaceMember } from "@/lib/permission";
@@ -31,8 +32,9 @@ export async function getCalendarData(workspaceSlug: string) {
 		isWorkspaceManager,
 	);
 
-	const [deadlines, projects] = await Promise.all([
+	const [deadlines, events, projects] = await Promise.all([
 		getWorkspaceDeadlines(workspace.id, visibleProjectIds),
+		getWorkspaceEvents(workspace.id, visibleProjectIds),
 		getCalendarProjects(workspace.id, visibleProjectIds),
 	]);
 
@@ -43,6 +45,7 @@ export async function getCalendarData(workspaceSlug: string) {
 				...row,
 				dueDate: row.dueDate as Date,
 			})),
+			events,
 			projects,
 		},
 	};

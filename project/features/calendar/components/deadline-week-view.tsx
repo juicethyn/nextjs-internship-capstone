@@ -8,13 +8,13 @@ import {
 	startOfWeekLocal,
 } from "@/features/calendar/lib/calendar-utils";
 import { useCalendarUIStore } from "@/features/calendar/store";
-import type { CalendarEvent } from "@/features/calendar/types";
+import type { CalendarItem } from "@/features/calendar/types";
 import { DeadlineColumns } from "./deadline-columns";
 
 type DeadlineWeekViewProps = {
 	date: Date;
-	events: CalendarEvent[];
-	onSelectEvent?: (event: CalendarEvent) => void;
+	events: CalendarItem[];
+	onSelectEvent?: (event: CalendarItem) => void;
 };
 
 export function DeadlineWeekView({

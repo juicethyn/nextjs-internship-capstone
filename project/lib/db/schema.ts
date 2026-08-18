@@ -64,6 +64,15 @@ export const priorityEnum = pgEnum("priority", [
 	"high",
 ]);
 
+export const eventTypeEnum = pgEnum("event_type", [
+	"meeting",
+	"planning",
+	"review",
+	"presentation",
+	"discussion",
+	"other",
+]);
+
 export const activityActionEnum = pgEnum("activity_action", [
 	"created",
 	"updated",
@@ -313,6 +322,37 @@ export const tasks = pgTable(
 		index("tasks_list_id_index").on(table.listId),
 		index("tasks_assignee_id_index").on(table.assigneeId),
 		index("tasks_created_by_id_index").on(table.createdById),
+	],
+);
+
+// ============================= EVENT TABLE SCHEMA =============================
+
+export const events = pgTable(
+	"events",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		projectId: uuid("project_id")
+			.notNull()
+			.references(() => projects.id, { onDelete: "cascade" }),
+		createdById: uuid("created_by_id")
+			.notNull()
+			.references(() => users.id, { onDelete: "restrict" }),
+		title: text("title").notNull(),
+		description: text("description"),
+		startAt: timestamp("start_at").notNull(),
+		endAt: timestamp("end_at").notNull(),
+		allDay: boolean("all_day").notNull().default(false),
+		eventType: eventTypeEnum("event_type").notNull().default("meeting"),
+		createdAt: timestamp("created_at").notNull().defaultNow(),
+		updatedAt: timestamp("updated_at")
+			.notNull()
+			.defaultNow()
+			.$onUpdate(() => new Date()),
+	},
+	(table) => [
+		index("events_project_id_index").on(table.projectId),
+		index("events_created_by_id_index").on(table.createdById),
+		index("events_start_at_index").on(table.startAt),
 	],
 );
 

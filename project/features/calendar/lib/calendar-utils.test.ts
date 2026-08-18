@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { formatProjectDate } from "../../../lib/date-formatter";
 import {
 	addDays,
+	combineDateAndTime,
 	countByPriority,
 	filterDeadlines,
+	formatCalendarDay,
 	getUpcomingDeadlines,
 	getWeekRange,
 	groupDeadlinesByDay,
@@ -11,21 +12,15 @@ import {
 	isSameLocalDay,
 	startOfWeekLocal,
 	toCalendarDay,
-	toCalendarEvent,
+	toTaskItem,
 } from "./calendar-utils";
 
-type Deadline = Parameters<typeof toCalendarEvent>[0];
+type Deadline = Parameters<typeof toTaskItem>[0];
 
-const utcDay = (offset: number) => {
+const dayFromToday = (offset: number) => {
 	const now = new Date();
 
-	return new Date(
-		Date.UTC(
-			now.getUTCFullYear(),
-			now.getUTCMonth(),
-			now.getUTCDate() + offset,
-		),
-	);
+	return new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset);
 };
 
 const deadline = (
@@ -41,7 +36,7 @@ const deadline = (
 	projectName: "Project A",
 	projectSlug: "project-a",
 	projectColor: "#7C3AED",
-	dueDate: utcDay(offset),
+	dueDate: dayFromToday(offset),
 	completedAt,
 	priority,
 });
@@ -54,27 +49,86 @@ const FIXTURE: Deadline[] = [
 	deadline("e", 20, "low"),
 ];
 
-describe("toCalendarEvent", () => {
-	it("projects the UTC calendar day onto local midnight", () => {
-		const event = toCalendarEvent({
+describe("toTaskItem", () => {
+	it("normalises a due date to local midnight of its own day", () => {
+		const item = toTaskItem({
 			...FIXTURE[0],
-			dueDate: new Date(Date.UTC(2026, 7, 18)),
+			dueDate: new Date(2026, 7, 18, 16, 45),
 		});
 
-		expect(event.start.getFullYear()).toBe(2026);
-		expect(event.start.getMonth()).toBe(7);
-		expect(event.start.getDate()).toBe(18);
-		expect(event.start.getHours()).toBe(0);
-		expect(event.allDay).toBe(true);
+		expect(item.start.getFullYear()).toBe(2026);
+		expect(item.start.getMonth()).toBe(7);
+		expect(item.start.getDate()).toBe(18);
+		expect(item.start.getHours()).toBe(0);
+		expect(item.allDay).toBe(true);
+		expect(item.kind).toBe("task");
 	});
 
-	it("keeps the grid cell on the same day the UTC date prints", () => {
-		for (const item of FIXTURE) {
-			const event = toCalendarEvent(item);
+	it("places every deadline on the day it was picked for", () => {
+		for (const deadlineRow of FIXTURE) {
+			const item = toTaskItem(deadlineRow);
 
-			expect(event.start.getDate()).toBe(item.dueDate.getUTCDate());
-			expect(event.start.getMonth()).toBe(item.dueDate.getUTCMonth());
+			expect(item.start.getDate()).toBe(deadlineRow.dueDate.getDate());
+			expect(item.start.getMonth()).toBe(deadlineRow.dueDate.getMonth());
 		}
+	});
+});
+
+describe("timestamp round trip", () => {
+	it("preserves the picked wall clock through a Drizzle-style round trip", () => {
+		const picked = combineDateAndTime(new Date(2026, 7, 19), "14:30");
+
+		const roundTripped = new Date(picked.getTime());
+
+		expect(roundTripped.getHours()).toBe(14);
+		expect(roundTripped.getMinutes()).toBe(30);
+		expect(roundTripped.getDate()).toBe(19);
+	});
+
+	it("keeps a DatePicker date on its picked day", () => {
+		const picked = new Date(2026, 7, 19);
+
+		const day = toCalendarDay(new Date(picked.getTime()));
+
+		expect(day.getDate()).toBe(19);
+		expect(day.getMonth()).toBe(7);
+		expect(day.getHours()).toBe(0);
+	});
+});
+
+describe("combineDateAndTime", () => {
+	it("merges a picked date with a time input value", () => {
+		const result = combineDateAndTime(new Date(2026, 7, 19), "09:05");
+
+		expect(result.getDate()).toBe(19);
+		expect(result.getHours()).toBe(9);
+		expect(result.getMinutes()).toBe(5);
+	});
+
+	it("handles midnight and end of day", () => {
+		expect(combineDateAndTime(new Date(2026, 7, 19), "00:00").getHours()).toBe(
+			0,
+		);
+
+		const endOfDay = combineDateAndTime(new Date(2026, 7, 19), "23:59");
+
+		expect(endOfDay.getHours()).toBe(23);
+		expect(endOfDay.getMinutes()).toBe(59);
+	});
+
+	it("falls back to midnight on a malformed value", () => {
+		const result = combineDateAndTime(new Date(2026, 7, 19), "");
+
+		expect(result.getHours()).toBe(0);
+		expect(result.getMinutes()).toBe(0);
+	});
+
+	it("does not mutate the date it was given", () => {
+		const base = new Date(2026, 7, 19);
+
+		combineDateAndTime(base, "18:45");
+
+		expect(base.getHours()).toBe(0);
 	});
 });
 
@@ -139,8 +193,6 @@ describe("getUpcomingDeadlines", () => {
 			now.getDate() + 5,
 		);
 
-		// "d" is 5 days out, "e" is 20 — from day 5 the window covers days 5..19,
-		// so "d" stays, the earlier three drop out, and "e" is still beyond it.
 		expect(getUpcomingDeadlines(FIXTURE, anchor).map((d) => d.id)).toEqual([
 			"d",
 		]);
@@ -190,16 +242,16 @@ describe("getUpcomingDeadlines", () => {
 });
 
 describe("toCalendarDay", () => {
-	it("agrees with the date formatProjectDate prints", () => {
+	it("agrees with the label the sidebar groups under", () => {
 		for (const item of FIXTURE) {
 			const day = toCalendarDay(item.dueDate);
 
-			expect(formatProjectDate(item.dueDate)).toContain(String(day.getDate()));
+			expect(formatCalendarDay(item.dueDate)).toContain(String(day.getDate()));
 		}
 	});
 
-	it("reads the UTC calendar day, matching how Drizzle returns timestamps", () => {
-		const day = toCalendarDay(new Date(Date.UTC(2026, 7, 18)));
+	it("strips the time without shifting the day", () => {
+		const day = toCalendarDay(new Date(2026, 7, 18, 23, 59));
 
 		expect(day.getFullYear()).toBe(2026);
 		expect(day.getMonth()).toBe(7);

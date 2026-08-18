@@ -1,4 +1,4 @@
-import type { TaskPriority } from "@/lib/db/types";
+import type { EventType, TaskPriority } from "@/lib/db/types";
 
 export type CalendarDeadline = {
 	id: string;
@@ -12,11 +12,39 @@ export type CalendarDeadline = {
 	projectColor: string;
 };
 
-export type CalendarEvent = CalendarDeadline & {
-	start: Date;
-	end: Date;
-	allDay: true;
+export type CalendarEvent = {
+	id: string;
+	title: string;
+	description: string | null;
+	startAt: Date;
+	endAt: Date;
+	allDay: boolean;
+	eventType: EventType;
+	projectId: string;
+	projectName: string;
+	projectSlug: string;
+	projectColor: string;
 };
+
+export type CalendarItem =
+	| {
+			kind: "task";
+			id: string;
+			title: string;
+			start: Date;
+			end: Date;
+			allDay: true;
+			deadline: CalendarDeadline;
+	  }
+	| {
+			kind: "event";
+			id: string;
+			title: string;
+			start: Date;
+			end: Date;
+			allDay: boolean;
+			event: CalendarEvent;
+	  };
 
 export type CalendarViewMode = "month" | "week";
 

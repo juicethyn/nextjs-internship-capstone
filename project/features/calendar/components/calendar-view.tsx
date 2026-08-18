@@ -14,12 +14,10 @@ import {
 import { CALENDAR_SURFACE } from "@/features/calendar/constants";
 import { isSameLocalDay } from "@/features/calendar/lib/calendar-utils";
 import { useCalendarUIStore } from "@/features/calendar/store";
-import type {
-	CalendarEvent,
-	CalendarViewMode,
-} from "@/features/calendar/types";
+import type { CalendarItem, CalendarViewMode } from "@/features/calendar/types";
 import { cn } from "@/lib/utils";
 import { DeadlineWeekView } from "./deadline-week-view";
+import { EventChip } from "./event-chip";
 import { TaskPill } from "./task-pill";
 
 import "react-big-calendar/lib/css/react-big-calendar.css";
@@ -62,11 +60,13 @@ function MonthDateHeader({ date, label, isOffRange }: DateHeaderProps) {
 	);
 }
 
-function MonthEvent({ event }: EventProps<CalendarEvent>) {
-	return <TaskPill deadline={event} />;
+function MonthEvent({ event }: EventProps<CalendarItem>) {
+	if (event.kind === "event") return <EventChip event={event.event} />;
+
+	return <TaskPill deadline={event.deadline} />;
 }
 
-function ShowMore({ count }: ShowMoreProps<CalendarEvent>) {
+function ShowMore({ count }: ShowMoreProps<CalendarItem>) {
 	return <>+{count} more</>;
 }
 
@@ -85,8 +85,8 @@ const CALENDAR_VIEWS = {
 };
 
 type CalendarViewProps = {
-	events: CalendarEvent[];
-	onSelectEvent: (event: CalendarEvent) => void;
+	events: CalendarItem[];
+	onSelectEvent: (event: CalendarItem) => void;
 };
 
 export function CalendarView({ events, onSelectEvent }: CalendarViewProps) {
@@ -112,7 +112,7 @@ export function CalendarView({ events, onSelectEvent }: CalendarViewProps) {
 				CALENDAR_SURFACE,
 			)}
 		>
-			<Calendar<CalendarEvent>
+			<Calendar<CalendarItem>
 				localizer={localizer}
 				events={events}
 				date={date}

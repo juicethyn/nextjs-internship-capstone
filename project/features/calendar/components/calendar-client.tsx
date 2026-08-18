@@ -1,25 +1,29 @@
 "use client";
 
 import { TriangleAlert } from "lucide-react";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CALENDAR_SURFACE } from "@/features/calendar/constants";
 import { useCalendarDeadlines } from "@/features/calendar/hooks/use-calendar-deadlines";
 import {
 	filterDeadlines,
 	getUpcomingDeadlines,
-	toCalendarEvent,
+	toEventItem,
+	toTaskItem,
 } from "@/features/calendar/lib/calendar-utils";
 import { useCalendarUIStore } from "@/features/calendar/store";
-import type { CalendarDeadline } from "@/features/calendar/types";
+import type { CalendarItem } from "@/features/calendar/types";
 import { useProjectUIStore } from "@/features/projects/store";
 import { cn } from "@/lib/utils";
 import { CalendarTaskDialog } from "./calendar-task-dialog";
 import { CalendarToolbar } from "./calendar-toolbar";
 import { CalendarView } from "./calendar-view";
+import { CreateEventModal } from "./create-event-modal";
 import { UpcomingDeadlines } from "./upcoming-deadlines";
 
 const EMPTY_DEADLINES: never[] = [];
+
+const EMPTY_EVENTS: never[] = [];
 
 const EMPTY_PROJECTS: never[] = [];
 
@@ -38,9 +42,13 @@ export function CalendarClient({ workspaceSlug }: CalendarClientProps) {
 
 	const openTaskDetails = useProjectUIStore((state) => state.openTaskDetails);
 
+	const [createEventOpen, setCreateEventOpen] = useState(false);
+
 	const { data, isLoading, isError } = useCalendarDeadlines({ workspaceSlug });
 
 	const deadlines = data?.deadlines ?? EMPTY_DEADLINES;
+
+	const events = data?.events ?? EMPTY_EVENTS;
 
 	const projects = data?.projects ?? EMPTY_PROJECTS;
 
@@ -49,17 +57,30 @@ export function CalendarClient({ workspaceSlug }: CalendarClientProps) {
 		[deadlines, priority, projectId],
 	);
 
-	const events = useMemo(() => filtered.map(toCalendarEvent), [filtered]);
+	const visibleEvents = useMemo(
+		() =>
+			projectId === "all"
+				? events
+				: events.filter((event) => event.projectId === projectId),
+		[events, projectId],
+	);
+
+	const items = useMemo(
+		() => [...filtered.map(toTaskItem), ...visibleEvents.map(toEventItem)],
+		[filtered, visibleEvents],
+	);
 
 	const upcoming = useMemo(
 		() => getUpcomingDeadlines(filtered, anchorDate),
 		[filtered, anchorDate],
 	);
 
-	const openTask = useCallback(
-		(deadline: CalendarDeadline) => {
-			setOpenTaskProjectSlug(deadline.projectSlug);
-			openTaskDetails(deadline.id);
+	const openItem = useCallback(
+		(item: CalendarItem) => {
+			if (item.kind !== "task") return;
+
+			setOpenTaskProjectSlug(item.deadline.projectSlug);
+			openTaskDetails(item.deadline.id);
 		},
 		[setOpenTaskProjectSlug, openTaskDetails],
 	);
@@ -67,7 +88,10 @@ export function CalendarClient({ workspaceSlug }: CalendarClientProps) {
 	return (
 		<div className="flex flex-col lg:h-full lg:min-h-0 lg:flex-row">
 			<div className="flex flex-col gap-5 p-6 lg:min-w-0 lg:flex-1 lg:overflow-auto">
-				<CalendarToolbar projects={projects} />
+				<CalendarToolbar
+					projects={projects}
+					onCreateEvent={() => setCreateEventOpen(true)}
+				/>
 
 				{isError ? (
 					<div
@@ -89,7 +113,7 @@ export function CalendarClient({ workspaceSlug }: CalendarClientProps) {
 				) : isLoading ? (
 					<Skeleton className={cn("rounded-xl", CALENDAR_SURFACE)} />
 				) : (
-					<CalendarView events={events} onSelectEvent={openTask} />
+					<CalendarView events={items} onSelectEvent={openItem} />
 				)}
 			</div>
 
@@ -97,11 +121,17 @@ export function CalendarClient({ workspaceSlug }: CalendarClientProps) {
 				deadlines={upcoming}
 				anchorDate={anchorDate}
 				isLoading={isLoading}
-				onSelect={openTask}
+				onSelect={(deadline) => openItem(toTaskItem(deadline))}
 				onClearAnchor={() => setAnchorDate(null)}
 			/>
 
 			<CalendarTaskDialog workspaceSlug={workspaceSlug} />
+
+			<CreateEventModal
+				workspaceSlug={workspaceSlug}
+				open={createEventOpen}
+				onOpenChange={setCreateEventOpen}
+			/>
 		</div>
 	);
 }

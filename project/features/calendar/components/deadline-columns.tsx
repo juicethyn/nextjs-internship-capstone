@@ -1,8 +1,9 @@
 "use client";
 
 import { isSameLocalDay } from "@/features/calendar/lib/calendar-utils";
-import type { CalendarEvent } from "@/features/calendar/types";
+import type { CalendarItem } from "@/features/calendar/types";
 import { cn } from "@/lib/utils";
+import { EventChip } from "./event-chip";
 import { TaskPill } from "./task-pill";
 
 const SHORT_DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -19,9 +20,9 @@ const FULL_DAY_NAMES = [
 
 type DeadlineColumnsProps = {
 	days: Date[];
-	events: CalendarEvent[];
+	events: CalendarItem[];
 	anchorDate?: Date | null;
-	onSelectEvent?: (event: CalendarEvent) => void;
+	onSelectEvent?: (event: CalendarItem) => void;
 	onSelectDay?: (day: Date) => void;
 };
 
@@ -95,16 +96,20 @@ export function DeadlineColumns({
 									"bg-primary/10 ring-2 ring-primary ring-inset",
 							)}
 						>
-							{dayEvents.map((event) => (
-								<TaskPill
-									key={event.id}
-									deadline={event}
-									showProject
-									onSelect={
-										onSelectEvent ? () => onSelectEvent(event) : undefined
-									}
-								/>
-							))}
+							{dayEvents.map((item) =>
+								item.kind === "event" ? (
+									<EventChip key={item.id} event={item.event} showProject />
+								) : (
+									<TaskPill
+										key={item.id}
+										deadline={item.deadline}
+										showProject
+										onSelect={
+											onSelectEvent ? () => onSelectEvent(item) : undefined
+										}
+									/>
+								),
+							)}
 
 							{dayEvents.length === 0 && (
 								<span className="pt-4 text-center text-[11px] text-muted-foreground/30">

@@ -69,9 +69,13 @@ function PriorityDot({ priority }: { priority: PriorityFilter }) {
 
 type CalendarToolbarProps = {
 	projects: CalendarProject[];
+	onCreateEvent: () => void;
 };
 
-export function CalendarToolbar({ projects }: CalendarToolbarProps) {
+export function CalendarToolbar({
+	projects,
+	onCreateEvent,
+}: CalendarToolbarProps) {
 	const date = useCalendarUIStore((state) => state.date);
 	const view = useCalendarUIStore((state) => state.view);
 	const priority = useCalendarUIStore((state) => state.priority);
@@ -192,7 +196,10 @@ export function CalendarToolbar({ projects }: CalendarToolbarProps) {
 						</DropdownMenuContent>
 					</DropdownMenu>
 
-					<Button className="h-9 gap-2 px-4 text-[13px] font-semibold">
+					<Button
+						onClick={onCreateEvent}
+						className="h-9 gap-2 px-4 text-[13px] font-semibold"
+					>
 						<Plus />
 						Create Event
 					</Button>

@@ -1,6 +1,7 @@
 import type {
 	CalendarDeadline,
 	CalendarEvent,
+	CalendarItem,
 	DeadlineGroup,
 	PriorityFilter,
 } from "@/features/calendar/types";
@@ -12,34 +13,77 @@ export const UPCOMING_WINDOW_DAYS = 14;
 
 export const FOOTER_PRIORITIES: TaskPriority[] = ["high", "medium", "low"];
 
-function utcDayIndex(date: Date) {
+function dayIndex(date: Date) {
 	return Math.floor(
-		Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()) /
-			DAY_MS,
+		Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / DAY_MS,
 	);
 }
 
 function todayDayIndex() {
-	return utcDayIndex(new Date());
+	return dayIndex(new Date());
 }
 
-export function toCalendarDay(dueDate: Date) {
+export function toCalendarDay(stamp: Date) {
+	return new Date(stamp.getFullYear(), stamp.getMonth(), stamp.getDate());
+}
+
+export function formatCalendarDay(stamp: Date) {
+	return stamp.toLocaleDateString("en-US", {
+		weekday: "long",
+		month: "short",
+		day: "numeric",
+	});
+}
+
+export function combineDateAndTime(date: Date, time: string) {
+	const [hours, minutes] = time.split(":").map(Number);
+
 	return new Date(
-		dueDate.getUTCFullYear(),
-		dueDate.getUTCMonth(),
-		dueDate.getUTCDate(),
+		date.getFullYear(),
+		date.getMonth(),
+		date.getDate(),
+		Number.isFinite(hours) ? hours : 0,
+		Number.isFinite(minutes) ? minutes : 0,
 	);
 }
 
-export function toCalendarEvent(deadline: CalendarDeadline): CalendarEvent {
+export function toTaskItem(deadline: CalendarDeadline): CalendarItem {
 	const day = toCalendarDay(deadline.dueDate);
 
 	return {
-		...deadline,
+		kind: "task",
+		id: deadline.id,
+		title: deadline.title,
 		start: day,
 		end: day,
 		allDay: true,
+		deadline,
 	};
+}
+
+export function toEventItem(event: CalendarEvent): CalendarItem {
+	return {
+		kind: "event",
+		id: event.id,
+		title: event.title,
+		start: event.startAt,
+		end: event.endAt,
+		allDay: event.allDay,
+		event,
+	};
+}
+
+export function formatEventTime(event: CalendarEvent) {
+	if (event.allDay) return "";
+
+	return event.startAt
+		.toLocaleTimeString("en-US", {
+			hour: "numeric",
+			minute: "2-digit",
+			hour12: true,
+		})
+		.replace(/\s/g, "")
+		.toLowerCase();
 }
 
 export function isCompleted(deadline: CalendarDeadline) {
@@ -60,23 +104,17 @@ export function filterDeadlines(
 	});
 }
 
-function localDayIndex(date: Date) {
-	return Math.floor(
-		Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / DAY_MS,
-	);
-}
-
 export function getUpcomingDeadlines(
 	deadlines: CalendarDeadline[],
 	anchor?: Date | null,
 ) {
-	const start = anchor ? localDayIndex(anchor) : todayDayIndex();
+	const start = anchor ? dayIndex(anchor) : todayDayIndex();
 
 	return deadlines
 		.filter((deadline) => {
 			if (isCompleted(deadline)) return false;
 
-			const offset = utcDayIndex(deadline.dueDate) - start;
+			const offset = dayIndex(deadline.dueDate) - start;
 
 			return offset >= 0 && offset <= UPCOMING_WINDOW_DAYS;
 		})
@@ -91,7 +129,7 @@ export function groupDeadlinesByDay(
 	const groups = new Map<number, DeadlineGroup>();
 
 	for (const deadline of deadlines) {
-		const index = utcDayIndex(deadline.dueDate);
+		const index = dayIndex(deadline.dueDate);
 
 		const existing = groups.get(index);
 
@@ -107,12 +145,7 @@ export function groupDeadlinesByDay(
 				? "Today"
 				: offset === 1
 					? "Tomorrow"
-					: deadline.dueDate.toLocaleDateString("en-US", {
-							weekday: "long",
-							month: "short",
-							day: "numeric",
-							timeZone: "UTC",
-						});
+					: formatCalendarDay(deadline.dueDate);
 
 		groups.set(index, { label, deadlines: [deadline] });
 	}
