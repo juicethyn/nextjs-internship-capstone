@@ -28,6 +28,18 @@ export function formatFullDate(date: Date) {
 	});
 }
 
+export function combineDateAndTime(date: Date, time: string) {
+	const [hours, minutes] = time.split(":").map(Number);
+
+	return new Date(
+		date.getFullYear(),
+		date.getMonth(),
+		date.getDate(),
+		Number.isFinite(hours) ? hours : 0,
+		Number.isFinite(minutes) ? minutes : 0,
+	);
+}
+
 const SECOND = 1000;
 const MINUTE = 60 * SECOND;
 const HOUR = 60 * MINUTE;

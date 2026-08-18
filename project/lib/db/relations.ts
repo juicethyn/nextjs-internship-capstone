@@ -74,8 +74,20 @@ export const projectsRelations = relations(
 		lists: many(schema.lists),
 		projectLabels: many(schema.projectWorkspaceLabels),
 		taskLabels: many(schema.taskLabels),
+		events: many(schema.events),
 	}),
 );
+
+export const eventsRelations = relations(schema.events, ({ one }) => ({
+	project: one(schema.projects, {
+		fields: [schema.events.projectId],
+		references: [schema.projects.id],
+	}),
+	creator: one(schema.users, {
+		fields: [schema.events.createdById],
+		references: [schema.users.id],
+	}),
+}));
 
 export const projectMembersRelations = relations(
 	schema.projectMembers,

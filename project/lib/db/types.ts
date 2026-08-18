@@ -25,6 +25,17 @@ export type CreatableListType = (typeof creatableListTypes)[number];
 export const taskPriorities = ["none", "low", "medium", "high"] as const;
 export type TaskPriority = (typeof taskPriorities)[number];
 
+export const eventTypes = [
+	"meeting",
+	"planning",
+	"review",
+	"presentation",
+	"discussion",
+	"other",
+] as const;
+
+export type EventType = (typeof eventTypes)[number];
+
 export const activityActionEnum = [
 	"created",
 	"updated",

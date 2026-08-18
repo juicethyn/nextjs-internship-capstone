@@ -1,0 +1,137 @@
+"use client";
+
+import { format, getDay, parse, startOfWeek } from "date-fns";
+import { enUS } from "date-fns/locale";
+import { useCallback } from "react";
+import {
+	Calendar,
+	type DateHeaderProps,
+	dateFnsLocalizer,
+	type EventProps,
+	type HeaderProps,
+	type ShowMoreProps,
+} from "react-big-calendar";
+import { CALENDAR_SURFACE } from "@/features/calendar/constants";
+import { isSameLocalDay } from "@/features/calendar/lib/calendar-utils";
+import { useCalendarUIStore } from "@/features/calendar/store";
+import type { CalendarItem, CalendarViewMode } from "@/features/calendar/types";
+import { cn } from "@/lib/utils";
+import { DeadlineWeekView } from "./deadline-week-view";
+import { EventChip } from "./event-chip";
+import { TaskPill } from "./task-pill";
+
+import "react-big-calendar/lib/css/react-big-calendar.css";
+import "@/features/calendar/calendar.css";
+
+const localizer = dateFnsLocalizer({
+	format,
+	parse,
+	startOfWeek,
+	getDay,
+	locales: { "en-US": enUS },
+});
+
+function MonthHeader({ label }: HeaderProps) {
+	return (
+		<div className="py-2.5 text-center text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+			{label.slice(0, 3)}
+		</div>
+	);
+}
+
+function MonthDateHeader({ date, label, isOffRange }: DateHeaderProps) {
+	const today = new Date();
+
+	const isToday =
+		date.getFullYear() === today.getFullYear() &&
+		date.getMonth() === today.getMonth() &&
+		date.getDate() === today.getDate();
+
+	return (
+		<span
+			className={cn(
+				"flex size-6 items-center justify-center rounded-full text-xs font-medium leading-none",
+				isToday && "bg-primary font-semibold text-primary-foreground",
+				!isToday && isOffRange && "text-muted-foreground/50",
+			)}
+		>
+			{label}
+		</span>
+	);
+}
+
+function MonthEvent({ event }: EventProps<CalendarItem>) {
+	if (event.kind === "event") return <EventChip event={event.event} />;
+
+	return <TaskPill deadline={event.deadline} />;
+}
+
+function ShowMore({ count }: ShowMoreProps<CalendarItem>) {
+	return <>+{count} more</>;
+}
+
+const CALENDAR_COMPONENTS = {
+	month: {
+		header: MonthHeader,
+		dateHeader: MonthDateHeader,
+		event: MonthEvent,
+	},
+	showMore: ShowMore,
+};
+
+const CALENDAR_VIEWS = {
+	month: true,
+	week: DeadlineWeekView,
+};
+
+type CalendarViewProps = {
+	events: CalendarItem[];
+	onSelectEvent: (event: CalendarItem) => void;
+};
+
+export function CalendarView({ events, onSelectEvent }: CalendarViewProps) {
+	const date = useCalendarUIStore((state) => state.date);
+	const view = useCalendarUIStore((state) => state.view);
+	const anchorDate = useCalendarUIStore((state) => state.anchorDate);
+	const setDate = useCalendarUIStore((state) => state.setDate);
+	const setView = useCalendarUIStore((state) => state.setView);
+	const setAnchorDate = useCalendarUIStore((state) => state.setAnchorDate);
+
+	const dayPropGetter = useCallback(
+		(day: Date) =>
+			anchorDate && isSameLocalDay(day, anchorDate)
+				? { className: "fora-selected-day" }
+				: {},
+		[anchorDate],
+	);
+
+	return (
+		<div
+			className={cn(
+				"fora-calendar flex flex-col overflow-hidden rounded-xl border bg-card",
+				CALENDAR_SURFACE,
+			)}
+		>
+			<Calendar<CalendarItem>
+				localizer={localizer}
+				events={events}
+				date={date}
+				view={view}
+				views={CALENDAR_VIEWS}
+				components={CALENDAR_COMPONENTS}
+				toolbar={false}
+				popup
+				selectable="ignoreEvents"
+				drilldownView={null}
+				dayPropGetter={dayPropGetter}
+				startAccessor="start"
+				endAccessor="end"
+				onNavigate={(newDate) => setDate(newDate)}
+				onView={(nextView) => setView(nextView as CalendarViewMode)}
+				onSelectSlot={(slot) => setAnchorDate(slot.start)}
+				onSelectEvent={(event) => onSelectEvent(event)}
+				style={{ height: "100%" }}
+			/>
+		</div>
+	);
+}

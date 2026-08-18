@@ -39,6 +39,8 @@ export function useTasks({ workspaceSlug, projectSlug }: UseTasksProps) {
 	const invalidateProject = () => {
 		queryClient.invalidateQueries({ queryKey });
 
+		queryClient.invalidateQueries({ queryKey: ["calendar", workspaceSlug] });
+
 		return queryClient.invalidateQueries({
 			queryKey: ["dashboard", workspaceSlug],
 		});
