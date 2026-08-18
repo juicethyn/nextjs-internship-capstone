@@ -4,17 +4,25 @@ import {
 	PROJECT_PROGRESS_LIMIT,
 	PROJECT_STATUS_COLORS,
 } from "@/features/analytics/constants";
-import { getAnalyticsRanges } from "@/features/analytics/lib/date-range";
+import {
+	getAnalyticsRanges,
+	getPeriodDays,
+} from "@/features/analytics/lib/date-range";
+import type { AnalyticsFilters } from "@/features/analytics/types";
 import { getCurrentUser } from "@/lib/auth";
 import {
 	getAnalyticsOverviewStats,
 	getProjectProgressRows,
 	getProjectStatusDistribution,
 	getTaskPriorityDistribution as getTaskPriorityDistributionQuery,
+	getTeamContributionCounts,
 } from "@/lib/db/queries/analytics";
 import { getCalendarProjects } from "@/lib/db/queries/calendar";
+import { getProjectMembers } from "@/lib/db/queries/projectMembers";
 import { getVisibleProjectIds } from "@/lib/db/queries/projects";
+import { getWorkspaceMembersById } from "@/lib/db/queries/workspaceMembers";
 import { requireWorkspaceMember } from "@/lib/permission";
+import { memberDisplayName } from "@/lib/user-display";
 
 const PROJECT_DENIED = "That project is not available in this workspace.";
 
@@ -54,9 +62,9 @@ async function resolveScope(workspaceSlug: string, projectId: string | null) {
 
 export async function getAnalyticsOverview(
 	workspaceSlug: string,
-	projectId: string | null,
+	filters: AnalyticsFilters,
 ) {
-	const scope = await resolveScope(workspaceSlug, projectId);
+	const scope = await resolveScope(workspaceSlug, filters.projectId);
 
 	if (!scope.success) {
 		return { success: false as const, message: scope.message };
@@ -64,8 +72,8 @@ export async function getAnalyticsOverview(
 
 	const stats = await getAnalyticsOverviewStats(
 		scope.workspaceId,
-		getAnalyticsRanges(new Date()),
-		projectId,
+		getAnalyticsRanges(new Date(), getPeriodDays(filters.period)),
+		{ projectId: filters.projectId, includeArchived: filters.includeArchived },
 	);
 
 	return {
@@ -76,9 +84,9 @@ export async function getAnalyticsOverview(
 
 export async function getTaskPriorityDistribution(
 	workspaceSlug: string,
-	projectId: string | null,
+	filters: AnalyticsFilters,
 ) {
-	const scope = await resolveScope(workspaceSlug, projectId);
+	const scope = await resolveScope(workspaceSlug, filters.projectId);
 
 	if (!scope.success) {
 		return { success: false as const, message: scope.message };
@@ -86,7 +94,7 @@ export async function getTaskPriorityDistribution(
 
 	const distribution = await getTaskPriorityDistributionQuery(
 		scope.workspaceId,
-		projectId,
+		{ projectId: filters.projectId, includeArchived: filters.includeArchived },
 	);
 
 	return {
@@ -95,7 +103,10 @@ export async function getTaskPriorityDistribution(
 	};
 }
 
-export async function getAnalyticsProjectOptions(workspaceSlug: string) {
+export async function getAnalyticsProjectOptions(
+	workspaceSlug: string,
+	includeArchived: boolean,
+) {
 	const scope = await resolveScope(workspaceSlug, null);
 
 	if (!scope.success) {
@@ -105,6 +116,7 @@ export async function getAnalyticsProjectOptions(workspaceSlug: string) {
 	const options = await getCalendarProjects(
 		scope.workspaceId,
 		scope.visibleProjectIds,
+		includeArchived,
 	);
 
 	return {
@@ -113,18 +125,66 @@ export async function getAnalyticsProjectOptions(workspaceSlug: string) {
 	};
 }
 
-export async function getProjectProgress(
+export async function getTeamContributions(
 	workspaceSlug: string,
-	projectId: string | null,
+	filters: AnalyticsFilters,
 ) {
-	const scope = await resolveScope(workspaceSlug, projectId);
+	const scope = await resolveScope(workspaceSlug, filters.projectId);
 
 	if (!scope.success) {
 		return { success: false as const, message: scope.message };
 	}
 
-	if (projectId) {
-		const distribution = await getProjectStatusDistribution(projectId);
+	const [roster, counts] = await Promise.all([
+		filters.projectId
+			? getProjectMembers(filters.projectId)
+			: getWorkspaceMembersById(scope.workspaceId),
+		getTeamContributionCounts(
+			scope.workspaceId,
+			getAnalyticsRanges(new Date(), getPeriodDays(filters.period)),
+			{
+				projectId: filters.projectId,
+				includeArchived: filters.includeArchived,
+			},
+		),
+	]);
+
+	const rows = roster
+		.map((member) => ({
+			userId: member.userId,
+			firstName: member.user.firstName,
+			lastName: member.user.lastName,
+			email: member.user.email,
+			imageUrl: member.user.imageUrl,
+			completed: counts.get(member.userId) ?? 0,
+		}))
+		.sort(
+			(a, b) =>
+				b.completed - a.completed ||
+				memberDisplayName(a).localeCompare(memberDisplayName(b)),
+		);
+
+	return {
+		success: true as const,
+		data: {
+			rows,
+			topCompleted: rows[0]?.completed ?? 0,
+		},
+	};
+}
+
+export async function getProjectProgress(
+	workspaceSlug: string,
+	filters: AnalyticsFilters,
+) {
+	const scope = await resolveScope(workspaceSlug, filters.projectId);
+
+	if (!scope.success) {
+		return { success: false as const, message: scope.message };
+	}
+
+	if (filters.projectId) {
+		const distribution = await getProjectStatusDistribution(filters.projectId);
 
 		if (distribution.total === 0) {
 			return {
@@ -166,6 +226,7 @@ export async function getProjectProgress(
 		scope.workspaceId,
 		scope.visibleProjectIds,
 		PROJECT_PROGRESS_LIMIT,
+		filters.includeArchived,
 	);
 
 	return {

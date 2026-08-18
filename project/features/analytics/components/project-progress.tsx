@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/card";
 import { PROJECT_PROGRESS_LIMIT } from "@/features/analytics/constants";
 import { useProjectProgress } from "@/features/analytics/hooks/use-project-progress";
-import { useAnalyticsUIStore } from "@/features/analytics/store";
+import { useAnalyticsFilters } from "@/features/analytics/store";
 import { ProjectProgressChart } from "./project-progress-chart";
 import { ProjectProgressSkeleton } from "./project-progress-skeleton";
 
@@ -34,11 +34,11 @@ function getDescription(data?: {
 }
 
 export function ProjectProgress({ workspaceSlug }: ProjectProgressProps) {
-	const projectId = useAnalyticsUIStore((state) => state.projectId);
+	const filters = useAnalyticsFilters();
 
 	const { data, isLoading, isError } = useProjectProgress({
 		workspaceSlug,
-		projectId,
+		filters,
 	});
 
 	if (isLoading) {

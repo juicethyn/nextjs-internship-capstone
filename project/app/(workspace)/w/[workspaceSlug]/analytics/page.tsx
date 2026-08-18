@@ -1,6 +1,7 @@
 import { AnalyticsHeader } from "@/features/analytics/components/analytics-header";
 import { AnalyticsInsights } from "@/features/analytics/components/analytics-insights";
 import { AnalyticsOverview } from "@/features/analytics/components/analytics-overview";
+import { TeamContributions } from "@/features/analytics/components/team-contributions";
 
 type AnalyticsPageProps = {
 	params: Promise<{
@@ -16,6 +17,7 @@ export default async function AnalyticsPage({ params }: AnalyticsPageProps) {
 			<AnalyticsHeader workspaceSlug={workspaceSlug} />
 			<AnalyticsOverview workspaceSlug={workspaceSlug} />
 			<AnalyticsInsights workspaceSlug={workspaceSlug} />
+			<TeamContributions workspaceSlug={workspaceSlug} />
 		</div>
 	);
 }

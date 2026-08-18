@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { getProjectProgress } from "@/features/analytics/actions/analytics";
+import type { AnalyticsFilters } from "@/features/analytics/types";
 
 export type ProjectProgress = Extract<
 	Awaited<ReturnType<typeof getProjectProgress>>,
@@ -12,17 +13,17 @@ export type ProgressRow = ProjectProgress["rows"][number];
 
 interface UseProjectProgressProps {
 	workspaceSlug: string;
-	projectId: string | null;
+	filters: AnalyticsFilters;
 }
 
 export function useProjectProgress({
 	workspaceSlug,
-	projectId,
+	filters,
 }: UseProjectProgressProps) {
 	const query = useQuery({
-		queryKey: ["analytics", workspaceSlug, "project-progress", projectId],
+		queryKey: ["analytics", workspaceSlug, "project-progress", filters],
 		queryFn: async () => {
-			const result = await getProjectProgress(workspaceSlug, projectId);
+			const result = await getProjectProgress(workspaceSlug, filters);
 
 			if (!result.success) throw new Error(result.message);
 

@@ -9,7 +9,7 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { useTaskPriorityDistribution } from "@/features/analytics/hooks/use-task-priority-distribution";
-import { useAnalyticsUIStore } from "@/features/analytics/store";
+import { useAnalyticsFilters } from "@/features/analytics/store";
 import { distributePercentages } from "@/features/dashboard/lib/percentages";
 import { TaskPriorityDistributionSkeleton } from "./task-priority-distribution-skeleton";
 import {
@@ -27,11 +27,11 @@ const PRIORITY_ORDER: PriorityKey[] = ["high", "medium", "low", "none"];
 export function TaskPriorityDistribution({
 	workspaceSlug,
 }: TaskPriorityDistributionProps) {
-	const projectId = useAnalyticsUIStore((state) => state.projectId);
+	const filters = useAnalyticsFilters();
 
 	const { data, isLoading, isError } = useTaskPriorityDistribution({
 		workspaceSlug,
-		projectId,
+		filters,
 	});
 
 	if (isLoading) {

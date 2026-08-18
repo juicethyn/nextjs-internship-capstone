@@ -10,15 +10,20 @@ export type AnalyticsProjectOption = Extract<
 
 interface UseAnalyticsProjectOptionsProps {
 	workspaceSlug: string;
+	includeArchived: boolean;
 }
 
 export function useAnalyticsProjectOptions({
 	workspaceSlug,
+	includeArchived,
 }: UseAnalyticsProjectOptionsProps) {
 	const query = useQuery({
-		queryKey: ["analytics", workspaceSlug, "project-options"],
+		queryKey: ["analytics", workspaceSlug, "project-options", includeArchived],
 		queryFn: async () => {
-			const result = await getAnalyticsProjectOptions(workspaceSlug);
+			const result = await getAnalyticsProjectOptions(
+				workspaceSlug,
+				includeArchived,
+			);
 
 			if (!result.success) throw new Error(result.message);
 
@@ -31,5 +36,6 @@ export function useAnalyticsProjectOptions({
 		projects: query.data ?? [],
 		isLoading: query.isLoading,
 		isError: query.isError,
+		isSuccess: query.isSuccess,
 	};
 }

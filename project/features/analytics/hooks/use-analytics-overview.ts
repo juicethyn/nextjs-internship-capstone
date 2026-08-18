@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { getAnalyticsOverview } from "@/features/analytics/actions/analytics";
+import type { AnalyticsFilters } from "@/features/analytics/types";
 
 export type AnalyticsOverview = Extract<
 	Awaited<ReturnType<typeof getAnalyticsOverview>>,
@@ -10,17 +11,17 @@ export type AnalyticsOverview = Extract<
 
 interface UseAnalyticsOverviewProps {
 	workspaceSlug: string;
-	projectId: string | null;
+	filters: AnalyticsFilters;
 }
 
 export function useAnalyticsOverview({
 	workspaceSlug,
-	projectId,
+	filters,
 }: UseAnalyticsOverviewProps) {
 	const query = useQuery({
-		queryKey: ["analytics", workspaceSlug, "overview", projectId],
+		queryKey: ["analytics", workspaceSlug, "overview", filters],
 		queryFn: async () => {
-			const result = await getAnalyticsOverview(workspaceSlug, projectId);
+			const result = await getAnalyticsOverview(workspaceSlug, filters);
 
 			if (!result.success) throw new Error(result.message);
 

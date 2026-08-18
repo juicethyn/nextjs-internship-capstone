@@ -1,8 +1,5 @@
-import { and, count, eq, inArray, sql } from "drizzle-orm";
-import {
-	ANALYTICS_PERIOD_DAYS,
-	type AnalyticsRanges,
-} from "@/features/analytics/lib/date-range";
+import { and, count, eq, gte, inArray, isNotNull, lt, sql } from "drizzle-orm";
+import type { AnalyticsRanges } from "@/features/analytics/lib/date-range";
 import { db } from "../index";
 import {
 	activityLogs,
@@ -22,10 +19,18 @@ const toNullableNumber = (value: string | number | null) =>
 const rate = (completed: number, created: number) =>
 	created === 0 ? null : (completed / created) * 100;
 
+type ScopeOptions = {
+	projectId?: string | null;
+	includeArchived?: boolean;
+};
+
+const archivedFilter = (includeArchived?: boolean) =>
+	includeArchived ? undefined : eq(projects.isArchived, false);
+
 export async function getAnalyticsOverviewStats(
 	workspaceId: string,
 	ranges: AnalyticsRanges,
-	projectId?: string | null,
+	{ projectId, includeArchived }: ScopeOptions = {},
 ) {
 	const currentStart = utc(ranges.currentStart);
 	const currentEnd = utc(ranges.currentEnd);
@@ -66,7 +71,7 @@ export async function getAnalyticsOverviewStats(
 			.where(
 				and(
 					eq(projects.workspaceId, workspaceId),
-					eq(projects.isArchived, false),
+					archivedFilter(includeArchived),
 					projectId ? eq(projects.id, projectId) : undefined,
 				),
 			),
@@ -99,9 +104,8 @@ export async function getAnalyticsOverviewStats(
 
 	return {
 		projectVelocity: {
-			current: toNumber(taskRow?.completedCurrent ?? 0) / ANALYTICS_PERIOD_DAYS,
-			previous:
-				toNumber(taskRow?.completedPrevious ?? 0) / ANALYTICS_PERIOD_DAYS,
+			current: toNumber(taskRow?.completedCurrent ?? 0) / ranges.days,
+			previous: toNumber(taskRow?.completedPrevious ?? 0) / ranges.days,
 		},
 		teamEfficiency: {
 			current: rate(
@@ -127,7 +131,7 @@ export async function getAnalyticsOverviewStats(
 
 export async function getTaskPriorityDistribution(
 	workspaceId: string,
-	projectId?: string | null,
+	{ projectId, includeArchived }: ScopeOptions = {},
 ) {
 	const [row] = await db
 		.select({
@@ -143,7 +147,7 @@ export async function getTaskPriorityDistribution(
 		.where(
 			and(
 				eq(projects.workspaceId, workspaceId),
-				eq(projects.isArchived, false),
+				archivedFilter(includeArchived),
 				projectId ? eq(projects.id, projectId) : undefined,
 			),
 		);
@@ -161,6 +165,7 @@ export async function getProjectProgressRows(
 	workspaceId: string,
 	visibleProjectIds: string[],
 	limit = 8,
+	includeArchived?: boolean,
 ) {
 	if (visibleProjectIds.length === 0) return { rows: [], totalProjects: 0 };
 
@@ -178,7 +183,7 @@ export async function getProjectProgressRows(
 		.where(
 			and(
 				eq(projects.workspaceId, workspaceId),
-				eq(projects.isArchived, false),
+				archivedFilter(includeArchived),
 				inArray(projects.id, visibleProjectIds),
 			),
 		)
@@ -194,6 +199,41 @@ export async function getProjectProgressRows(
 		.sort((a, b) => b.progress - a.progress || a.name.localeCompare(b.name));
 
 	return { rows: ranked.slice(0, limit), totalProjects: ranked.length };
+}
+
+export async function getTeamContributionCounts(
+	workspaceId: string,
+	ranges: AnalyticsRanges,
+	{ projectId, includeArchived }: ScopeOptions = {},
+) {
+	const rows = await db
+		.select({
+			assigneeId: tasks.assigneeId,
+			completed: count(),
+		})
+		.from(tasks)
+		.innerJoin(lists, eq(tasks.listId, lists.id))
+		.innerJoin(projects, eq(lists.projectId, projects.id))
+		.where(
+			and(
+				eq(projects.workspaceId, workspaceId),
+				archivedFilter(includeArchived),
+				eq(lists.type, "done"),
+				isNotNull(tasks.assigneeId),
+				gte(tasks.completedAt, ranges.currentStart),
+				lt(tasks.completedAt, ranges.currentEnd),
+				projectId ? eq(projects.id, projectId) : undefined,
+			),
+		)
+		.groupBy(tasks.assigneeId);
+
+	return new Map(
+		rows
+			.filter((row): row is { assigneeId: string; completed: number } =>
+				Boolean(row.assigneeId),
+			)
+			.map((row) => [row.assigneeId, toNumber(row.completed)]),
+	);
 }
 
 export async function getProjectStatusDistribution(projectId: string) {

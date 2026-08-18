@@ -7,7 +7,7 @@ import {
 	formatMetricValue,
 	formatPercent,
 } from "@/features/analytics/lib/format-metric";
-import { useAnalyticsUIStore } from "@/features/analytics/store";
+import { useAnalyticsFilters } from "@/features/analytics/store";
 import { AnalyticsOverviewSkeleton } from "./analytics-overview-skeleton";
 import { AnalyticsStatCard } from "./analytics-stat-card";
 
@@ -19,11 +19,11 @@ const HEADING_CLASS =
 	"text-xs font-bold uppercase tracking-wide text-muted-foreground";
 
 export function AnalyticsOverview({ workspaceSlug }: AnalyticsOverviewProps) {
-	const projectId = useAnalyticsUIStore((state) => state.projectId);
+	const filters = useAnalyticsFilters();
 
 	const { data, isLoading, isError } = useAnalyticsOverview({
 		workspaceSlug,
-		projectId,
+		filters,
 	});
 
 	if (isLoading) {

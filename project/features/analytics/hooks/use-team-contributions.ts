@@ -1,27 +1,29 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { getTaskPriorityDistribution } from "@/features/analytics/actions/analytics";
+import { getTeamContributions } from "@/features/analytics/actions/analytics";
 import type { AnalyticsFilters } from "@/features/analytics/types";
 
-export type TaskPriorityDistribution = Extract<
-	Awaited<ReturnType<typeof getTaskPriorityDistribution>>,
+export type TeamContributions = Extract<
+	Awaited<ReturnType<typeof getTeamContributions>>,
 	{ success: true }
 >["data"];
 
-interface UseTaskPriorityDistributionProps {
+export type ContributionRow = TeamContributions["rows"][number];
+
+interface UseTeamContributionsProps {
 	workspaceSlug: string;
 	filters: AnalyticsFilters;
 }
 
-export function useTaskPriorityDistribution({
+export function useTeamContributions({
 	workspaceSlug,
 	filters,
-}: UseTaskPriorityDistributionProps) {
+}: UseTeamContributionsProps) {
 	const query = useQuery({
-		queryKey: ["analytics", workspaceSlug, "priority", filters],
+		queryKey: ["analytics", workspaceSlug, "contributions", filters],
 		queryFn: async () => {
-			const result = await getTaskPriorityDistribution(workspaceSlug, filters);
+			const result = await getTeamContributions(workspaceSlug, filters);
 
 			if (!result.success) throw new Error(result.message);
 
