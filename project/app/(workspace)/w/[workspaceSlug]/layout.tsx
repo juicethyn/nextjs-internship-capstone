@@ -27,8 +27,6 @@ export default async function Layout({ children, params }: LayoutProps) {
 
 	const workspaces = await getUserWorkspaces(user.id);
 
-	// A signed-in user who landed on someone else's workspace is better served
-	// by being dropped into one of their own than by a dead-end error page.
 	if (!access.success) {
 		redirect(
 			workspaces.length > 0
@@ -39,7 +37,6 @@ export default async function Layout({ children, params }: LayoutProps) {
 
 	const currentWorkspace = access.data;
 
-	// getWorkspaceBySlug already loads `members`, so the role costs no extra query.
 	const currentUserRole =
 		currentWorkspace.members.find((member) => member.userId === user.id)
 			?.role ?? "member";

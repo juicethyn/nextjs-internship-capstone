@@ -295,7 +295,3 @@ export async function moveListAction(
 		data: movedList,
 	};
 }
-
-// export async function getListByIdAction(listId: string) {
-//     // TO DO SOON
-// }

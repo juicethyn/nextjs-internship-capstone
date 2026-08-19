@@ -3,7 +3,6 @@ import {
 	ChartColumn,
 	FolderKanban,
 	LayoutDashboard,
-	Settings,
 	Users,
 } from "lucide-react";
 
@@ -18,5 +17,4 @@ export const NAV_LINKS = [
 	{ id: "members", name: "Members", href: "members", icon: Users },
 	{ id: "analytics", name: "Analytics", href: "analytics", icon: ChartColumn },
 	{ id: "calendar", name: "Calendar", href: "calendar", icon: CalendarDays },
-	{ id: "settings", name: "Settings", href: "settings", icon: Settings },
 ];

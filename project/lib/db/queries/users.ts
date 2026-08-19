@@ -67,7 +67,6 @@ export async function upsertUser(
 				firstName: data.firstName,
 				lastName: data.lastName,
 				imageUrl: data.imageUrl,
-				occupation: data.occupation,
 			},
 		})
 		.returning();

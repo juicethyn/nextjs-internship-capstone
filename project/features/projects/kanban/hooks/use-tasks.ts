@@ -103,7 +103,6 @@ export function useTasks({ workspaceSlug, projectSlug }: UseTasksProps) {
 		},
 	});
 
-	// Silent on success, like moveList — the board is its own feedback.
 	const moveMutation = useMutation({
 		mutationFn: ({
 			taskId,
@@ -123,8 +122,6 @@ export function useTasks({ workspaceSlug, projectSlug }: UseTasksProps) {
 			),
 
 		onMutate: async ({ taskId, destinationListId, position }) => {
-			// Without this, a refetch already in flight can resolve after the
-			// optimistic write and snap the card back to its old slot.
 			await queryClient.cancelQueries({ queryKey });
 
 			const previous = queryClient.getQueryData<ProjectDetail>(queryKey);
@@ -155,8 +152,6 @@ export function useTasks({ workspaceSlug, projectSlug }: UseTasksProps) {
 		onSettled: () => invalidateProject(),
 	});
 
-	// Label assignment used to be raw server-action calls from the dialog, which
-	// never touched React Query — hence needing a refresh to see the change.
 	const setLabelsMutation = useMutation({
 		mutationFn: async ({
 			taskId,
@@ -211,8 +206,6 @@ export function useTasks({ workspaceSlug, projectSlug }: UseTasksProps) {
 		onSettled: () => invalidateProject(),
 	});
 
-	// Cache-only relocation used during onDragOver so the gap opens in the target
-	// list mid-drag. No server call — onDragEnd is what persists.
 	const previewTaskMove = (
 		taskId: string,
 		destinationListId: string,

@@ -62,8 +62,6 @@ export function ListCard({
 	const canDelete = list.type !== "done";
 	const isDone = list.type === "done";
 
-	// View-only ordering. SortableContext below is fed this exact array, since
-	// its items must match render order or drop targets land on the wrong card.
 	const taskSort = useProjectUIStore((state) => state.taskSort);
 	const tasks = sortTasks(list.tasks, taskSort);
 
@@ -80,8 +78,6 @@ export function ListCard({
 		data: { type: "list", list },
 	});
 
-	// An empty list has no sortable children to collide with, so the body itself
-	// has to be a drop target or cards could never be dropped into it.
 	const { setNodeRef: setDroppableRef } = useDroppable({
 		id: `list-body-${list.id}`,
 		data: { type: "list-body", listId: list.id },

@@ -6,6 +6,7 @@ import {
 	ChevronsUpDown,
 	Plus,
 	Settings,
+	UserCog,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -75,6 +76,8 @@ export function AppSidebar({
 	};
 	const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
 	const [workspaceSettingsOpen, setWorkspaceSettingsOpen] = useState(false);
+
+	const isAccountActive = pathname.startsWith("/account");
 	return (
 		<>
 			<Sidebar collapsible="icon">
@@ -250,9 +253,30 @@ export function AppSidebar({
 
 				{/* Footer */}
 				<SidebarFooter className="border-t">
-					<div className="px-2 py-2 text-xs text-muted-foreground">
-						Fora v1.0
-					</div>
+					<SidebarMenu>
+						<SidebarMenuItem>
+							<SidebarMenuButton
+								asChild
+								className={cn(
+									"h-9 rounded-md px-2 transition-colors",
+									isAccountActive ? "bg-primary/10" : "",
+								)}
+							>
+								<Link
+									href="/account"
+									className={cn(
+										"flex w-full items-center gap-3",
+										isAccountActive
+											? "text-primary"
+											: "text-muted-foreground hover:text-foreground",
+									)}
+								>
+									<UserCog className="h-4 w-4 shrink-0" />
+									<span>Account Settings</span>
+								</Link>
+							</SidebarMenuButton>
+						</SidebarMenuItem>
+					</SidebarMenu>
 				</SidebarFooter>
 
 				<SidebarRail />

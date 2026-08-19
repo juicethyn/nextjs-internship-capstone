@@ -2,7 +2,6 @@
 
 import { UserButton } from "@clerk/nextjs";
 import { Bell, Menu } from "lucide-react";
-import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { Button } from "../ui/button";
 import { useSidebar } from "../ui/sidebar";
 
@@ -24,8 +23,6 @@ export default function TopBar() {
 			<div className="flex items-center gap-x-2 lg:gap-x-4">
 				<h1 className="text-xl font-bold">Fora</h1>
 			</div>
-
-			<ThemeToggle />
 
 			<div className="flex items-center gap-x-2 lg:gap-x-4">
 				<button

@@ -48,7 +48,6 @@ type KanbanBoardProps = {
 type KanbanList = ProjectDetail["lists"][number];
 type KanbanTask = KanbanList["tasks"][number];
 
-// A drop target is either a card or a list body; both resolve to a list id.
 function resolveListId(data: Record<string, unknown> | undefined) {
 	if (!data) return undefined;
 
@@ -87,15 +86,8 @@ export function KanbanBoard({
 	const [activeList, setActiveList] = useState<KanbanList | null>(null);
 	const [activeTask, setActiveTask] = useState<KanbanTask | null>(null);
 
-	// Where the card started, so onDragEnd can tell a real move from a no-op
-	// after handleDragOver has already relocated it in the cache.
 	const dragOriginListId = useRef<string | null>(null);
 
-	// Mouse and touch are split deliberately. A single PointerSensor with a
-	// distance constraint treats a vertical swipe as a drag, which makes a long
-	// list impossible to scroll on touch.
-	//   mouse — 8px of travel, so a plain click still opens the card
-	//   touch — press and hold; moving more than 5px before then is a scroll
 	const sensors = useSensors(
 		useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
 		useSensor(TouchSensor, {
@@ -135,8 +127,6 @@ export function KanbanBoard({
 		dragOriginListId.current = null;
 	};
 
-	// Cross-list preview. Relocating the card in the cache mid-drag is what makes
-	// the gap open under the cursor; onDragEnd then persists from that state.
 	const handleDragOver = (event: DragOverEvent) => {
 		const { active, over } = event;
 
@@ -204,8 +194,6 @@ export function KanbanBoard({
 
 		const activeTaskId = String(active.id);
 
-		// After handleDragOver the card may already live in the target list, so
-		// read its list from the cache rather than from the drag payload.
 		const destinationListId = findListIdByTaskId(project, activeTaskId);
 
 		if (!destinationListId) return;
@@ -231,11 +219,8 @@ export function KanbanBoard({
 
 		const isSameList = dragOriginListId.current === destinationListId;
 
-		// Under a sort, a drop height inside the same list means nothing — the
-		// comparator would immediately re-place the card. Cross-list still counts.
 		if (taskSort !== "manual" && isSameList) return;
 
-		// Same list, same slot — nothing to persist.
 		if (isSameList && oldIndex === newIndex) return;
 
 		let position: number;
@@ -245,8 +230,6 @@ export function KanbanBoard({
 			const { prev, next } = getNeighbourPositions(reordered, newIndex);
 			position = calculatePosition(prev, next);
 		} else {
-			// Sorted view: append to the end so the card sits at the bottom of its
-			// new list once the user switches back to Manual.
 			const others = ordered.filter((task) => task.id !== activeTaskId);
 			const last = others.reduce(
 				(max, task) => Math.max(max, task.position),
@@ -269,7 +252,6 @@ export function KanbanBoard({
 	const handleDragEnd = (event: DragEndEvent) => {
 		const type = event.active.data.current?.type;
 
-		// Handlers read dragOriginListId, so clear only after they have run.
 		if (type === "list") {
 			handleListDragEnd(event);
 		} else if (type === "task") {
@@ -301,7 +283,6 @@ export function KanbanBoard({
 				className={cn(
 					"board-scrollbar flex h-full snap-x snap-mandatory scroll-smooth items-start gap-4 overflow-x-auto overflow-y-hidden pb-4 sm:snap-none sm:cursor-grab",
 					isDragging && "sm:cursor-grabbing select-none scroll-auto",
-					// Scroll snapping fights touch dragging on mobile.
 					isItemDragging && "snap-none",
 				)}
 			>
@@ -323,8 +304,6 @@ export function KanbanBoard({
 				{canManageLists && <CreateListButton />}
 			</div>
 
-			{/* Portaled to <body>, so the dragged item is not clipped by the board's
-			    horizontal scroller or a list's vertical one. */}
 			<DragOverlay>
 				{activeList && (
 					<div className="w-72 rounded-xl border bg-card p-3 shadow-lg">
