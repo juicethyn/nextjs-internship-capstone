@@ -1,4 +1,24 @@
 import z from "zod";
+import { occupationEnum } from "../db/schema";
+
+// updateUserSchema is all-optional, so `{}` validates and would issue a no-op
+// UPDATE. The account form needs every field present, and derives the
+// occupation values from the enum rather than duplicating them.
+export const profileSettingsSchema = z.object({
+	firstName: z
+		.string()
+		.trim()
+		.min(1, "First name is required")
+		.max(50, "First name too long"),
+	lastName: z
+		.string()
+		.trim()
+		.min(1, "Last name is required")
+		.max(50, "Last name too long"),
+	occupation: z.enum(occupationEnum.enumValues),
+});
+
+export type ProfileSettingsInput = z.infer<typeof profileSettingsSchema>;
 
 export const updateUserSchema = z
 	.object({

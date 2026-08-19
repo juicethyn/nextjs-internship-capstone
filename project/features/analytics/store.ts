@@ -7,8 +7,6 @@ import type {
 } from "@/features/analytics/types";
 
 type AnalyticsUIStore = {
-	// The filters live in the page header while the charts render in sibling
-	// sections, so these have to be shared rather than local state.
 	projectId: string | null;
 	period: AnalyticsPeriod;
 	includeArchived: boolean;
@@ -39,8 +37,6 @@ export const useAnalyticsUIStore = create<AnalyticsUIStore>((set) => ({
 		}),
 }));
 
-// Selected field by field rather than as one object literal: a selector
-// returning a fresh object every render trips Zustand's snapshot check.
 export function useAnalyticsFilters(): AnalyticsFilters {
 	const projectId = useAnalyticsUIStore((state) => state.projectId);
 	const period = useAnalyticsUIStore((state) => state.period);

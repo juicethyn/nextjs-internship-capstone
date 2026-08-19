@@ -51,8 +51,6 @@ export function useComments({
 		enabled,
 	});
 
-	// The card face shows a comment count read from the project query, so both
-	// caches have to move together.
 	const invalidateAll = () =>
 		Promise.all([
 			queryClient.invalidateQueries({ queryKey }),
@@ -64,8 +62,6 @@ export function useComments({
 			}),
 		]);
 
-	// createComment returns a bare row with no author join, so the placeholder is
-	// assembled from the Clerk profile. The refetch in onSettled replaces it.
 	const buildOptimisticComment = (content: string): TaskComment => ({
 		id: `${PENDING_COMMENT_PREFIX}${crypto.randomUUID()}`,
 		content,

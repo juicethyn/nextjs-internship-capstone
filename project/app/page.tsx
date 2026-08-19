@@ -1,6 +1,5 @@
 import { ArrowRight, CheckCircle, Kanban, Users } from "lucide-react";
 import Link from "next/link";
-import { ThemeToggle } from "@/components/shared/theme-toggle";
 
 export default function HomePage() {
 	return (
@@ -13,7 +12,6 @@ export default function HomePage() {
 							ProjectFlow
 						</div>
 						<div className="flex items-center space-x-4">
-							<ThemeToggle />
 							<Link
 								href="/dashboard"
 								className="text-outer_space-500 dark:text-platinum-500 hover:text-blue_munsell-500"

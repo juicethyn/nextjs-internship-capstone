@@ -93,15 +93,11 @@ export function useLists({ workspaceSlug, projectSlug }: UseListsProps) {
 		},
 	});
 
-	// Silent on success — a toast on every drag would be unbearable. The board
-	// already shows the result, so only failures need to speak up.
 	const moveMutation = useMutation({
 		mutationFn: ({ listId, position }: { listId: string; position: number }) =>
 			moveListAction(workspaceSlug, projectSlug, listId, position),
 
 		onMutate: async ({ listId, position }) => {
-			// Stop an in-flight refetch from resolving after our optimistic write
-			// and snapping the list back.
 			await queryClient.cancelQueries({ queryKey });
 
 			const previous = queryClient.getQueryData<ProjectDetail>(queryKey);

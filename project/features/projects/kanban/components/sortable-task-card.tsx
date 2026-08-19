@@ -15,8 +15,6 @@ type SortableTaskCardProps = {
 	isDone?: boolean;
 };
 
-// Thin wrapper so TaskCard stays presentational — DragOverlay renders a second
-// copy of it, and that copy must not register itself as a sortable node.
 export function SortableTaskCard({
 	task,
 	listId,
@@ -42,9 +40,6 @@ export function SortableTaskCard({
 			style={{ transform: CSS.Translate.toString(transform), transition }}
 			{...attributes}
 			{...listeners}
-			// touch-manipulation, not touch-none: cards fill the list body, so
-			// blocking touch gestures here would kill scrolling in a long list.
-			// The TouchSensor's hold delay is what separates a drag from a swipe.
 			className={cn("touch-manipulation", isDragging && "opacity-40")}
 		>
 			<TaskCard task={task} isDone={isDone} />

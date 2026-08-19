@@ -15,8 +15,6 @@ export const ANALYTICS_PERIODS = [
 
 export const DEFAULT_ANALYTICS_PERIOD = "30d";
 
-// Only chart-1..5 are declared in both the light and dark blocks of globals.css,
-// so the palette stops at five and everyone below it shares the muted tone.
 export const RANK_COLORS = [
 	"var(--chart-1)",
 	"var(--chart-2)",

@@ -36,8 +36,6 @@ function compareTitle(a: SortableTask, b: SortableTask) {
 	return a.title.localeCompare(b.title, undefined, { sensitivity: "base" });
 }
 
-// Sorting is view-only — `position` still holds the real drag order, so every
-// comparator falls back to title then position to stay stable across renders.
 export function sortTasks<T extends SortableTask>(
 	tasks: T[],
 	key: TaskSortKey,
@@ -56,7 +54,6 @@ export function sortTasks<T extends SortableTask>(
 		}
 
 		if (key === "dueDate") {
-			// A missing due date is not urgent — those cards sink to the bottom.
 			const aDue = a.dueDate?.getTime() ?? null;
 			const bDue = b.dueDate?.getTime() ?? null;
 

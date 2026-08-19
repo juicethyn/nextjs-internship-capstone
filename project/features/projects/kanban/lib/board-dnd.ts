@@ -6,8 +6,6 @@ type BoardTask = BoardList["tasks"][number];
 const byPosition = (a: { position: number }, b: { position: number }) =>
 	a.position - b.position;
 
-// Optimistic counterpart to moveListAction: rewrite the cached project so the
-// board keeps the dropped order while the mutation is in flight.
 export function applyListMove(
 	project: ProjectDetail,
 	listId: string,
@@ -20,8 +18,6 @@ export function applyListMove(
 	return { ...project, lists };
 }
 
-// Optimistic counterpart to moveTaskAction. Handles the cross-list case by
-// removing the task from every list and re-inserting it into the destination.
 export function applyTaskMove(
 	project: ProjectDetail,
 	taskId: string,
@@ -70,9 +66,6 @@ export function applyTaskMove(
 type TaskLabelEntry = BoardTask["taskLabels"][number];
 type TaskLabel = TaskLabelEntry["taskLabel"];
 
-// Optimistic label assignment. The cache stores join rows with the label
-// nested, so the selected labels get wrapped in throwaway assignment rows —
-// the refetch in onSettled replaces them with the real ones.
 export function applyTaskLabels(
 	project: ProjectDetail,
 	taskId: string,
@@ -111,8 +104,6 @@ export function findListIdByTaskId(project: ProjectDetail, taskId: string) {
 	)?.id;
 }
 
-// Neighbours of the slot an item was dropped into, given the ordered ids after
-// the drop. Feeds calculatePosition.
 export function getNeighbourPositions(
 	ordered: { id: string; position: number }[],
 	targetIndex: number,
