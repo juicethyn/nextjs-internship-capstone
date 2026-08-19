@@ -67,8 +67,6 @@ export async function createTaskLabelAction(
 
 	const { project } = access.data;
 
-	// unique(projectId, name) is enforced in Postgres — check first so a repeat
-	// name reads as a message instead of a constraint violation.
 	const existingLabels = await getTaskLabelsByProject(project.id);
 
 	const nameTaken = existingLabels.some(

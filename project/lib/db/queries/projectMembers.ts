@@ -48,9 +48,6 @@ export async function addProjectMembers(
 		.returning();
 }
 
-// Kicking someone from a workspace has to take their project memberships with
-// it — project_members references users, not workspace_members, so the rows
-// would otherwise survive and keep granting project access.
 export async function removeUserFromWorkspaceProjects(
 	workspaceId: string,
 	userId: string,

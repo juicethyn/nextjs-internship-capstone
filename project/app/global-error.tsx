@@ -18,8 +18,6 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
 			<body className="bg-background text-foreground antialiased">
 				<div className="flex min-h-screen flex-col items-center justify-center px-6 py-12 text-center">
 					<div className="flex size-16 items-center justify-center rounded-2xl bg-muted">
-						{/* Inline SVG rather than lucide: this tree renders when the app
-						    shell is broken, so it should pull in as little as possible. */}
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
 							viewBox="0 0 24 24"

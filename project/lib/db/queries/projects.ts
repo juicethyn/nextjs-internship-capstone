@@ -33,8 +33,6 @@ export async function createProject(
 
 // READ
 
-// Mirrors requireProjectMember: workspace owners/admins oversee every project,
-// everyone else sees only the ones they hold a project_members row for.
 export async function getVisibleProjectIds(
 	workspaceId: string,
 	userId: string,
@@ -116,7 +114,6 @@ export function getProjectBySlug(workspaceId: string, slug: string) {
 	});
 }
 
-// requireProjectBySlug returns the bare row above; the detail page needs relations.
 export function getProjectBySlugWithRelations(
 	workspaceId: string,
 	slug: string,
@@ -124,8 +121,6 @@ export function getProjectBySlugWithRelations(
 	return db.query.projects.findFirst({
 		where: and(eq(projects.workspaceId, workspaceId), eq(projects.slug, slug)),
 		with: {
-			// Board order is position-driven, so hand back rows already sorted
-			// instead of relying on the client to re-sort every render.
 			lists: {
 				orderBy: asc(lists.position),
 				with: {
@@ -156,8 +151,6 @@ export function getProjectBySlugWithRelations(
 	});
 }
 
-// The slug is frozen at creation. Regenerating it on rename would change the
-// project URL and 404 the page the user is standing on.
 export async function updateProject(
 	id: string,
 	data: Partial<
@@ -182,8 +175,6 @@ export async function deleteProject(id: string) {
 	return project;
 }
 
-// Business Operations
-
 export async function transferProjectLead(
 	projectId: string,
 	newLeadId: string,
@@ -199,8 +190,6 @@ export async function transferProjectLead(
 	return project;
 }
 
-// status and isArchived have to move together, otherwise ProjectStatusBadge
-// keeps reporting "Active" for an archived project.
 export async function archiveProject(projectId: string) {
 	const [project] = await db
 		.update(projects)
@@ -227,11 +216,6 @@ export async function restoreProject(projectId: string) {
 	return project;
 }
 
-// A user counts as assigned to a project when they hold a project_members row
-// OR they are the lead — leadId can point at someone with no membership row, so
-// counting memberships alone would report 0 for a lead on their own project.
-// The lead rows are also handed back by name, which is what lets the members
-// page block a kick without a second query.
 export async function getWorkspaceProjectAssignments(workspaceId: string) {
 	const [memberships, leads] = await Promise.all([
 		db
@@ -291,9 +275,6 @@ export async function getWorkspaceProjectAssignments(workspaceId: string) {
 	return { counts, ledProjects };
 }
 
-// A project is completed once every task it has sits in a "done" list. The
-// totalTasks > 0 guard keeps an empty project on "active" rather than counting
-// "nothing to do" as "everything done".
 export async function syncProjectCompletionStatus(projectId: string) {
 	const [project] = await db
 		.select({ status: projects.status, isArchived: projects.isArchived })
@@ -328,12 +309,3 @@ export async function syncProjectCompletionStatus(projectId: string) {
 		.set({ status: nextStatus })
 		.where(eq(projects.id, projectId));
 }
-
-// Will be used for the dashboard.ts queries
-// export async function getRecentProjects(workspaceId: string, limit: number = 5) {
-// 	return db.query.projects.findMany({
-// 		where: eq(projects.workspaceId, workspaceId),
-// 		orderBy: desc(projects.updatedAt),
-// 		limit,
-// 	});
-// }

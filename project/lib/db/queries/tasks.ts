@@ -100,7 +100,6 @@ export async function updateTaskPosition(
 	return task;
 }
 
-// Counterpart to rebalanceListPositionsIfNeeded, scoped to one list's cards.
 export async function rebalanceTaskPositionsIfNeeded(listId: string) {
 	const current = await db
 		.select({ id: tasks.id, position: tasks.position })

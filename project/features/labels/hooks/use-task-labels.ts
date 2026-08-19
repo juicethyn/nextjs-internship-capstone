@@ -70,8 +70,6 @@ export function useTaskLabels({
 				return;
 			}
 
-			// task_label_assignments cascades, so the label vanishes from every card
-			// too — the board reads those from the project query, not this one.
 			queryClient.invalidateQueries({ queryKey });
 			queryClient.invalidateQueries({
 				queryKey: ["project", workspaceSlug, projectSlug],

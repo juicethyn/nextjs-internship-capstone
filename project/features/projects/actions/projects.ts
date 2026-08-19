@@ -79,7 +79,6 @@ export async function getProjectBySlug(
 		return { success: false as const, message: access.message };
 	}
 
-	// The guard returns a bare row; the board needs lists, tasks and members.
 	const project = await getProjectBySlugWithRelations(
 		access.data.project.workspaceId,
 		projectSlug,
@@ -281,7 +280,6 @@ export async function restoreProjectAction(
 ) {
 	const user = await getCurrentUser();
 
-	// Not requireActiveProject — the project being archived is the whole point.
 	const access = await requireProjectMember(
 		workspaceSlug,
 		projectSlug,
@@ -310,8 +308,6 @@ export async function restoreProjectAction(
 
 	const restoredProject = await restoreProject(project.id);
 
-	// restoreProject always writes "active"; re-derive so a fully-done project
-	// comes back as completed.
 	await syncProjectCompletionStatus(project.id);
 
 	await createActivity({
@@ -362,8 +358,6 @@ export async function deleteProjectAction(
 		};
 	}
 
-	// Logged before the delete — the activity row references the workspace, and
-	// lists/tasks/members cascade away with the project.
 	await createActivity({
 		workspaceId: project.workspaceId,
 		actorId: user.id,

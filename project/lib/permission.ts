@@ -8,9 +8,6 @@ import { getWorkspaceInvitationById } from "./db/queries/workspaceInvitations";
 import { getWorkspaceMemberById } from "./db/queries/workspaceMembers";
 import { getWorkspaceBySlug } from "./db/queries/workspaces";
 
-// These guards report, they never navigate. A guard that redirects can only be
-// used by a page; returning a result lets a server action turn the same check
-// into a toast, which is why every caller here shares one implementation.
 export type PermissionResult<T> =
 	| { success: true; data: T }
 	| {
@@ -104,8 +101,6 @@ export async function requireWorkspaceOwner(
 	return granted(result.data);
 }
 
-// Not an authorization check on the caller — used to validate that a task's
-// assignee belongs to the workspace before writing the row.
 export async function isWorkspaceMember(workspaceId: string, userId: string) {
 	const member = await getWorkspaceMemberById(workspaceId, userId);
 
@@ -131,9 +126,6 @@ export async function requireProjectBySlug(
 	return granted(project);
 }
 
-// Returns canManage alongside the project: deciding access already loaded the
-// workspace member row, so callers that also need the manage flag get it
-// without a second lookup.
 export async function requireProjectMember(
 	workspaceSlug: string,
 	projectSlug: string,
@@ -150,9 +142,6 @@ export async function requireProjectMember(
 		getWorkspaceMemberById(project.workspaceId, userId),
 	]);
 
-	// A project_members row is not sufficient on its own. Removing someone from a
-	// workspace cascades their memberships away, but any row that predates that
-	// cascade would otherwise still grant project access to a non-member.
 	if (!workspaceMember) {
 		return forbidden(FORBIDDEN_MESSAGES.workspaceMember);
 	}

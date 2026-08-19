@@ -113,6 +113,7 @@ export async function deleteEvent(eventId: string) {
 export async function getCalendarProjects(
 	workspaceId: string,
 	visibleProjectIds: string[],
+	includeArchived = false,
 ) {
 	if (visibleProjectIds.length === 0) return [];
 
@@ -126,7 +127,7 @@ export async function getCalendarProjects(
 		.where(
 			and(
 				eq(projects.workspaceId, workspaceId),
-				eq(projects.isArchived, false),
+				includeArchived ? undefined : eq(projects.isArchived, false),
 				inArray(projects.id, visibleProjectIds),
 			),
 		)

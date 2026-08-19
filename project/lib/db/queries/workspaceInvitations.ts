@@ -54,10 +54,6 @@ export function getWorkspaceInvitationByToken(token: string) {
 	});
 }
 
-// (workspaceId, email) is unique, so a revoked or accepted invitation occupies
-// the slot forever and a plain insert would throw on any re-invite. Upserting
-// re-arms the existing row instead, in one statement so concurrent invites to
-// the same address cannot race.
 export async function createWorkspaceInvitation(
 	data: CreateWorkspaceInvitationInput & {
 		workspaceId: string;
