@@ -1,22 +1,21 @@
 import { AccountHeader } from "@/features/account/components/account-header";
+import { ConnectedAccountsSection } from "@/features/account/components/security/connected-accounts-section";
+import { EmailSection } from "@/features/account/components/security/email-section";
+import { PasswordSection } from "@/features/account/components/security/password-section";
 
 export default function SecurityPage() {
 	return (
 		<div className="space-y-6">
 			<AccountHeader
 				title="Security"
-				description="Manage your password and sign-in methods."
+				description="Manage your email, password, and sign-in methods."
 			/>
 
-			<div className="space-y-3 rounded-lg border p-4">
-				<div>
-					<h3 className="text-sm font-semibold">Nothing here yet</h3>
+			<EmailSection />
 
-					<p className="mt-1 text-sm text-muted-foreground">
-						Password and session controls are coming soon.
-					</p>
-				</div>
-			</div>
+			<PasswordSection />
+
+			<ConnectedAccountsSection />
 		</div>
 	);
 }

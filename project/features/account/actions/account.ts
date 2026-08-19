@@ -1,9 +1,9 @@
 "use server";
 
-import { clerkClient } from "@clerk/nextjs/server";
+import { clerkClient, currentUser } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth";
-import { updateUser } from "@/lib/db/queries/users";
+import { getUserByEmail, updateUser } from "@/lib/db/queries/users";
 import {
 	type ProfileSettingsInput,
 	profileSettingsSchema,
@@ -45,6 +45,40 @@ export async function syncAvatarAction(imageUrl: string) {
 	await updateUser(user.id, { imageUrl });
 
 	revalidatePath("/account");
+
+	return { success: true as const };
+}
+
+export async function syncEmailAction() {
+	const user = await getCurrentUser();
+	const clerkUser = await currentUser();
+
+	const email = clerkUser?.primaryEmailAddress?.emailAddress;
+
+	if (!email) {
+		return {
+			success: false as const,
+			message: "Couldn't read your new email.",
+		};
+	}
+
+	if (email === user.email) {
+		return { success: true as const };
+	}
+
+	const existing = await getUserByEmail(email);
+
+	if (existing && existing.id !== user.id) {
+		return {
+			success: false as const,
+			message: "That email is already in use.",
+		};
+	}
+
+	await updateUser(user.id, { email });
+
+	revalidatePath("/account");
+	revalidatePath("/account/security");
 
 	return { success: true as const };
 }

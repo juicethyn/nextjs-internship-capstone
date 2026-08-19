@@ -1,9 +1,6 @@
 import z from "zod";
 import { occupationEnum } from "../db/schema";
 
-// updateUserSchema is all-optional, so `{}` validates and would issue a no-op
-// UPDATE. The account form needs every field present, and derives the
-// occupation values from the enum rather than duplicating them.
 export const profileSettingsSchema = z.object({
 	firstName: z
 		.string()
@@ -20,6 +17,49 @@ export const profileSettingsSchema = z.object({
 
 export type ProfileSettingsInput = z.infer<typeof profileSettingsSchema>;
 
+const passwordFormBase = z.object({
+	currentPassword: z.string(),
+	newPassword: z
+		.string()
+		.min(8, "Password must be at least 8 characters")
+		.max(72, "Password too long"),
+	confirmPassword: z.string(),
+	signOutOfOtherSessions: z.boolean(),
+});
+
+export type PasswordFormInput = z.infer<typeof passwordFormBase>;
+
+export const setPasswordSchema = passwordFormBase.refine(
+	(data) => data.newPassword === data.confirmPassword,
+	{ message: "Passwords do not match", path: ["confirmPassword"] },
+);
+
+export const changePasswordSchema = passwordFormBase
+	.refine((data) => data.currentPassword.length > 0, {
+		message: "Current password is required",
+		path: ["currentPassword"],
+	})
+	.refine((data) => data.newPassword === data.confirmPassword, {
+		message: "Passwords do not match",
+		path: ["confirmPassword"],
+	})
+	.refine((data) => data.newPassword !== data.currentPassword, {
+		message: "New password must be different",
+		path: ["newPassword"],
+	});
+
+export const changeEmailSchema = z.object({
+	email: z.email("Enter a valid email address"),
+});
+
+export type ChangeEmailInput = z.infer<typeof changeEmailSchema>;
+
+export const emailCodeSchema = z.object({
+	code: z.string().trim().length(6, "Enter the 6-digit code"),
+});
+
+export type EmailCodeInput = z.infer<typeof emailCodeSchema>;
+
 export const updateUserSchema = z
 	.object({
 		firstName: z
@@ -30,6 +70,7 @@ export const updateUserSchema = z
 			.string()
 			.min(1, "Last name is required")
 			.max(50, "Last name too long"),
+		email: z.email("Invalid email").optional(),
 		imageUrl: z.url("Invalid image URL").optional(),
 		occupation: z.enum([
 			"software_engineer",
