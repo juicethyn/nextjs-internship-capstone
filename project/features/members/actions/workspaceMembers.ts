@@ -8,6 +8,7 @@ import {
 import { createActivity } from "@/lib/activity";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { deleteWorkspaceNotificationsForUser } from "@/lib/db/queries/notifications";
 import { removeUserFromWorkspaceProjects } from "@/lib/db/queries/projectMembers";
 import { getWorkspaceProjectAssignments } from "@/lib/db/queries/projects";
 import { getUsersByEmails } from "@/lib/db/queries/users";
@@ -19,6 +20,7 @@ import {
 	touchWorkspaceMemberPresence,
 	updateWorkspaceMemberRole,
 } from "@/lib/db/queries/workspaceMembers";
+import { dispatchNotifications } from "@/lib/notifications";
 import { requireWorkspaceMember } from "@/lib/permission";
 import { memberDisplayName } from "@/lib/user-display";
 
@@ -205,6 +207,17 @@ export async function updateWorkspaceMemberRoleAction(
 		},
 	});
 
+	await dispatchNotifications([
+		{
+			type: "workspace_role_changed",
+			recipientId: target.userId,
+			actorId: user.id,
+			workspaceId: workspace.id,
+			entityId: target.id,
+			metadata: { role, previousRole: target.role },
+		},
+	]);
+
 	revalidatePath(`/w/${workspace.slug}`, "layout");
 
 	return {
@@ -283,6 +296,19 @@ export async function removeWorkspaceMemberAction(
 			role: target.role,
 		},
 	});
+
+	await deleteWorkspaceNotificationsForUser(workspace.id, target.userId);
+
+	await dispatchNotifications([
+		{
+			type: "workspace_member_removed",
+			recipientId: target.userId,
+			actorId: user.id,
+			workspaceId: workspace.id,
+			entityId: target.id,
+			metadata: { workspaceName: workspace.name },
+		},
+	]);
 
 	revalidatePath(`/w/${workspace.slug}`, "layout");
 

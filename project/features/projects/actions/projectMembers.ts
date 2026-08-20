@@ -12,6 +12,7 @@ import {
 } from "@/lib/db/queries/projectMembers";
 import { transferProjectLead } from "@/lib/db/queries/projects";
 import { getWorkspaceMembersById } from "@/lib/db/queries/workspaceMembers";
+import { dispatchNotifications } from "@/lib/notifications";
 import { FORBIDDEN_MESSAGES, requireActiveProject } from "@/lib/permission";
 import {
 	type AddProjectMembersInput,
@@ -96,6 +97,18 @@ export async function addProjectMembersAction(
 		),
 	);
 
+	await dispatchNotifications(
+		addedMembers.map((member) => ({
+			type: "project_member_added" as const,
+			recipientId: member.userId,
+			actorId: user.id,
+			workspaceId: project.workspaceId,
+			projectId: project.id,
+			entityId: member.id,
+			metadata: { projectName: project.name },
+		})),
+	);
+
 	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
 	return {
@@ -165,6 +178,18 @@ export async function removeProjectMemberAction(
 		},
 	});
 
+	await dispatchNotifications([
+		{
+			type: "project_member_removed",
+			recipientId: member.userId,
+			actorId: user.id,
+			workspaceId: project.workspaceId,
+			projectId: project.id,
+			entityId: member.id,
+			metadata: { projectName: project.name },
+		},
+	]);
+
 	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
 	return {
@@ -230,6 +255,31 @@ export async function transferProjectLeadAction(
 			newLeadId: newLeadUserId,
 		},
 	});
+
+	await dispatchNotifications([
+		{
+			type: "project_lead_assigned",
+			recipientId: newLeadUserId,
+			actorId: user.id,
+			workspaceId: project.workspaceId,
+			projectId: project.id,
+			entityId: project.id,
+			metadata: { projectName: project.name },
+		},
+		...(project.leadId
+			? [
+					{
+						type: "project_lead_removed" as const,
+						recipientId: project.leadId,
+						actorId: user.id,
+						workspaceId: project.workspaceId,
+						projectId: project.id,
+						entityId: project.id,
+						metadata: { projectName: project.name },
+					},
+				]
+			: []),
+	]);
 
 	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 

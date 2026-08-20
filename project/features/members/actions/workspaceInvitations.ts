@@ -18,7 +18,9 @@ import {
 } from "@/lib/db/queries/workspaceMembers";
 import { getWorkspaceById } from "@/lib/db/queries/workspaces";
 import { sendWorkspaceInvitationEmail } from "@/lib/email/send-workspace-invitation";
+import { dispatchNotifications } from "@/lib/notifications";
 import { isInvitationExpired, requireWorkspaceAdmin } from "@/lib/permission";
+import { memberDisplayName } from "@/lib/user-display";
 import {
 	type CreateWorkspaceInvitationInput,
 	createWorkspaceInvitationSchema,
@@ -205,6 +207,19 @@ export async function createWorkspaceInvitationsAction(
 					role: invitation.role,
 				},
 			});
+
+			if (existingUser) {
+				await dispatchNotifications([
+					{
+						type: "workspace_invitation_received",
+						recipientId: existingUser.id,
+						actorId: user.id,
+						workspaceId: workspace.id,
+						entityId: invitation.id,
+						metadata: { role: invitation.role },
+					},
+				]);
+			}
 
 			results.push({ email, success: true, emailSent: emailResult.success });
 		} catch (error) {
@@ -461,6 +476,17 @@ export async function acceptWorkspaceInvitationAction(token: string) {
 			role: invitation.role,
 		},
 	});
+
+	await dispatchNotifications([
+		{
+			type: "workspace_member_joined",
+			recipientId: invitation.invitedById,
+			actorId: user.id,
+			workspaceId: invitation.workspaceId,
+			entityId: invitation.id,
+			metadata: { memberName: memberDisplayName(user) },
+		},
+	]);
 
 	return {
 		success: true as const,

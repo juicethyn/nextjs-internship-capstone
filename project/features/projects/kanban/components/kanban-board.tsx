@@ -19,7 +19,8 @@ import {
 	SortableContext,
 	sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable";
-import { useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { useProject } from "@/features/projects/hooks/use-project";
 import { useDragScroll } from "@/features/projects/kanban/hooks/use-drag-scroll";
 import { useLists } from "@/features/projects/kanban/hooks/use-lists";
@@ -81,7 +82,17 @@ export function KanbanBoard({
 	const { ref, isDragging, dragHandlers } = useDragScroll<HTMLDivElement>();
 
 	const openTaskId = useProjectUIStore((state) => state.openTaskId);
+	const openTaskDetails = useProjectUIStore((state) => state.openTaskDetails);
 	const taskSort = useProjectUIStore((state) => state.taskSort);
+
+	const searchParams = useSearchParams();
+	const linkedTaskId = searchParams.get("task");
+
+	useEffect(() => {
+		if (linkedTaskId) {
+			openTaskDetails(linkedTaskId);
+		}
+	}, [linkedTaskId, openTaskDetails]);
 
 	const [activeList, setActiveList] = useState<KanbanList | null>(null);
 	const [activeTask, setActiveTask] = useState<KanbanTask | null>(null);

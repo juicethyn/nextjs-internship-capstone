@@ -12,6 +12,8 @@ import {
 	uuid,
 	varchar,
 } from "drizzle-orm/pg-core";
+import type { NotificationCategory } from "@/lib/db/types";
+import type { NotificationMetadata } from "@/lib/validations/notification";
 
 // ============================= ENUMS =============================
 
@@ -89,6 +91,23 @@ export const activityActionEnum = pgEnum("activity_action", [
 	"accepted",
 ]);
 
+export const notificationTypeEnum = pgEnum("notification_type", [
+	"workspace_invitation_received",
+	"workspace_role_changed",
+	"workspace_member_removed",
+	"workspace_ownership_transferred",
+	"workspace_member_joined",
+	"project_member_added",
+	"project_member_removed",
+	"project_lead_assigned",
+	"project_lead_removed",
+	"task_assigned",
+	"task_unassigned",
+	"task_due_date_changed",
+	"task_comment_added",
+	"task_completed",
+]);
+
 export const activityEntityEnum = pgEnum("activity_entity", [
 	"workspace",
 	"workspace_member",
@@ -114,6 +133,11 @@ export const users = pgTable(
 		lastName: text("last_name").notNull(),
 		imageUrl: text("image_url"),
 		occupation: occupationEnum("occupation"),
+		notificationsMuted: boolean("notifications_muted").notNull().default(false),
+		mutedNotificationCategories: jsonb("muted_notification_categories")
+			.$type<NotificationCategory[]>()
+			.notNull()
+			.default([]),
 		createdAt: timestamp("created_at").notNull().defaultNow(),
 		updatedAt: timestamp("updated_at")
 			.notNull()
@@ -499,5 +523,41 @@ export const activityLogs = pgTable(
 		index("activityLogs_actor_id_index").on(table.actorId),
 		index("activityLogs_project_id_index").on(table.projectId),
 		index("activityLogs_entity_index").on(table.entity, table.entityId),
+	],
+);
+
+export const notifications = pgTable(
+	"notifications",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		recipientId: uuid("recipient_id")
+			.notNull()
+			.references(() => users.id, { onDelete: "cascade" }),
+		actorId: uuid("actor_id").references(() => users.id, {
+			onDelete: "set null",
+		}),
+		workspaceId: uuid("workspace_id")
+			.notNull()
+			.references(() => workspaces.id, { onDelete: "cascade" }),
+		projectId: uuid("project_id").references(() => projects.id, {
+			onDelete: "cascade",
+		}),
+		entityId: uuid("entity_id"),
+		type: notificationTypeEnum("type").notNull(),
+		metadata: jsonb("metadata").$type<NotificationMetadata>(),
+		readAt: timestamp("read_at"),
+		createdAt: timestamp("created_at").notNull().defaultNow(),
+	},
+	(table) => [
+		index("notifications_recipient_index").on(
+			table.recipientId,
+			table.createdAt,
+		),
+		index("notifications_recipient_unread_index").on(
+			table.recipientId,
+			table.readAt,
+		),
+		index("notifications_workspace_id_index").on(table.workspaceId),
+		index("notifications_project_id_index").on(table.projectId),
 	],
 );

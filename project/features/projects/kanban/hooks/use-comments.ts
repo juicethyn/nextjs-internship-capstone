@@ -79,6 +79,8 @@ export function useComments({
 			imageUrl: user?.imageUrl ?? null,
 			occupation: null,
 			lastWorkspaceId: null,
+			notificationsMuted: false,
+			mutedNotificationCategories: [],
 			createdAt: new Date(),
 			updatedAt: new Date(),
 		},

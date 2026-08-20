@@ -1,7 +1,8 @@
 "use client";
 
 import { UserButton } from "@clerk/nextjs";
-import { Bell, Menu } from "lucide-react";
+import { Menu } from "lucide-react";
+import { NotificationBell } from "@/features/notifications/components/notification-bell";
 import { Button } from "../ui/button";
 import { useSidebar } from "../ui/sidebar";
 
@@ -25,12 +26,7 @@ export default function TopBar() {
 			</div>
 
 			<div className="flex items-center gap-x-2 lg:gap-x-4">
-				<button
-					type="button"
-					className="p-2 rounded-lg hover:bg-platinum-500 dark:hover:bg-payne's_gray-400"
-				>
-					<Bell size={20} />
-				</button>
+				<NotificationBell />
 				<UserButton
 					appearance={{
 						elements: {

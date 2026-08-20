@@ -1,6 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import {
+	hasDueDateDayChanged,
+	resolveAssignmentChange,
+} from "@/features/notifications/lib/task-changes";
 import { createActivity } from "@/lib/activity";
 import { getCurrentUser } from "@/lib/auth";
 import { syncProjectCompletionStatus } from "@/lib/db/queries/projects";
@@ -11,6 +15,7 @@ import {
 	updateTask,
 	updateTaskPosition,
 } from "@/lib/db/queries/tasks";
+import { dispatchNotifications } from "@/lib/notifications";
 import {
 	isWorkspaceMember,
 	requireActiveProject,
@@ -99,6 +104,20 @@ export async function createTaskAction(
 			listName: list.name,
 		},
 	});
+
+	if (task.assigneeId) {
+		await dispatchNotifications([
+			{
+				type: "task_assigned",
+				recipientId: task.assigneeId,
+				actorId: user.id,
+				workspaceId: project.workspaceId,
+				projectId: project.id,
+				entityId: task.id,
+				metadata: { taskTitle: task.title, projectName: project.name },
+			},
+		]);
+	}
 
 	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
@@ -191,6 +210,69 @@ export async function updateTaskAction(
 			newTitle: updatedTask.title,
 		},
 	});
+
+	const { assignedTo, unassignedFrom } = resolveAssignmentChange(
+		task.assigneeId,
+		updatedTask.assigneeId,
+	);
+
+	const dueDateChanged = hasDueDateDayChanged(
+		task.dueDate,
+		updatedTask.dueDate,
+	);
+
+	await dispatchNotifications([
+		...(assignedTo
+			? [
+					{
+						type: "task_assigned" as const,
+						recipientId: assignedTo,
+						actorId: user.id,
+						workspaceId: project.workspaceId,
+						projectId: project.id,
+						entityId: task.id,
+						metadata: {
+							taskTitle: updatedTask.title,
+							projectName: project.name,
+						},
+					},
+				]
+			: []),
+		...(unassignedFrom
+			? [
+					{
+						type: "task_unassigned" as const,
+						recipientId: unassignedFrom,
+						actorId: user.id,
+						workspaceId: project.workspaceId,
+						projectId: project.id,
+						entityId: task.id,
+						metadata: {
+							taskTitle: updatedTask.title,
+							projectName: project.name,
+						},
+					},
+				]
+			: []),
+		...(dueDateChanged && updatedTask.assigneeId && !assignedTo
+			? [
+					{
+						type: "task_due_date_changed" as const,
+						recipientId: updatedTask.assigneeId,
+						actorId: user.id,
+						workspaceId: project.workspaceId,
+						projectId: project.id,
+						entityId: task.id,
+						metadata: {
+							taskTitle: updatedTask.title,
+							projectName: project.name,
+							dueDate: updatedTask.dueDate?.toISOString() ?? null,
+							previousDueDate: task.dueDate?.toISOString() ?? null,
+						},
+					},
+				]
+			: []),
+	]);
 
 	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
@@ -360,6 +442,20 @@ export async function moveTaskAction(
 			toList: destinationList.name,
 		},
 	});
+
+	if (enteringDone) {
+		await dispatchNotifications([
+			{
+				type: "task_completed",
+				recipientId: task.createdById,
+				actorId: user.id,
+				workspaceId: project.workspaceId,
+				projectId: project.id,
+				entityId: task.id,
+				metadata: { taskTitle: task.title, projectName: project.name },
+			},
+		]);
+	}
 
 	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 

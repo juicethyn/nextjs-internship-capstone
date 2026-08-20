@@ -68,3 +68,26 @@ export const entityTypeEnum = [
 ] as const;
 
 export type EntityType = (typeof entityTypeEnum)[number];
+
+export const notificationTypes = [
+	"workspace_invitation_received",
+	"workspace_role_changed",
+	"workspace_member_removed",
+	"workspace_ownership_transferred",
+	"workspace_member_joined",
+	"project_member_added",
+	"project_member_removed",
+	"project_lead_assigned",
+	"project_lead_removed",
+	"task_assigned",
+	"task_unassigned",
+	"task_due_date_changed",
+	"task_comment_added",
+	"task_completed",
+] as const;
+
+export type NotificationType = (typeof notificationTypes)[number];
+
+export const notificationCategories = ["workspace", "project", "task"] as const;
+
+export type NotificationCategory = (typeof notificationCategories)[number];

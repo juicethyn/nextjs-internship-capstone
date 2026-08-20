@@ -20,6 +20,7 @@ import {
 	updateWorkspace,
 } from "@/lib/db/queries/workspaces";
 import { sendWorkspaceInvitationEmail } from "@/lib/email/send-workspace-invitation";
+import { dispatchNotifications } from "@/lib/notifications";
 import {
 	requireWorkspaceMember,
 	requireWorkspaceOwner,
@@ -281,6 +282,17 @@ export async function transferWorkspaceOwnershipAction(
 			name: workspace.name,
 		},
 	});
+
+	await dispatchNotifications([
+		{
+			type: "workspace_ownership_transferred",
+			recipientId: newOwnerUserId,
+			actorId: user.id,
+			workspaceId: workspace.id,
+			entityId: transferredMember.id,
+			metadata: { workspaceName: workspace.name },
+		},
+	]);
 
 	revalidatePath(`/w/${workspace.slug}`, "layout");
 
