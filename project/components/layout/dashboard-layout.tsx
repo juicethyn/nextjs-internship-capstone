@@ -28,7 +28,7 @@ export function DashboardLayout({
 			<NotificationListener userId={currentUserId} />
 
 			<div className="flex flex-1 min-w-0 h-dvh flex-col">
-				<TopBar />
+				<TopBar workspaceSlug={currentWorkspace.slug} />
 				<div className="flex flex-1 min-w-0 min-h-0">
 					<AppSidebar
 						currentWorkspace={currentWorkspace}

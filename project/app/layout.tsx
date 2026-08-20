@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Inter } from "next/font/google";
 import type React from "react";
-import "./globals.css"; // FIX #2: Creating global.d.ts to declare module for CSS imports to avoid TypeScript errors - Done
+import "./globals.css";
 
-// TODO: Task 2.1 - Set up Clerk authentication service - Complete
 import { ClerkProvider } from "@clerk/nextjs";
 import { shadcn } from "@clerk/themes";
 import { ThemedToaster } from "@/components/shared/themed-toaster";

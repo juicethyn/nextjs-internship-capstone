@@ -2,7 +2,7 @@ import { getEventById } from "./db/queries/calendar";
 import { getCommentById } from "./db/queries/comments";
 import { getListById } from "./db/queries/lists";
 import { getProjectMember } from "./db/queries/projectMembers";
-import { getProjectBySlug } from "./db/queries/projects";
+import { getProjectById, getProjectBySlug } from "./db/queries/projects";
 import { getTaskById } from "./db/queries/tasks";
 import { getWorkspaceInvitationById } from "./db/queries/workspaceInvitations";
 import { getWorkspaceMemberById } from "./db/queries/workspaceMembers";
@@ -175,6 +175,24 @@ export async function requireActiveProject(
 	}
 
 	return result;
+}
+
+export async function canAccessProject(projectId: string, userId: string) {
+	const project = await getProjectById(projectId);
+
+	if (!project) return false;
+
+	const [projectMember, workspaceMember] = await Promise.all([
+		getProjectMember(project.id, userId),
+		getWorkspaceMemberById(project.workspaceId, userId),
+	]);
+
+	if (!workspaceMember) return false;
+
+	const isWorkspaceManager =
+		workspaceMember.role === "owner" || workspaceMember.role === "admin";
+
+	return Boolean(projectMember) || isWorkspaceManager;
 }
 
 // Lists Permissions

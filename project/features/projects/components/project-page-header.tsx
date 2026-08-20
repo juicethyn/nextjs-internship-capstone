@@ -10,6 +10,7 @@ import { useProject } from "@/features/projects/hooks/use-project";
 import { KanbanSortMenu } from "@/features/projects/kanban/components/kanban-sort-menu";
 import { useProjectUIStore } from "@/features/projects/store";
 import type { ProjectDetail } from "@/features/projects/types";
+import { BoardViewers } from "./board-viewers";
 import { MemberAvatarStack } from "./member-avatar-stack";
 import { ProjectDetailsDialog } from "./project-details-dialog";
 import { ProjectInviteDialog } from "./project-invite-dialog";
@@ -95,9 +96,13 @@ export function ProjectPageHeader({
 
 				{/* Actions */}
 				<div className="flex min-w-0 items-center justify-between gap-2 sm:justify-end">
-					<MemberAvatarStack
-						members={project.members.map((member) => member.user)}
-					/>
+					<div className="flex min-w-0 items-center gap-3">
+						<MemberAvatarStack
+							members={project.members.map((member) => member.user)}
+						/>
+
+						<BoardViewers />
+					</div>
 
 					<div className="flex shrink-0 items-center gap-2">
 						<Button

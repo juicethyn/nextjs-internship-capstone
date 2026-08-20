@@ -1,7 +1,7 @@
 import { clerkMiddleware } from "@clerk/nextjs/server";
 
 // Add more protected route prefixes as needed
-const protectedPrefixes = ["/sync", "/w", "/onboarding", "/settings"];
+const protectedPrefixes = ["/sync", "/w", "/onboarding", "/account"];
 
 export default clerkMiddleware(async (auth, req) => {
 	const pathname = req.nextUrl.pathname;

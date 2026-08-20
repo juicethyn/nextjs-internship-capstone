@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getProjectBySlug } from "@/features/projects/actions/projects";
 import { ProjectPageHeader } from "@/features/projects/components/project-page-header";
 import { KanbanBoard } from "@/features/projects/kanban/components/kanban-board";
+import { getCurrentUser } from "@/lib/auth";
 
 type ProjectPageProps = {
 	params: Promise<{
@@ -12,6 +13,8 @@ type ProjectPageProps = {
 
 export default async function ProjectPage({ params }: ProjectPageProps) {
 	const { workspaceSlug, projectSlug } = await params;
+
+	const user = await getCurrentUser();
 
 	const result = await getProjectBySlug(workspaceSlug, projectSlug);
 
@@ -40,6 +43,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
 					projectSlug={projectSlug}
 					initialProject={project}
 					canManageLists={canManage}
+					currentUserId={user.id}
 				/>
 			</div>
 		</div>

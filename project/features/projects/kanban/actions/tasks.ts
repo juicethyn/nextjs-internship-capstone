@@ -7,6 +7,7 @@ import {
 } from "@/features/notifications/lib/task-changes";
 import { createActivity } from "@/lib/activity";
 import { getCurrentUser } from "@/lib/auth";
+import { publishBoardEvent } from "@/lib/board-events";
 import { syncProjectCompletionStatus } from "@/lib/db/queries/projects";
 import {
 	createTask,
@@ -118,6 +119,8 @@ export async function createTaskAction(
 			},
 		]);
 	}
+
+	await publishBoardEvent(project.id, user.id, "task_created");
 
 	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
@@ -274,6 +277,8 @@ export async function updateTaskAction(
 			: []),
 	]);
 
+	await publishBoardEvent(project.id, user.id, "task_updated");
+
 	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
 	return {
@@ -341,6 +346,8 @@ export async function deleteTaskAction(
 			listName: list.name,
 		},
 	});
+
+	await publishBoardEvent(project.id, user.id, "task_deleted");
 
 	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
@@ -456,6 +463,8 @@ export async function moveTaskAction(
 			},
 		]);
 	}
+
+	await publishBoardEvent(project.id, user.id, "task_moved");
 
 	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 

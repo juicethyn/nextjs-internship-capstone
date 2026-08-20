@@ -6,6 +6,13 @@ import {
 
 export type ProjectSettingsTab = "general" | "members" | "labels" | "danger";
 
+export type BoardViewer = {
+	id: string;
+	firstName: string;
+	lastName: string;
+	imageUrl: string | null;
+};
+
 type ProjectUIStore = {
 	isProjectDetailsOpen: boolean;
 	isCreateListOpen: boolean;
@@ -41,6 +48,15 @@ type ProjectUIStore = {
 	// cards render in ListCard — sibling trees, so this has to be shared state.
 	taskSort: TaskSortKey;
 	setTaskSort: (sort: TaskSortKey) => void;
+
+	// The board renders straight from the query cache, so a realtime refetch
+	// landing mid-drag would yank the card out from under the cursor.
+	isBoardDragging: boolean;
+	setBoardDragging: (dragging: boolean) => void;
+
+	// Presence lands in KanbanBoard but renders in ProjectPageHeader.
+	boardViewers: BoardViewer[];
+	setBoardViewers: (viewers: BoardViewer[]) => void;
 };
 
 export const useProjectUIStore = create<ProjectUIStore>((set) => ({
@@ -142,5 +158,19 @@ export const useProjectUIStore = create<ProjectUIStore>((set) => ({
 	setTaskSort: (sort) =>
 		set({
 			taskSort: sort,
+		}),
+
+	isBoardDragging: false,
+
+	setBoardDragging: (dragging) =>
+		set({
+			isBoardDragging: dragging,
+		}),
+
+	boardViewers: [],
+
+	setBoardViewers: (viewers) =>
+		set({
+			boardViewers: viewers,
 		}),
 }));
