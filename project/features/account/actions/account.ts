@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth";
 import { getUserByEmail, updateUser } from "@/lib/db/queries/users";
 import {
+	type NotificationSettingsInput,
+	notificationSettingsSchema,
 	type ProfileSettingsInput,
 	profileSettingsSchema,
 } from "@/lib/validations/user";
@@ -45,6 +47,27 @@ export async function syncAvatarAction(imageUrl: string) {
 	await updateUser(user.id, { imageUrl });
 
 	revalidatePath("/account");
+
+	return { success: true as const };
+}
+
+export async function updateNotificationSettingsAction(
+	data: NotificationSettingsInput,
+) {
+	const user = await getCurrentUser();
+
+	const validated = notificationSettingsSchema.safeParse(data);
+
+	if (!validated.success) {
+		return {
+			success: false as const,
+			message: "Invalid notification settings.",
+		};
+	}
+
+	await updateUser(user.id, validated.data);
+
+	revalidatePath("/account/notifications");
 
 	return { success: true as const };
 }

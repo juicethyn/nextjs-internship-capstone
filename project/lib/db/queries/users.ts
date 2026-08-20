@@ -1,4 +1,5 @@
 import { eq, inArray } from "drizzle-orm";
+import type { NotificationPreferences } from "@/features/notifications/lib/preferences";
 import type { DbClient } from "@/lib/db/types";
 import type { UpdateUserInput } from "@/lib/validations/user";
 import { db } from "../index";
@@ -28,6 +29,29 @@ export async function getUsersByEmails(emails: string[]) {
 	return db.query.users.findMany({
 		where: inArray(users.email, emails),
 	});
+}
+
+export async function getNotificationPreferences(userIds: string[]) {
+	if (userIds.length === 0) return new Map<string, NotificationPreferences>();
+
+	const rows = await db
+		.select({
+			id: users.id,
+			notificationsMuted: users.notificationsMuted,
+			mutedNotificationCategories: users.mutedNotificationCategories,
+		})
+		.from(users)
+		.where(inArray(users.id, userIds));
+
+	return new Map(
+		rows.map((row) => [
+			row.id,
+			{
+				notificationsMuted: row.notificationsMuted,
+				mutedNotificationCategories: row.mutedNotificationCategories,
+			},
+		]),
+	);
 }
 
 type UpsertUserInput = {

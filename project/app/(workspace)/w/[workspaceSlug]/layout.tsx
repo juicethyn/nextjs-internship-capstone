@@ -46,6 +46,7 @@ export default async function Layout({ children, params }: LayoutProps) {
 			currentWorkspace={currentWorkspace}
 			currentUserRole={currentUserRole}
 			workspaces={workspaces}
+			currentUserId={user.id}
 		>
 			{children}
 		</DashboardLayout>

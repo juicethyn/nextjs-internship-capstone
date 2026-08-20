@@ -1,12 +1,14 @@
-import PusherServer from "pusher";
-import Pusher from "pusher-js";
+import "server-only";
 
-// To fix Biome's forbidden non-null assertions
+import PusherServer from "pusher";
+
 function getEnv(key: string): string {
 	const value = process.env[key];
+
 	if (!value) {
 		throw new Error(`Missing environment variable: ${key}`);
 	}
+
 	return value;
 }
 
@@ -15,11 +17,5 @@ export const pusherServer = new PusherServer({
 	key: getEnv("NEXT_PUBLIC_PUSHER_PUBLISHER_KEY"),
 	secret: getEnv("PUSHER_SECRET_KEY"),
 	cluster: getEnv("NEXT_PUBLIC_PUSHER_CLUSTER"),
+	useTLS: true,
 });
-
-export const pusherClient = new Pusher(
-	getEnv("NEXT_PUBLIC_PUSHER_PUBLISHER_KEY"),
-	{
-		cluster: getEnv("NEXT_PUBLIC_PUSHER_CLUSTER"),
-	},
-);

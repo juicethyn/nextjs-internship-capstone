@@ -13,6 +13,12 @@ export const usersRelations = relations(schema.users, ({ many }) => ({
 	}),
 	comments: many(schema.comments),
 	activities: many(schema.activityLogs),
+	receivedNotifications: many(schema.notifications, {
+		relationName: "notificationRecipient",
+	}),
+	triggeredNotifications: many(schema.notifications, {
+		relationName: "notificationActor",
+	}),
 }));
 
 export const workspacesRelations = relations(
@@ -27,6 +33,7 @@ export const workspacesRelations = relations(
 		projects: many(schema.projects),
 		labels: many(schema.workspaceLabels),
 		activityLogs: many(schema.activityLogs),
+		notifications: many(schema.notifications),
 	}),
 );
 
@@ -75,6 +82,7 @@ export const projectsRelations = relations(
 		projectLabels: many(schema.projectWorkspaceLabels),
 		taskLabels: many(schema.taskLabels),
 		events: many(schema.events),
+		notifications: many(schema.notifications),
 	}),
 );
 
@@ -205,6 +213,30 @@ export const activityLogsRelations = relations(
 		}),
 		project: one(schema.projects, {
 			fields: [schema.activityLogs.projectId],
+			references: [schema.projects.id],
+		}),
+	}),
+);
+
+export const notificationsRelations = relations(
+	schema.notifications,
+	({ one }) => ({
+		recipient: one(schema.users, {
+			fields: [schema.notifications.recipientId],
+			references: [schema.users.id],
+			relationName: "notificationRecipient",
+		}),
+		actor: one(schema.users, {
+			fields: [schema.notifications.actorId],
+			references: [schema.users.id],
+			relationName: "notificationActor",
+		}),
+		workspace: one(schema.workspaces, {
+			fields: [schema.notifications.workspaceId],
+			references: [schema.workspaces.id],
+		}),
+		project: one(schema.projects, {
+			fields: [schema.notifications.projectId],
 			references: [schema.projects.id],
 		}),
 	}),

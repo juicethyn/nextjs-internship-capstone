@@ -1,5 +1,6 @@
 import z from "zod";
 import { occupationEnum } from "../db/schema";
+import { notificationCategories } from "../db/types";
 
 export const profileSettingsSchema = z.object({
 	firstName: z
@@ -60,6 +61,15 @@ export const emailCodeSchema = z.object({
 
 export type EmailCodeInput = z.infer<typeof emailCodeSchema>;
 
+export const notificationSettingsSchema = z.object({
+	notificationsMuted: z.boolean(),
+	mutedNotificationCategories: z.array(z.enum(notificationCategories)),
+});
+
+export type NotificationSettingsInput = z.infer<
+	typeof notificationSettingsSchema
+>;
+
 export const updateUserSchema = z
 	.object({
 		firstName: z
@@ -83,6 +93,10 @@ export const updateUserSchema = z
 		]),
 		lastWorkspaceId: z.uuid("Invalid workspace ID").nullable().optional(),
 		currentWorkspaceId: z.uuid("Invalid workspace ID").nullable().optional(),
+		notificationsMuted: z.boolean().optional(),
+		mutedNotificationCategories: z
+			.array(z.enum(notificationCategories))
+			.optional(),
 	})
 	.partial();
 

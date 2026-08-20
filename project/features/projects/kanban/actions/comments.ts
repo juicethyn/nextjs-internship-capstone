@@ -8,6 +8,7 @@ import {
 	deleteComment,
 	getCommentsByTask,
 } from "@/lib/db/queries/comments";
+import { dispatchNotifications } from "@/lib/notifications";
 import {
 	requireActiveProject,
 	requireComment,
@@ -136,6 +137,20 @@ export async function createCommentAction(
 			taskTitle: task.title,
 		},
 	});
+
+	if (task.assigneeId) {
+		await dispatchNotifications([
+			{
+				type: "task_comment_added",
+				recipientId: task.assigneeId,
+				actorId: user.id,
+				workspaceId: project.workspaceId,
+				projectId: project.id,
+				entityId: task.id,
+				metadata: { taskTitle: task.title, projectName: project.name },
+			},
+		]);
+	}
 
 	return {
 		success: true as const,
