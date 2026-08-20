@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { treeifyError } from "zod/v4/core";
 import { createActivity } from "@/lib/activity";
 import { getCurrentUser } from "@/lib/auth";
+import { publishBoardEvent } from "@/lib/board-events";
 import {
 	createList,
 	deleteList,
@@ -72,6 +73,8 @@ export async function createListAction(
 			name: list.name,
 		},
 	});
+
+	await publishBoardEvent(project.id, user.id, "list_created");
 
 	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
@@ -153,6 +156,8 @@ export async function updateListAction(
 		},
 	});
 
+	await publishBoardEvent(project.id, user.id, "list_updated");
+
 	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
 	return {
@@ -226,6 +231,8 @@ export async function deleteListAction(
 		},
 	});
 
+	await publishBoardEvent(project.id, user.id, "list_deleted");
+
 	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
 	return {
@@ -287,6 +294,8 @@ export async function moveListAction(
 
 	// Self-heals if repeated midpoint splits ever collapse a gap.
 	await rebalanceListPositionsIfNeeded(project.id);
+
+	await publishBoardEvent(project.id, user.id, "list_moved");
 
 	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 

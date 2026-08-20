@@ -22,6 +22,7 @@ import {
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useProject } from "@/features/projects/hooks/use-project";
+import { useBoardRealtime } from "@/features/projects/kanban/hooks/use-board-realtime";
 import { useDragScroll } from "@/features/projects/kanban/hooks/use-drag-scroll";
 import { useLists } from "@/features/projects/kanban/hooks/use-lists";
 import { useTasks } from "@/features/projects/kanban/hooks/use-tasks";
@@ -44,6 +45,7 @@ type KanbanBoardProps = {
 	projectSlug: string;
 	initialProject: ProjectDetail;
 	canManageLists: boolean;
+	currentUserId: string;
 };
 
 type KanbanList = ProjectDetail["lists"][number];
@@ -64,11 +66,19 @@ export function KanbanBoard({
 	projectSlug,
 	initialProject,
 	canManageLists,
+	currentUserId,
 }: KanbanBoardProps) {
 	const { project } = useProject({
 		workspaceSlug,
 		projectSlug,
 		initialProject,
+	});
+
+	useBoardRealtime({
+		workspaceSlug,
+		projectSlug,
+		projectId: initialProject.id,
+		currentUserId,
 	});
 
 	const { moveList } = useLists({ workspaceSlug, projectSlug });
@@ -84,6 +94,7 @@ export function KanbanBoard({
 	const openTaskId = useProjectUIStore((state) => state.openTaskId);
 	const openTaskDetails = useProjectUIStore((state) => state.openTaskDetails);
 	const taskSort = useProjectUIStore((state) => state.taskSort);
+	const setBoardDragging = useProjectUIStore((state) => state.setBoardDragging);
 
 	const searchParams = useSearchParams();
 	const linkedTaskId = searchParams.get("task");
@@ -121,6 +132,8 @@ export function KanbanBoard({
 	const handleDragStart = (event: DragStartEvent) => {
 		const data = event.active.data.current;
 
+		setBoardDragging(true);
+
 		if (data?.type === "list") {
 			setActiveList(data.list as KanbanList);
 			return;
@@ -136,6 +149,7 @@ export function KanbanBoard({
 		setActiveList(null);
 		setActiveTask(null);
 		dragOriginListId.current = null;
+		setBoardDragging(false);
 	};
 
 	const handleDragOver = (event: DragOverEvent) => {

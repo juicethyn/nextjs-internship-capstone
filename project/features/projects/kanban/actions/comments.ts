@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createActivity } from "@/lib/activity";
 import { getCurrentUser } from "@/lib/auth";
+import { publishBoardEvent } from "@/lib/board-events";
 import {
 	createComment,
 	deleteComment,
@@ -152,6 +153,8 @@ export async function createCommentAction(
 		]);
 	}
 
+	await publishBoardEvent(project.id, user.id, "comment_created");
+
 	return {
 		success: true as const,
 		data: comment,
@@ -228,6 +231,8 @@ export async function deleteCommentAction(
 			taskTitle: task.title,
 		},
 	});
+
+	await publishBoardEvent(project.id, user.id, "comment_deleted");
 
 	revalidatePath(`/w/${workspaceSlug}/projects/${projectSlug}`);
 

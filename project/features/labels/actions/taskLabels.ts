@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createActivity } from "@/lib/activity";
 import { getCurrentUser } from "@/lib/auth";
+import { publishBoardEvent } from "@/lib/board-events";
 import {
 	createTaskLabel,
 	deleteTaskLabel,
@@ -97,6 +98,8 @@ export async function createTaskLabelAction(
 		},
 	});
 
+	await publishBoardEvent(project.id, user.id, "label_created");
+
 	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
 	return {
@@ -146,6 +149,8 @@ export async function deleteTaskLabelAction(
 			name: label.name,
 		},
 	});
+
+	await publishBoardEvent(project.id, user.id, "label_deleted");
 
 	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth";
+import { publishBoardEvent } from "@/lib/board-events";
 import {
 	addLabelToTask,
 	removeLabelFromTask,
@@ -67,6 +68,8 @@ export async function addTaskLabelToTaskAction(
 
 	const assignment = await addLabelToTask(task.id, label.id);
 
+	await publishBoardEvent(project.id, user.id, "task_label_added");
+
 	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
 	return {
@@ -119,6 +122,8 @@ export async function removeTaskLabelFromTaskAction(
 	}
 
 	const removed = await removeLabelFromTask(task.id, taskLabelId);
+
+	await publishBoardEvent(project.id, user.id, "task_label_removed");
 
 	revalidatePath(`/w/${workspaceSlug}/projects/${project.slug}`);
 
