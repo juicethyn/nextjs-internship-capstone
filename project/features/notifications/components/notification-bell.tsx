@@ -8,7 +8,6 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { NotificationCard } from "@/features/notifications/components/notification-card";
 import {
@@ -53,8 +52,8 @@ export function NotificationBell() {
 				</Button>
 			</PopoverTrigger>
 
-			<PopoverContent align="end" className="w-96 gap-0 p-0">
-				<div className="flex items-center justify-between border-b px-4 py-3">
+			<PopoverContent align="end" className="w-96 gap-0 overflow-hidden p-0">
+				<div className="flex shrink-0 items-center justify-between border-b px-4 py-3">
 					<p className="text-sm font-semibold">Notifications</p>
 
 					{unreadCount > 0 && (
@@ -83,7 +82,7 @@ export function NotificationBell() {
 						</p>
 					</div>
 				) : (
-					<ScrollArea className="max-h-96">
+					<div className="board-scrollbar max-h-96 overflow-y-auto overscroll-contain">
 						<div className="divide-y">
 							{notifications.map((notification) => (
 								<NotificationCard
@@ -94,7 +93,7 @@ export function NotificationBell() {
 								/>
 							))}
 						</div>
-					</ScrollArea>
+					</div>
 				)}
 			</PopoverContent>
 		</Popover>
