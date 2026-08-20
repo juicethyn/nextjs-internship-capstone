@@ -2,8 +2,10 @@
 
 import { UserButton } from "@clerk/nextjs";
 import { Menu } from "lucide-react";
+import Image from "next/image";
 import { NotificationBell } from "@/features/notifications/components/notification-bell";
 import { GlobalSearch } from "@/features/search/components/global-search";
+import { instrumentSerif } from "@/fonts";
 import { Button } from "../ui/button";
 import { useSidebar } from "../ui/sidebar";
 
@@ -27,7 +29,14 @@ export default function TopBar({ workspaceSlug }: TopBarProps) {
 					<span className="sr-only">Toggle sidebar</span>
 				</Button>
 
-				<h1 className="text-xl font-bold">Fora</h1>
+				<div className="flex items-center gap-1.5">
+					<Image src="/icons/fora-icon.svg" alt="Fora" width={28} height={28} />
+					<h1
+						className={`${instrumentSerif.className} hidden text-xl lg:block`}
+					>
+						Fora
+					</h1>
+				</div>
 			</div>
 
 			<div className="flex min-w-0 flex-1 justify-center">
