@@ -11,9 +11,11 @@ import {
 	removeProjectMember,
 } from "@/lib/db/queries/projectMembers";
 import { transferProjectLead } from "@/lib/db/queries/projects";
+import { getUserById } from "@/lib/db/queries/users";
 import { getWorkspaceMembersById } from "@/lib/db/queries/workspaceMembers";
 import { dispatchNotifications } from "@/lib/notifications";
 import { FORBIDDEN_MESSAGES, requireActiveProject } from "@/lib/permission";
+import { memberDisplayName } from "@/lib/user-display";
 import {
 	type AddProjectMembersInput,
 	addProjectMembersSchema,
@@ -80,6 +82,13 @@ export async function addProjectMembersAction(
 
 	const addedMembers = await addProjectMembers(project.id, userIdsToAdd);
 
+	const nameByUserId = new Map(
+		workspaceMembers.map((member) => [
+			member.userId,
+			memberDisplayName(member.user),
+		]),
+	);
+
 	await Promise.all(
 		addedMembers.map((member) =>
 			createActivity({
@@ -92,6 +101,7 @@ export async function addProjectMembersAction(
 				metadata: {
 					project: project.name,
 					userId: member.userId,
+					name: nameByUserId.get(member.userId) ?? "",
 				},
 			}),
 		),
@@ -163,6 +173,8 @@ export async function removeProjectMemberAction(
 		};
 	}
 
+	const removedUser = await getUserById(userId);
+
 	const removed = await removeProjectMember(project.id, userId);
 
 	await createActivity({
@@ -175,6 +187,7 @@ export async function removeProjectMemberAction(
 		metadata: {
 			project: project.name,
 			userId: member.userId,
+			name: removedUser ? memberDisplayName(removedUser) : "",
 		},
 	});
 
@@ -241,6 +254,8 @@ export async function transferProjectLeadAction(
 		};
 	}
 
+	const newLead = await getUserById(newLeadUserId);
+
 	const updatedProject = await transferProjectLead(project.id, newLeadUserId);
 
 	await createActivity({
@@ -253,6 +268,7 @@ export async function transferProjectLeadAction(
 		metadata: {
 			previousLeadId: project.leadId,
 			newLeadId: newLeadUserId,
+			name: newLead ? memberDisplayName(newLead) : "",
 		},
 	});
 
