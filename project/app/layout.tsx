@@ -17,8 +17,23 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
 	title: "Fora",
-	description: "Team collaboration and project management platform",
-	generator: "v0.dev",
+	description:
+		"Plan projects, manage tasks, and collaborate with your team in Fora.",
+	openGraph: {
+		title: "Fora — Project Management for Focused Teams",
+		description:
+			"Plan projects, manage tasks, and collaborate with your team in Fora.",
+		type: "website",
+		siteName: "Fora",
+		images: [
+			{
+				url: "/images/fora-preview.png",
+				width: 1200,
+				height: 630,
+				alt: "Fora — Project Management for Focused Teams",
+			},
+		],
+	},
 };
 
 export default function RootLayout({
