@@ -287,3 +287,8 @@
 .board-scrollbar::-webkit-scrollbar-thumb:hover {
 	background-color: var(--muted-foreground);
 }
+
+/* Opts back out of the app shell's body-level scroll lock for the landing page. */
+body:has([data-landing]) {
+	overflow-y: auto;
+}
