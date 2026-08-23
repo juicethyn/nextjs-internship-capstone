@@ -42,7 +42,7 @@ import { type TaskPriority, taskPriorities } from "@/lib/db/types";
 import { cn } from "@/lib/utils";
 import { PRIORITY_ICON_STYLES, PRIORITY_LABELS } from "./priority-badge";
 import { RichTextEditor } from "./rich-text-editor";
-import { TaskComments } from "./task-comments";
+import { TaskFeed } from "./task-feed";
 
 type KanbanTask = ProjectDetail["lists"][number]["tasks"][number];
 type ProjectMember = ProjectDetail["members"][number];
@@ -429,7 +429,7 @@ export function TaskDetailsDialog({
 
 					{isCommentsOpen && (
 						<div className="board-scrollbar min-w-0 border-t px-4 py-4 lg:min-h-0 lg:w-96 lg:shrink-0 lg:overflow-y-auto lg:border-t-0 lg:border-l">
-							<TaskComments
+							<TaskFeed
 								taskId={task.id}
 								workspaceSlug={workspaceSlug}
 								projectSlug={projectSlug}
@@ -459,7 +459,7 @@ export function TaskDetailsDialog({
 							className="w-full gap-1.5 sm:w-auto"
 						>
 							<MessageSquare className="size-4" />
-							{isCommentsOpen ? "Hide Comments" : "Show Comments"}
+							{isCommentsOpen ? "Hide Comments" : "Comments & Activity"}
 						</Button>
 
 						<Button

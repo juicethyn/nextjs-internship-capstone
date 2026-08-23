@@ -5,6 +5,7 @@ import {
 	hasDueDateDayChanged,
 	resolveAssignmentChange,
 } from "@/features/notifications/lib/task-changes";
+import { diffTaskFields } from "@/features/projects/kanban/lib/task-changes-diff";
 import { createActivity } from "@/lib/activity";
 import { getCurrentUser } from "@/lib/auth";
 import { publishBoardEvent } from "@/lib/board-events";
@@ -16,6 +17,7 @@ import {
 	updateTask,
 	updateTaskPosition,
 } from "@/lib/db/queries/tasks";
+import { getUserById } from "@/lib/db/queries/users";
 import { dispatchNotifications } from "@/lib/notifications";
 import {
 	isWorkspaceMember,
@@ -23,6 +25,7 @@ import {
 	requireList,
 	requireTask,
 } from "@/lib/permission";
+import { memberDisplayName } from "@/lib/user-display";
 import {
 	type CreateTaskInput,
 	createTaskSchema,
@@ -198,22 +201,6 @@ export async function updateTaskAction(
 
 	const updatedTask = await updateTask(task.id, validatedData.data);
 
-	await createActivity({
-		workspaceId: project.workspaceId,
-		actorId: user.id,
-		projectId: project.id,
-		action: "updated",
-		entity: "task",
-		entityId: task.id,
-		metadata: {
-			title: updatedTask.title,
-			listId: list.id,
-			listName: list.name,
-			previousTitle: task.title,
-			newTitle: updatedTask.title,
-		},
-	});
-
 	const { assignedTo, unassignedFrom } = resolveAssignmentChange(
 		task.assigneeId,
 		updatedTask.assigneeId,
@@ -223,6 +210,45 @@ export async function updateTaskAction(
 		task.dueDate,
 		updatedTask.dueDate,
 	);
+
+	const fieldChanges = diffTaskFields(task, updatedTask);
+
+	if (fieldChanges.length > 0) {
+		await createActivity({
+			workspaceId: project.workspaceId,
+			actorId: user.id,
+			projectId: project.id,
+			action: "updated",
+			entity: "task",
+			entityId: task.id,
+			metadata: {
+				title: updatedTask.title,
+				listId: list.id,
+				listName: list.name,
+				changes: fieldChanges,
+			},
+		});
+	}
+
+	if (assignedTo || unassignedFrom) {
+		const changedUserId = assignedTo ?? unassignedFrom;
+		const changedUser = changedUserId ? await getUserById(changedUserId) : null;
+
+		await createActivity({
+			workspaceId: project.workspaceId,
+			actorId: user.id,
+			projectId: project.id,
+			action: assignedTo ? "assigned" : "unassigned",
+			entity: "task",
+			entityId: task.id,
+			metadata: {
+				title: updatedTask.title,
+				listId: list.id,
+				listName: list.name,
+				assigneeName: changedUser ? memberDisplayName(changedUser) : "",
+			},
+		});
+	}
 
 	await dispatchNotifications([
 		...(assignedTo

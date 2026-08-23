@@ -9,6 +9,20 @@ export async function createActivity(data: CreateActivityInput) {
 	return activityLog;
 }
 
+export async function getTaskActivity(taskId: string, limit = 50) {
+	return db.query.activityLogs.findMany({
+		where: and(
+			eq(activityLogs.entity, "task"),
+			eq(activityLogs.entityId, taskId),
+		),
+		orderBy: (activityLog, { desc }) => desc(activityLog.createdAt),
+		limit,
+		with: {
+			actor: true,
+		},
+	});
+}
+
 export async function getWorkspaceActivity(workspaceId: string) {
 	return db.query.activityLogs.findMany({
 		where: eq(activityLogs.workspaceId, workspaceId),

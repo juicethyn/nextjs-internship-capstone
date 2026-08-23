@@ -1,7 +1,7 @@
 "use client";
 
 import { MessageSquare } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,10 +9,13 @@ import {
 	PENDING_COMMENT_PREFIX,
 	useComments,
 } from "@/features/projects/kanban/hooks/use-comments";
+import { useTaskActivity } from "@/features/projects/kanban/hooks/use-task-activity";
+import { mergeTaskFeed } from "@/features/projects/kanban/lib/task-feed";
 import { createCommentSchema } from "@/lib/validations/comment";
 import { CommentItem } from "./comment-item";
+import { TaskActivityItem } from "./task-activity-item";
 
-type TaskCommentsProps = {
+type TaskFeedProps = {
 	taskId: string;
 	workspaceSlug: string;
 	projectSlug: string;
@@ -21,11 +24,11 @@ type TaskCommentsProps = {
 // Relative labels go stale on their own, so nudge a re-render periodically rather than running a timer per row.
 const TICK_MS = 30_000;
 
-export function TaskComments({
+export function TaskFeed({
 	taskId,
 	workspaceSlug,
 	projectSlug,
-}: TaskCommentsProps) {
+}: TaskFeedProps) {
 	const {
 		comments,
 		isLoading,
@@ -36,6 +39,15 @@ export function TaskComments({
 		deletingCommentId,
 	} = useComments({ workspaceSlug, projectSlug, taskId });
 
+	const [showActivity, setShowActivity] = useState(false);
+
+	const { activity, isLoading: isActivityLoading } = useTaskActivity({
+		workspaceSlug,
+		projectSlug,
+		taskId,
+		enabled: showActivity,
+	});
+
 	const [draft, setDraft] = useState("");
 	const [error, setError] = useState<string | null>(null);
 	const [, forceTick] = useState(0);
@@ -45,6 +57,11 @@ export function TaskComments({
 
 		return () => clearInterval(id);
 	}, []);
+
+	const entries = useMemo(
+		() => mergeTaskFeed(comments, activity, showActivity),
+		[comments, activity, showActivity],
+	);
 
 	const handlePost = () => {
 		const result = createCommentSchema.safeParse({ content: draft.trim() });
@@ -60,19 +77,29 @@ export function TaskComments({
 		createComment({ content: result.data.content }).catch(() => undefined);
 	};
 
+	const isEmpty = !isLoading && entries.length === 0;
+
 	return (
 		<section className="flex min-w-0 flex-col gap-3">
-			<div className="flex items-center gap-2">
-				<MessageSquare className="size-4 shrink-0 text-muted-foreground" />
+			<div className="flex min-w-0 items-center justify-between gap-2">
+				<div className="flex min-w-0 items-center gap-2">
+					<MessageSquare className="size-4 shrink-0 text-muted-foreground" />
 
-				<h3 className="text-sm font-semibold">
-					Comments
-					{comments.length > 0 && (
-						<span className="ml-1.5 font-normal text-muted-foreground">
-							({comments.length})
-						</span>
-					)}
-				</h3>
+					<h3 className="min-w-0 truncate text-sm font-semibold">
+						Comments &amp; Activity
+					</h3>
+				</div>
+
+				<Button
+					type="button"
+					variant="ghost"
+					size="sm"
+					onClick={() => setShowActivity((current) => !current)}
+					aria-pressed={showActivity}
+					className="h-auto shrink-0 px-2 py-1 text-xs text-muted-foreground"
+				>
+					{showActivity ? "Hide activity" : "Show activity"}
+				</Button>
 			</div>
 
 			<div className="space-y-2">
@@ -108,37 +135,41 @@ export function TaskComments({
 				</div>
 			</div>
 
-			{isLoading && (
+			{(isLoading || (showActivity && isActivityLoading)) && (
 				<div className="space-y-3">
 					<Skeleton className="h-12 w-full" />
 					<Skeleton className="h-12 w-full" />
 				</div>
 			)}
 
-			{!isLoading && comments.length === 0 && (
+			{isEmpty && (
 				<p className="rounded-lg p-6 text-center text-sm text-muted-foreground">
 					No comments yet. Start the conversation.
 				</p>
 			)}
 
-			{comments.length > 0 && (
+			{entries.length > 0 && (
 				<ul className="min-w-0 space-y-4">
-					{comments.map((comment) => (
-						<li key={comment.id} className="min-w-0">
-							<CommentItem
-								comment={comment}
-								isPending={comment.id.startsWith(PENDING_COMMENT_PREFIX)}
-								isDeleting={deletingCommentId === comment.id}
-								isUpdating={updatingCommentId === comment.id}
-								onDelete={() =>
-									deleteComment(comment.id).catch(() => undefined)
-								}
-								onUpdate={(content) =>
-									updateComment({ commentId: comment.id, content }).catch(
-										() => undefined,
-									)
-								}
-							/>
+					{entries.map((entry) => (
+						<li key={`${entry.kind}-${entry.id}`} className="min-w-0">
+							{entry.kind === "comment" ? (
+								<CommentItem
+									comment={entry.comment}
+									isPending={entry.id.startsWith(PENDING_COMMENT_PREFIX)}
+									isDeleting={deletingCommentId === entry.id}
+									isUpdating={updatingCommentId === entry.id}
+									onDelete={() =>
+										deleteComment(entry.id).catch(() => undefined)
+									}
+									onUpdate={(content) =>
+										updateComment({ commentId: entry.id, content }).catch(
+											() => undefined,
+										)
+									}
+								/>
+							) : (
+								<TaskActivityItem activity={entry.activity} />
+							)}
 						</li>
 					))}
 				</ul>
