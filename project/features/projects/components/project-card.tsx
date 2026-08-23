@@ -42,28 +42,16 @@ export function ProjectCard({
 	const visibleLabels = labels.slice(0, MAX_VISIBLE_LABELS);
 	const remainingLabels = labels.length - visibleLabels.length;
 	const trimmedDescription = description?.trim() || null;
+	const isArchived = status === "archived";
 
 	return (
 		<Link
 			href={href}
-			className="
-				group
-				flex
-				flex-col
-				gap-4
-				rounded-xl
-				border
-				bg-card
-				p-4
-				transition-all
-				hover:border-primary/30
-				hover:shadow-lg
-				hover:shadow-primary/5
-				focus-visible:outline-2
-				focus-visible:outline-offset-2
-				focus-visible:outline-ring
-				sm:p-5
-			"
+			className={cn(
+				"group flex flex-col gap-4 rounded-xl border bg-card p-4 transition-all hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:p-5",
+				isArchived &&
+					"opacity-60 grayscale hover:opacity-100 hover:grayscale-0 focus-visible:opacity-100 focus-visible:grayscale-0",
+			)}
 		>
 			<div className="flex items-center justify-between gap-3">
 				<div className="flex min-w-0 items-center gap-2.5">
