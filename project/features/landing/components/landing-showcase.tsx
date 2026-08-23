@@ -10,7 +10,7 @@ import { ScreenshotFrame } from "./screenshot-frame";
 export function LandingShowcase() {
 	return (
 		<section id="how-it-works" className="relative z-10 px-6 py-20">
-			<div className="mx-auto max-w-[1180px]">
+			<div className="mx-auto max-w-295">
 				<Fade className="mb-20">
 					<p className="mb-4 font-semibold text-[#8200db] text-[11px] uppercase tracking-[0.18em]">
 						See it in action
@@ -18,7 +18,7 @@ export function LandingShowcase() {
 					<h2
 						className={cn(
 							instrumentSerif.className,
-							"max-w-[560px] text-[42px] text-white leading-[1.1] tracking-tight md:text-[52px]",
+							"max-w-140 text-[42px] text-white leading-[1.1] tracking-tight md:text-[52px]",
 						)}
 					>
 						One workspace, <em className="text-[#b06aff] italic">every</em> tool

@@ -26,11 +26,11 @@ export function LandingNav() {
 			className={cn(
 				"fixed inset-x-0 top-0 z-50 transition-all duration-300",
 				scrolled
-					? "border-white/[0.06] border-b bg-[#080808]/80 backdrop-blur-xl"
+					? "border-white/6 border-b bg-[#080808]/80 backdrop-blur-xl"
 					: "bg-transparent",
 			)}
 		>
-			<div className="mx-auto flex h-16 max-w-[1180px] items-center justify-between px-6">
+			<div className="mx-auto flex h-16 max-w-295 items-center justify-between px-6">
 				<Link href="/" className="flex shrink-0 items-center gap-2.5">
 					<ForaLogo size={28} />
 					<span
@@ -71,7 +71,7 @@ export function LandingNav() {
 			</div>
 
 			{mobileOpen ? (
-				<div className="space-y-1 border-white/[0.06] border-t bg-[#0d0d0d]/95 px-6 py-5 backdrop-blur-xl md:hidden">
+				<div className="space-y-1 border-white/6 border-t bg-[#0d0d0d]/95 px-6 py-5 backdrop-blur-xl md:hidden">
 					{NAV_LINKS.map((link) => (
 						<a
 							key={link.href}
@@ -83,7 +83,7 @@ export function LandingNav() {
 						</a>
 					))}
 
-					<div className="mt-4 space-y-3 border-white/[0.06] border-t pt-4">
+					<div className="mt-4 space-y-3 border-white/6 border-t pt-4">
 						<LandingAuthCta
 							variant="mobile"
 							onNavigate={() => setMobileOpen(false)}

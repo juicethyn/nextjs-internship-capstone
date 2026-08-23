@@ -4,8 +4,8 @@ import { ForaLogo } from "./fora-logo";
 
 export function LandingFooter() {
 	return (
-		<footer className="relative z-10 border-white/[0.06] border-t px-6 py-8">
-			<div className="mx-auto flex max-w-[1180px] flex-col items-center justify-between gap-4 md:flex-row">
+		<footer className="relative z-10 border-white/6 border-t px-6 py-8">
+			<div className="mx-auto flex max-w-295 flex-col items-center justify-between gap-4 md:flex-row">
 				<div className="flex items-center gap-2.5">
 					<ForaLogo size={22} />
 					<span

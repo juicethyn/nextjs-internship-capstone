@@ -14,6 +14,7 @@ export type BoardEventKind =
 	| "task_deleted"
 	| "task_moved"
 	| "comment_created"
+	| "comment_updated"
 	| "comment_deleted"
 	| "label_created"
 	| "label_deleted"

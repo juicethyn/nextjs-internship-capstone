@@ -30,6 +30,8 @@ export function TaskComments({
 		comments,
 		isLoading,
 		createComment,
+		updateComment,
+		updatingCommentId,
 		deleteComment,
 		deletingCommentId,
 	} = useComments({ workspaceSlug, projectSlug, taskId });
@@ -127,8 +129,14 @@ export function TaskComments({
 								comment={comment}
 								isPending={comment.id.startsWith(PENDING_COMMENT_PREFIX)}
 								isDeleting={deletingCommentId === comment.id}
+								isUpdating={updatingCommentId === comment.id}
 								onDelete={() =>
 									deleteComment(comment.id).catch(() => undefined)
+								}
+								onUpdate={(content) =>
+									updateComment({ commentId: comment.id, content }).catch(
+										() => undefined,
+									)
 								}
 							/>
 						</li>
