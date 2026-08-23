@@ -65,6 +65,12 @@ export function sortProjectItems(
 	key: ProjectSortKey,
 ): ProjectListItem[] {
 	return [...items].sort((a, b) => {
+		const archivedRank =
+			Number(a.project.status === "archived") -
+			Number(b.project.status === "archived");
+
+		if (archivedRank !== 0) return archivedRank;
+
 		if (key === "progress") {
 			return b.stats.progress - a.stats.progress || compareByName(a, b);
 		}
