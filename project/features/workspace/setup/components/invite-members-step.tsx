@@ -30,7 +30,7 @@ export function InviteMembersStep({
 			<InviteMembersForm />
 
 			{/* Invite List */}
-			<InviteMembersLists />
+			<InviteMembersLists disabled={isSubmitting} />
 
 			{/* Navigation */}
 			<InviteMembersNavigation

@@ -8,7 +8,7 @@ import { Fade } from "./fade";
 export function LandingFeatures() {
 	return (
 		<section id="features" className="relative z-10 px-6 pt-20 pb-28">
-			<div className="mx-auto max-w-[1180px]">
+			<div className="mx-auto max-w-295">
 				<Fade className="mb-16">
 					<p className="mb-4 font-semibold text-[#8200db] text-[11px] uppercase tracking-[0.18em]">
 						What Fora does
@@ -16,7 +16,7 @@ export function LandingFeatures() {
 					<h2
 						className={cn(
 							instrumentSerif.className,
-							"max-w-[520px] text-[42px] text-white leading-[1.1] tracking-tight md:text-[52px]",
+							"max-w-130 text-[42px] text-white leading-[1.1] tracking-tight md:text-[52px]",
 						)}
 					>
 						Everything a team needs,{" "}
@@ -30,7 +30,7 @@ export function LandingFeatures() {
 
 						return (
 							<Fade key={feature.num} delay={index * 0.08}>
-								<div className="group relative h-full overflow-hidden rounded-2xl border border-white/[0.07] bg-[#0f0f0f] p-6 transition-all duration-300 hover:border-white/[0.13]">
+								<div className="group relative h-full overflow-hidden rounded-2xl border border-white/[0.07] bg-[#0f0f0f] p-6 transition-all duration-300 hover:border-white/13">
 									<span
 										className="pointer-events-none absolute top-4 right-5 select-none font-bold text-[44px] leading-none"
 										style={{
@@ -59,7 +59,7 @@ export function LandingFeatures() {
 									</p>
 
 									<div
-										className="absolute right-0 bottom-0 left-0 h-[2px] opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+										className="absolute right-0 bottom-0 left-0 h-0.5 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
 										style={{
 											background: `linear-gradient(90deg, ${feature.color}, transparent)`,
 										}}

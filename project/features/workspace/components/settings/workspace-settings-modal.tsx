@@ -60,7 +60,8 @@ export function WorkspaceSettingsModal({
 						<TabsContent value="danger" className="pt-4">
 							<DangerTab
 								workspaceSlug={workspace.slug}
-								onTransferred={() => onOpenChange(false)}
+								workspaceName={workspace.name}
+								onDone={() => onOpenChange(false)}
 							/>
 						</TabsContent>
 					)}

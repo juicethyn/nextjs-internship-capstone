@@ -3,6 +3,7 @@ import {
 	boolean,
 	doublePrecision,
 	index,
+	integer,
 	jsonb,
 	pgEnum,
 	pgTable,
@@ -559,5 +560,27 @@ export const notifications = pgTable(
 		),
 		index("notifications_workspace_id_index").on(table.workspaceId),
 		index("notifications_project_id_index").on(table.projectId),
+	],
+);
+
+export const taskAttachments = pgTable(
+	"task_attachments",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		taskId: uuid("task_id")
+			.notNull()
+			.references(() => tasks.id, { onDelete: "cascade" }),
+		uploadedById: uuid("uploaded_by_id").references(() => users.id, {
+			onDelete: "set null",
+		}),
+		fileKey: text("file_key").notNull(),
+		fileName: text("file_name").notNull(),
+		fileSize: integer("file_size").notNull(),
+		fileType: text("file_type").notNull(),
+		createdAt: timestamp("created_at").notNull().defaultNow(),
+	},
+	(table) => [
+		index("taskAttachments_task_id_index").on(table.taskId),
+		index("taskAttachments_uploaded_by_id_index").on(table.uploadedById),
 	],
 );

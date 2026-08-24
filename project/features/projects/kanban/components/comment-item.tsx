@@ -1,6 +1,6 @@
 "use client";
 
-import { MoreHorizontal, Trash2 } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 import {
 	AlertDialog,
@@ -20,6 +20,7 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Textarea } from "@/components/ui/textarea";
 import type { TaskComment } from "@/features/projects/kanban/hooks/use-comments";
 import { formatCommentTimestamp } from "@/lib/date-formatter";
 import { getInitials, memberDisplayName } from "@/lib/user-display";
@@ -29,22 +30,59 @@ type CommentItemProps = {
 	comment: TaskComment;
 	isPending?: boolean;
 	isDeleting?: boolean;
+	isUpdating?: boolean;
 	onDelete?: () => unknown;
+	onUpdate?: (content: string) => unknown;
 };
+
+// createdAt comes from Postgres while an edit's updatedAt comes from the app
+// server, so clock skew needs absorbing before calling a comment edited.
+const EDITED_THRESHOLD_MS = 1000;
 
 export function CommentItem({
 	comment,
 	isPending = false,
 	isDeleting = false,
+	isUpdating = false,
 	onDelete,
+	onUpdate,
 }: CommentItemProps) {
 	const [confirmDelete, setConfirmDelete] = useState(false);
+	const [isEditing, setEditing] = useState(false);
+	const [draft, setDraft] = useState(comment.content);
 
 	const author = comment.author;
 	const name = memberDisplayName(author);
 
 	// A row still in flight has no real id yet, so it cannot be deleted.
 	const canDelete = comment.isOwn && !isPending && Boolean(onDelete);
+	const canEdit = comment.isOwn && !isPending && Boolean(onUpdate);
+
+	const isEdited =
+		new Date(comment.updatedAt).getTime() -
+			new Date(comment.createdAt).getTime() >
+		EDITED_THRESHOLD_MS;
+
+	const trimmedDraft = draft.trim();
+	const canSave =
+		!isUpdating && trimmedDraft !== "" && trimmedDraft !== comment.content;
+
+	const startEditing = () => {
+		setDraft(comment.content);
+		setEditing(true);
+	};
+
+	const cancelEditing = () => {
+		setDraft(comment.content);
+		setEditing(false);
+	};
+
+	const handleSave = async () => {
+		if (!canSave) return;
+
+		setEditing(false);
+		await onUpdate?.(trimmedDraft);
+	};
 
 	return (
 		<div
@@ -71,7 +109,13 @@ export function CommentItem({
 							: formatCommentTimestamp(comment.createdAt)}
 					</span>
 
-					{canDelete && (
+					{isEdited && !isPending && (
+						<span className="shrink-0 text-[11px] text-muted-foreground">
+							· Edited
+						</span>
+					)}
+
+					{(canEdit || canDelete) && (
 						<div className="ml-auto shrink-0">
 							<DropdownMenu>
 								<DropdownMenuTrigger asChild>
@@ -79,7 +123,7 @@ export function CommentItem({
 										type="button"
 										variant="ghost"
 										size="icon-xs"
-										disabled={isDeleting}
+										disabled={isDeleting || isUpdating}
 										aria-label="Comment options"
 										className="text-muted-foreground"
 									>
@@ -88,22 +132,77 @@ export function CommentItem({
 								</DropdownMenuTrigger>
 
 								<DropdownMenuContent align="end" className="w-40">
-									<DropdownMenuItem
-										variant="destructive"
-										onSelect={() => setConfirmDelete(true)}
-									>
-										<Trash2 />
-										Delete
-									</DropdownMenuItem>
+									{canEdit && !isEditing && (
+										<DropdownMenuItem onSelect={startEditing}>
+											<Pencil />
+											Edit
+										</DropdownMenuItem>
+									)}
+
+									{canDelete && (
+										<DropdownMenuItem
+											variant="destructive"
+											onSelect={() => setConfirmDelete(true)}
+										>
+											<Trash2 />
+											Delete
+										</DropdownMenuItem>
+									)}
 								</DropdownMenuContent>
 							</DropdownMenu>
 						</div>
 					)}
 				</div>
 
-				<p className="mt-0.5 min-w-0 whitespace-pre-wrap wrap-break-word text-sm leading-relaxed">
-					{comment.content}
-				</p>
+				{isEditing ? (
+					<div className="mt-1 space-y-2">
+						<Textarea
+							value={draft}
+							onChange={(event) => setDraft(event.target.value)}
+							onKeyDown={(event) => {
+								if (event.key === "Escape") {
+									event.preventDefault();
+									cancelEditing();
+									return;
+								}
+
+								if (event.key === "Enter" && !event.shiftKey) {
+									event.preventDefault();
+									handleSave();
+								}
+							}}
+							aria-label="Edit comment"
+							maxLength={1000}
+							rows={3}
+							className="resize-none"
+						/>
+
+						<div className="flex justify-end gap-2">
+							<Button
+								type="button"
+								variant="ghost"
+								size="sm"
+								onClick={cancelEditing}
+								disabled={isUpdating}
+							>
+								Cancel
+							</Button>
+
+							<Button
+								type="button"
+								size="sm"
+								onClick={handleSave}
+								disabled={!canSave}
+							>
+								{isUpdating ? "Saving..." : "Save"}
+							</Button>
+						</div>
+					</div>
+				) : (
+					<p className="mt-0.5 min-w-0 whitespace-pre-wrap wrap-break-word text-sm leading-relaxed">
+						{comment.content}
+					</p>
+				)}
 			</div>
 
 			<AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>

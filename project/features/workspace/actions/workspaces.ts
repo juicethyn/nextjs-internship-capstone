@@ -14,6 +14,7 @@ import {
 } from "@/lib/db/queries/workspaceMembers";
 import {
 	createWorkspace,
+	deleteWorkspace,
 	getUserOwnedWorkspaces,
 	getUserWorkspaceById,
 	getUserWorkspaces,
@@ -299,6 +300,37 @@ export async function transferWorkspaceOwnershipAction(
 	return {
 		success: true as const,
 		data: transferredMember,
+	};
+}
+
+export async function deleteWorkspaceAction(workspaceSlug: string) {
+	const user = await getCurrentUser();
+
+	const access = await requireWorkspaceOwner(workspaceSlug, user.id);
+
+	if (!access.success) {
+		return { success: false as const, message: access.message };
+	}
+
+	const workspace = access.data;
+
+	await deleteWorkspace(workspace.id);
+
+	const remaining = await getUserWorkspaces(user.id);
+	const next = remaining[0];
+
+	if (next) {
+		await updateUser(user.id, { lastWorkspaceId: next.id });
+	}
+
+	revalidatePath("/", "layout");
+
+	return {
+		success: true as const,
+		message: "Workspace deleted.",
+		data: {
+			redirectTo: next ? `/w/${next.slug}/dashboard` : "/onboarding",
+		},
 	};
 }
 

@@ -8,6 +8,7 @@ import {
 	createComment,
 	deleteComment,
 	getCommentsByTask,
+	updateComment,
 } from "@/lib/db/queries/comments";
 import { dispatchNotifications } from "@/lib/notifications";
 import {
@@ -158,6 +159,83 @@ export async function createCommentAction(
 	return {
 		success: true as const,
 		data: comment,
+	};
+}
+
+export async function updateCommentAction(
+	workspaceSlug: string,
+	projectSlug: string,
+	commentId: string,
+	data: CreateCommentInput,
+) {
+	const user = await getCurrentUser();
+
+	const validatedData = createCommentSchema.safeParse(data);
+
+	if (!validatedData.success) {
+		return {
+			success: false as const,
+			message: "Invalid comment data.",
+		};
+	}
+
+	const access = await requireActiveProject(
+		workspaceSlug,
+		projectSlug,
+		user.id,
+	);
+
+	if (!access.success) {
+		return { success: false as const, message: access.message };
+	}
+
+	const { project } = access.data;
+
+	const commentResult = await requireComment(commentId);
+
+	if (!commentResult.success) {
+		return { success: false as const, message: commentResult.message };
+	}
+
+	const comment = commentResult.data;
+
+	const taskResult = await requireTask(comment.taskId);
+
+	if (!taskResult.success) {
+		return { success: false as const, message: taskResult.message };
+	}
+
+	const task = taskResult.data;
+
+	const listResult = await requireList(task.listId);
+
+	if (!listResult.success) {
+		return { success: false as const, message: listResult.message };
+	}
+
+	if (listResult.data.projectId !== project.id) {
+		return {
+			success: false as const,
+			message: "Comment does not belong to the project.",
+		};
+	}
+
+	if (comment.authorId !== user.id) {
+		return {
+			success: false as const,
+			message: "You can only edit your own comments.",
+		};
+	}
+
+	const updatedComment = await updateComment(commentId, validatedData.data);
+
+	await publishBoardEvent(project.id, user.id, "comment_updated");
+
+	revalidatePath(`/w/${workspaceSlug}/projects/${projectSlug}`);
+
+	return {
+		success: true as const,
+		data: updatedComment,
 	};
 }
 

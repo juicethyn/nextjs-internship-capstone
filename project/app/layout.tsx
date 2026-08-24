@@ -16,9 +16,12 @@ const geistHeading = Geist({ subsets: ["latin"], variable: "--font-heading" });
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
+	metadataBase: new URL("https://foraapp.me"),
+
 	title: "Fora",
 	description:
 		"Plan projects, manage tasks, and collaborate with your team in Fora.",
+
 	openGraph: {
 		title: "Fora — Project Management for Focused Teams",
 		description:

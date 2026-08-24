@@ -4,6 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
+	deleteWorkspaceAction,
 	transferWorkspaceOwnershipAction,
 	updateWorkspaceAction,
 } from "@/features/workspace/actions/workspaces";
@@ -42,10 +43,27 @@ export function useWorkspaceSettings(workspaceSlug: string) {
 		onError: () => toast.error("Failed to transfer ownership."),
 	});
 
+	const deleteMutation = useMutation({
+		mutationFn: () => deleteWorkspaceAction(workspaceSlug),
+		onSuccess: (result) => {
+			if (!result.success) {
+				toast.error(result.message ?? "Failed to delete workspace.");
+				return;
+			}
+
+			router.push(result.data.redirectTo);
+			router.refresh();
+			toast.success("Workspace deleted.");
+		},
+		onError: () => toast.error("Failed to delete workspace."),
+	});
+
 	return {
 		updateWorkspace: updateMutation.mutateAsync,
 		isUpdating: updateMutation.isPending,
 		transferOwnership: transferMutation.mutateAsync,
 		isTransferring: transferMutation.isPending,
+		deleteWorkspace: deleteMutation.mutateAsync,
+		isDeleting: deleteMutation.isPending,
 	};
 }

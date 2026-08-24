@@ -15,8 +15,8 @@ export function ScreenshotFrame({
 	return (
 		<div
 			className={cn(
-				"overflow-hidden rounded-2xl border border-white/[0.08]",
-				isHero && "rounded-xl border-white/[0.09]",
+				"overflow-hidden rounded-2xl border border-white/8",
+				isHero && "rounded-xl border-white/9",
 				className,
 			)}
 			style={{
@@ -27,7 +27,7 @@ export function ScreenshotFrame({
 		>
 			<div
 				className={cn(
-					"flex items-center gap-1.5 border-white/[0.05] border-b bg-[#0b0b0b] px-4",
+					"flex items-center gap-1.5 border-white/5 border-b bg-[#0b0b0b] px-4",
 					isHero ? "h-9 gap-2" : "h-8",
 				)}
 			>
@@ -55,9 +55,9 @@ export function ScreenshotFrame({
 				{isHero ? (
 					<>
 						<div className="flex flex-1 justify-center">
-							<span className="h-4 w-48 rounded-md border border-white/[0.05] bg-white/[0.04]" />
+							<span className="h-4 w-48 rounded-md border border-white/5 bg-white/4" />
 						</div>
-						<div className="w-[52px]" />
+						<div className="w-13" />
 					</>
 				) : null}
 			</div>
@@ -72,8 +72,8 @@ export function ScreenshotFrame({
 					className="block h-auto w-full"
 				/>
 			) : (
-				<div className="flex aspect-[16/10] w-full items-center justify-center bg-[#0d0d0d]">
-					<div className="flex flex-col items-center gap-3 rounded-xl border border-white/[0.09] border-dashed px-8 py-7 text-center">
+				<div className="flex aspect-16/10 w-full items-center justify-center bg-[#0d0d0d]">
+					<div className="flex flex-col items-center gap-3 rounded-xl border border-white/9 border-dashed px-8 py-7 text-center">
 						<ImageIcon className="size-6 text-white/25" strokeWidth={1.5} />
 						<div className="space-y-1">
 							<p className="font-medium text-[13px] text-white/45">{label}</p>

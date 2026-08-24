@@ -65,6 +65,14 @@ export function useBoardRealtime({
 		queryClient.invalidateQueries({
 			queryKey: ["comments", workspaceSlug, projectSlug],
 		});
+
+		queryClient.invalidateQueries({
+			queryKey: ["task-activity", workspaceSlug, projectSlug],
+		});
+
+		queryClient.invalidateQueries({
+			queryKey: ["task-attachments", workspaceSlug, projectSlug],
+		});
 	}, [queryClient, workspaceSlug, projectSlug]);
 
 	useEffect(() => {

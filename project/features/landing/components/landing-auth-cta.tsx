@@ -19,9 +19,9 @@ export function LandingAuthCta({
 
 	if (!isLoaded) {
 		return isMobile ? (
-			<div className="h-10 w-full animate-pulse rounded-lg bg-white/[0.06]" />
+			<div className="h-10 w-full animate-pulse rounded-lg bg-white/6" />
 		) : (
-			<div className="h-9 w-[132px] animate-pulse rounded-lg bg-white/[0.06]" />
+			<div className="h-9 w-33 animate-pulse rounded-lg bg-white/6" />
 		);
 	}
 

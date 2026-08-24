@@ -6,6 +6,7 @@ import {
 	createCommentAction,
 	deleteCommentAction,
 	getCommentsByTaskAction,
+	updateCommentAction,
 } from "@/features/projects/kanban/actions/comments";
 import { useCurrentUser } from "@/hooks/use-user";
 import type { CreateCommentInput } from "@/lib/validations/comment";
@@ -120,6 +121,52 @@ export function useComments({
 		onSettled: () => invalidateAll(),
 	});
 
+	const updateMutation = useMutation({
+		mutationFn: ({
+			commentId,
+			content,
+		}: {
+			commentId: string;
+			content: string;
+		}) =>
+			updateCommentAction(workspaceSlug, projectSlug, commentId, { content }),
+
+		onMutate: async ({ commentId, content }) => {
+			await queryClient.cancelQueries({ queryKey });
+
+			const previous = queryClient.getQueryData<TaskComment[]>(queryKey);
+
+			queryClient.setQueryData<TaskComment[]>(queryKey, (current) =>
+				(current ?? []).map((comment) =>
+					comment.id === commentId
+						? { ...comment, content, updatedAt: new Date() }
+						: comment,
+				),
+			);
+
+			return { previous };
+		},
+
+		onError: (_error, _variables, context) => {
+			if (context?.previous) {
+				queryClient.setQueryData(queryKey, context.previous);
+			}
+
+			toast.error("Failed to update comment.");
+		},
+
+		onSuccess: (result) => {
+			if (!result.success) {
+				toast.error(result.message ?? "Failed to update comment.");
+				return;
+			}
+
+			toast.success("Comment updated.");
+		},
+
+		onSettled: () => invalidateAll(),
+	});
+
 	const deleteMutation = useMutation({
 		mutationFn: (commentId: string) =>
 			deleteCommentAction(workspaceSlug, projectSlug, commentId),
@@ -162,6 +209,11 @@ export function useComments({
 
 		createComment: createMutation.mutateAsync,
 		isCreating: createMutation.isPending,
+
+		updateComment: updateMutation.mutateAsync,
+		updatingCommentId: updateMutation.isPending
+			? updateMutation.variables.commentId
+			: null,
 
 		deleteComment: deleteMutation.mutateAsync,
 		deletingCommentId: deleteMutation.isPending

@@ -12,6 +12,7 @@ import {
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
 	Select,
@@ -25,16 +26,30 @@ import { useWorkspaceSettings } from "@/features/workspace/hooks/use-workspace-s
 
 type DangerTabProps = {
 	workspaceSlug: string;
-	onTransferred: () => void;
+	workspaceName: string;
+	onDone: () => void;
 };
 
-export function DangerTab({ workspaceSlug, onTransferred }: DangerTabProps) {
+export function DangerTab({
+	workspaceSlug,
+	workspaceName,
+	onDone,
+}: DangerTabProps) {
 	const { members, isLoading } = useWorkspaceMembers(workspaceSlug);
-	const { transferOwnership, isTransferring } =
+	const { transferOwnership, isTransferring, deleteWorkspace, isDeleting } =
 		useWorkspaceSettings(workspaceSlug);
 
 	const [selectedUserId, setSelectedUserId] = useState<string>("");
 	const [confirmOpen, setConfirmOpen] = useState(false);
+	const [confirmDelete, setConfirmDelete] = useState(false);
+	const [deleteConfirmText, setDeleteConfirmText] = useState("");
+
+	const canDelete = deleteConfirmText.trim() === workspaceName;
+
+	const deleteDescription =
+		members.length > 1
+			? `This permanently deletes ${workspaceName} and every project, task, and comment in it for all ${members.length} members. This cannot be undone.`
+			: `This permanently deletes ${workspaceName} and everything in it. This cannot be undone.`;
 
 	const transferableMembers = members.filter(
 		(member) => member.role !== "owner",
@@ -59,7 +74,16 @@ export function DangerTab({ workspaceSlug, onTransferred }: DangerTabProps) {
 
 		if (result.success) {
 			// The current user is now an admin, so this tab must go away.
-			onTransferred();
+			onDone();
+		}
+	};
+
+	const handleDelete = async () => {
+		const result = await deleteWorkspace();
+
+		if (result.success) {
+			setConfirmDelete(false);
+			onDone();
 		}
 	};
 
@@ -117,6 +141,70 @@ export function DangerTab({ workspaceSlug, onTransferred }: DangerTabProps) {
 					</>
 				)}
 			</div>
+
+			<div className="space-y-3 rounded-lg border border-destructive/50 p-4">
+				<div>
+					<h3 className="text-sm font-semibold">Delete workspace</h3>
+
+					<p className="mt-1 text-sm text-muted-foreground">
+						Permanently delete this workspace along with every project, task,
+						comment, and label inside it. This cannot be undone.
+					</p>
+				</div>
+
+				<Button
+					type="button"
+					variant="destructive"
+					disabled={isDeleting}
+					onClick={() => {
+						setDeleteConfirmText("");
+						setConfirmDelete(true);
+					}}
+				>
+					Delete workspace
+				</Button>
+			</div>
+
+			<AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Delete this workspace?</AlertDialogTitle>
+
+						<AlertDialogDescription>{deleteDescription}</AlertDialogDescription>
+					</AlertDialogHeader>
+
+					<div className="space-y-2">
+						<Label htmlFor="delete-workspace-confirm">
+							Type <span className="font-semibold">{workspaceName}</span> to
+							confirm
+						</Label>
+
+						<Input
+							id="delete-workspace-confirm"
+							value={deleteConfirmText}
+							onChange={(event) => setDeleteConfirmText(event.target.value)}
+							disabled={isDeleting}
+							autoComplete="off"
+							placeholder={workspaceName}
+						/>
+					</div>
+
+					<AlertDialogFooter>
+						<AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+
+						<AlertDialogAction
+							variant="destructive"
+							disabled={!canDelete || isDeleting}
+							onClick={(event) => {
+								event.preventDefault();
+								handleDelete();
+							}}
+						>
+							{isDeleting ? "Deleting..." : "Delete workspace"}
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 
 			<AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
 				<AlertDialogContent>
