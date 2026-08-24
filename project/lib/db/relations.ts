@@ -136,7 +136,22 @@ export const tasksRelations = relations(schema.tasks, ({ one, many }) => ({
 	}),
 	comments: many(schema.comments),
 	taskLabels: many(schema.taskLabelAssignments),
+	attachments: many(schema.taskAttachments),
 }));
+
+export const taskAttachmentsRelations = relations(
+	schema.taskAttachments,
+	({ one }) => ({
+		task: one(schema.tasks, {
+			fields: [schema.taskAttachments.taskId],
+			references: [schema.tasks.id],
+		}),
+		uploadedBy: one(schema.users, {
+			fields: [schema.taskAttachments.uploadedById],
+			references: [schema.users.id],
+		}),
+	}),
+);
 
 export const commentsRelations = relations(schema.comments, ({ one }) => ({
 	task: one(schema.tasks, {

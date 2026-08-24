@@ -1,7 +1,14 @@
 "use client";
 
 import type { JSONContent } from "@tiptap/react";
-import { Flag, MessageSquare, Tag, Trash2, UserRound } from "lucide-react";
+import {
+	Flag,
+	MessageSquare,
+	Paperclip,
+	Tag,
+	Trash2,
+	UserRound,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { OptionalTag } from "@/components/shared/optional-tag";
 import {
@@ -35,6 +42,7 @@ import {
 import { LabelBadge } from "@/features/labels/components/label-badge";
 import { LabelToggle } from "@/features/labels/components/label-toggle";
 import { useTaskLabels } from "@/features/labels/hooks/use-task-labels";
+import { useTaskAttachments } from "@/features/projects/kanban/hooks/use-task-attachments";
 import { useTasks } from "@/features/projects/kanban/hooks/use-tasks";
 import { useProjectUIStore } from "@/features/projects/store";
 import type { ProjectDetail } from "@/features/projects/types";
@@ -42,6 +50,7 @@ import { type TaskPriority, taskPriorities } from "@/lib/db/types";
 import { cn } from "@/lib/utils";
 import { PRIORITY_ICON_STYLES, PRIORITY_LABELS } from "./priority-badge";
 import { RichTextEditor } from "./rich-text-editor";
+import { TaskAttachmentList } from "./task-attachment-list";
 import { TaskFeed } from "./task-feed";
 
 type KanbanTask = ProjectDetail["lists"][number]["tasks"][number];
@@ -82,6 +91,13 @@ export function TaskDetailsDialog({
 			workspaceSlug,
 			projectSlug,
 		});
+
+	const attachments = useTaskAttachments({
+		workspaceSlug,
+		projectSlug,
+		taskId: task?.id ?? "",
+		enabled: isOpen,
+	});
 
 	const { taskLabels } = useTaskLabels({
 		workspaceSlug,
@@ -363,6 +379,28 @@ export function TaskDetailsDialog({
 									)}
 								</PopoverContent>
 							</Popover>
+
+							<input
+								ref={attachments.inputRef}
+								type="file"
+								accept="image/*,.pdf,.doc,.docx"
+								onChange={attachments.handleFileSelected}
+								className="hidden"
+								aria-hidden="true"
+								tabIndex={-1}
+							/>
+
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								onClick={attachments.openFilePicker}
+								disabled={attachments.isUploading}
+								className="gap-1.5"
+							>
+								<Paperclip className="size-4 text-muted-foreground" />
+								{attachments.isUploading ? "Uploading..." : "Attach"}
+							</Button>
 						</div>
 
 						{selectedLabels.length > 0 && (
@@ -380,6 +418,18 @@ export function TaskDetailsDialog({
 								</div>
 							</div>
 						)}
+
+						<TaskAttachmentList
+							attachments={attachments.attachments}
+							isLoading={attachments.isLoading}
+							isUploading={attachments.isUploading}
+							downloadingId={attachments.downloadingId}
+							removingId={attachments.removingId}
+							onDownload={(id) => attachments.download(id)}
+							onRemove={(id) =>
+								attachments.removeAttachment(id).catch(() => undefined)
+							}
+						/>
 
 						<div className="grid gap-4 sm:grid-cols-2">
 							<div className="min-w-0 space-y-1.5">

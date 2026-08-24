@@ -18,6 +18,8 @@ export type BoardEventKind =
 	| "comment_deleted"
 	| "label_created"
 	| "label_deleted"
+	| "attachment_added"
+	| "attachment_removed"
 	| "task_label_added"
 	| "task_label_removed";
 
