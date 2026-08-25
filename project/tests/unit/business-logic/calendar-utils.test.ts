@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { combineDateAndTime } from "../../../lib/date-formatter";
 import {
 	addDays,
 	countByPriority,
@@ -16,7 +15,8 @@ import {
 	toCalendarDay,
 	toEventItem,
 	toTaskItem,
-} from "./calendar-utils";
+} from "@/features/calendar/lib/calendar-utils";
+import { combineDateAndTime } from "@/lib/date-formatter";
 
 type Deadline = Parameters<typeof toTaskItem>[0];
 type Event = Parameters<typeof toEventItem>[0];

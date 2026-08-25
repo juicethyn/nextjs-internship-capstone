@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mergeTaskFeed } from "./task-feed";
+import { mergeTaskFeed } from "@/features/projects/kanban/lib/task-feed";
 
 const comment = (id: string, iso: string) => ({ id, createdAt: new Date(iso) });
 const activity = (id: string, iso: string) => ({
