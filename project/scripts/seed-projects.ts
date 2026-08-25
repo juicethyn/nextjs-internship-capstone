@@ -7,20 +7,21 @@ import { createDefaultLists } from "@/lib/db/queries/lists";
 import { addProjectMember } from "@/lib/db/queries/projectMembers";
 import { createProject } from "@/lib/db/queries/projects";
 import { setProjectLabels } from "@/lib/db/queries/projectWorkspaceLabels";
-import { createWorkspace } from "@/lib/db/queries/workspaces";
+import { getUserByClerkId } from "@/lib/db/queries/users";
+import { getWorkspaceBySlug } from "@/lib/db/queries/workspaces";
 import {
 	activityLogs,
+	comments,
 	taskLabelAssignments,
 	taskLabels,
 	tasks,
-	users,
 	workspaceLabels,
 } from "@/lib/db/schema";
 import type { ListType, TaskPriority } from "@/lib/db/types";
+import { POSITION_STEP } from "@/lib/positioning";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const HOUR_MS = 60 * 60 * 1000;
-const TASK_POSITION_STEP = 1000;
 
 function toRichTextDoc(text: string) {
 	if (!text) return null;
@@ -31,16 +32,10 @@ function toRichTextDoc(text: string) {
 	};
 }
 
-const UUID_PATTERN =
-	/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-const WORKSPACE_NAME = "Demo Workspace";
-
 const WORKSPACE_LABELS = [
 	{ name: "Research", color: LABEL_COLORS[0] },
 	{ name: "Engineering", color: LABEL_COLORS[1] },
 	{ name: "Marketing", color: LABEL_COLORS[3] },
-	{ name: "Academic", color: LABEL_COLORS[6] },
 ];
 
 type DueSpec =
@@ -58,6 +53,7 @@ type SeedTask = {
 	labels: string[];
 	due: DueSpec;
 	completed: CompletedSpec;
+	comments?: string[];
 };
 
 type SeedProject = {
@@ -70,90 +66,6 @@ type SeedProject = {
 };
 
 const PROJECTS: SeedProject[] = [
-	{
-		name: "Freshwater Fish Thesis",
-		description:
-			"Undergraduate thesis investigating how water temperature affects the growth rate of freshwater tilapia in Laguna Lake.",
-		color: WORKSPACE_COLORS[2],
-		workspaceLabels: ["Research", "Academic"],
-		taskLabels: [
-			{ name: "Fieldwork", color: LABEL_COLORS[8] },
-			{ name: "Data Analysis", color: LABEL_COLORS[6] },
-			{ name: "Writing", color: LABEL_COLORS[11] },
-		],
-		tasks: [
-			{
-				title: "Secure lake access permit",
-				description:
-					"Coordinate with the local government unit for sampling clearance at the three study sites.",
-				priority: "high",
-				list: "done",
-				labels: ["Fieldwork"],
-				due: { kind: "none" },
-				completed: "dayBefore",
-			},
-			{
-				title: "Calibrate temperature loggers",
-				description:
-					"Validate all six HOBO loggers against a reference thermometer before deployment.",
-				priority: "medium",
-				list: "done",
-				labels: ["Fieldwork"],
-				due: { kind: "none" },
-				completed: "yesterday",
-			},
-			{
-				title: "Weekly tilapia growth measurements",
-				description:
-					"Record length and weight for the tagged sample population across all treatment tanks.",
-				priority: "high",
-				list: "in_progress",
-				labels: ["Fieldwork", "Data Analysis"],
-				due: { kind: "thisWeek", daysFromToday: 2 },
-				completed: null,
-			},
-			{
-				title: "Draft methodology chapter",
-				description:
-					"Write up the experimental design, sampling protocol and instrumentation sections.",
-				priority: "medium",
-				list: "in_progress",
-				labels: ["Writing"],
-				due: { kind: "thisWeek", daysFromToday: 4 },
-				completed: null,
-			},
-			{
-				title: "Water quality sampling at site B",
-				description:
-					"Collect dissolved oxygen, pH and turbidity readings. Site B was skipped last cycle.",
-				priority: "high",
-				list: "todo",
-				labels: ["Fieldwork"],
-				due: { kind: "overdue", daysAgo: 3 },
-				completed: null,
-			},
-			{
-				title: "Statistical analysis of growth curves",
-				description:
-					"Fit von Bertalanffy growth models per temperature treatment and test for significance.",
-				priority: "medium",
-				list: "todo",
-				labels: ["Data Analysis"],
-				due: { kind: "none" },
-				completed: null,
-			},
-			{
-				title: "Literature review on thermal tolerance",
-				description:
-					"Summarise recent studies on Oreochromis niloticus thermal tolerance ranges.",
-				priority: "low",
-				list: "todo",
-				labels: ["Writing"],
-				due: { kind: "none" },
-				completed: null,
-			},
-		],
-	},
 	{
 		name: "Fora Mobile App",
 		description:
@@ -175,6 +87,9 @@ const PROJECTS: SeedProject[] = [
 				labels: ["Frontend"],
 				due: { kind: "none" },
 				completed: "dayBefore",
+				comments: [
+					"Expo SDK 52 it is — the dev client builds on both platforms and CI is green.",
+				],
 			},
 			{
 				title: "Implement Clerk authentication flow",
@@ -185,6 +100,9 @@ const PROJECTS: SeedProject[] = [
 				labels: ["Frontend", "Backend"],
 				due: { kind: "none" },
 				completed: "yesterday",
+				comments: [
+					"Session persistence is on SecureStore now, so a cold start keeps the user signed in.",
+				],
 			},
 			{
 				title: "Fix token refresh loop",
@@ -195,6 +113,9 @@ const PROJECTS: SeedProject[] = [
 				labels: ["Bug", "Backend"],
 				due: { kind: "none" },
 				completed: "yesterday",
+				comments: [
+					"Exponential backoff capped at five attempts, then we force a sign-out. Verified on a physical device overnight.",
+				],
 			},
 			{
 				title: "Offline sync queue",
@@ -205,6 +126,11 @@ const PROJECTS: SeedProject[] = [
 				labels: ["Backend"],
 				due: { kind: "thisWeek", daysFromToday: 1 },
 				completed: null,
+				comments: [
+					"Queue is persisting to SQLite now. Each mutation stores its payload plus a monotonic sequence number.",
+					"Replay ordering is the tricky part — two edits to the same task can land out of order if we fire them in parallel.",
+					"Serialised replay per task id fixes it. Throughput is fine since the queue is rarely more than a few dozen entries.",
+				],
 			},
 			{
 				title: "Push notification service",
@@ -215,6 +141,10 @@ const PROJECTS: SeedProject[] = [
 				labels: ["Backend"],
 				due: { kind: "thisWeek", daysFromToday: 3 },
 				completed: null,
+				comments: [
+					"Token registration is wired to the existing notification preferences, so muted categories never reach the device.",
+					"Still need to handle token rotation — Expo hands out a new one after a reinstall and the old row goes stale.",
+				],
 			},
 			{
 				title: "Crash on cold start with expired session",
@@ -269,6 +199,9 @@ const PROJECTS: SeedProject[] = [
 				labels: ["Analysis"],
 				due: { kind: "none" },
 				completed: "yesterday",
+				comments: [
+					"Locked to three: where we sit on price, which features actually drive the decision, and who signs off.",
+				],
 			},
 			{
 				title: "Competitor pricing teardown",
@@ -279,6 +212,11 @@ const PROJECTS: SeedProject[] = [
 				labels: ["Analysis"],
 				due: { kind: "thisWeek", daysFromToday: 0 },
 				completed: null,
+				comments: [
+					"Four of six are captured. Two of them hide pricing behind a sales call, so those rows are estimates from published case studies.",
+					"Annual discounts cluster around 15–20%, which is well below what we assumed when we set our own.",
+					"Adding a per-seat normalised column so the comparison holds for the mid-market tier.",
+				],
 			},
 			{
 				title: "Survey questionnaire design",
@@ -289,6 +227,10 @@ const PROJECTS: SeedProject[] = [
 				labels: ["Survey"],
 				due: { kind: "thisWeek", daysFromToday: 4 },
 				completed: null,
+				comments: [
+					"Draft is at eighteen questions — needs trimming, the pilot group dropped off around question twelve.",
+					"Cut the three demographic questions we can pull from the CRM instead.",
+				],
 			},
 			{
 				title: "Recruit 20 survey participants",
@@ -338,32 +280,47 @@ function usage(message?: string) {
 	if (message) console.error(`\nError: ${message}`);
 
 	console.error(`
-Usage: pnpm exec tsx scripts/seed-workspace.ts <userId>
+Usage: pnpm db:seed <clerkId> <workspaceSlug>
 
-Adds one new workspace with three sample projects to an existing user.
-Existing data is never modified or deleted.
+Adds two sample projects (lists, tasks, labels, comments, activity) to an
+existing workspace. Existing data is never modified or deleted.
 
-  <userId>  A uuid from the "users" table (not a Clerk id).
+  <clerkId>        A Clerk user id starting with "user_", not the users.id uuid.
+  <workspaceSlug>  The slug from the workspace url, e.g. /w/<workspaceSlug>/dashboard.
 `);
 
 	process.exit(1);
 }
 
 async function main() {
-	const userId = process.argv[2];
+	const [clerkId, workspaceSlug] = process.argv.slice(2);
 
-	if (!userId) usage("No user id supplied.");
-	if (!UUID_PATTERN.test(userId)) {
-		usage(`"${userId}" is not a valid uuid.`);
+	if (!clerkId) usage("No Clerk id supplied.");
+	if (!workspaceSlug) usage("No workspace slug supplied.");
+
+	if (!clerkId.startsWith("user_")) {
+		usage(
+			`"${clerkId}" is not a Clerk id. Clerk ids start with "user_" — this is not the users.id uuid.`,
+		);
 	}
 
-	const user = await db.query.users.findFirst({
-		where: eq(users.id, userId),
-	});
+	const user = await getUserByClerkId(clerkId);
 
 	if (!user) {
+		usage(`No user found with Clerk id ${clerkId}.`);
+		return;
+	}
+
+	const workspace = await getWorkspaceBySlug(workspaceSlug);
+
+	if (!workspace) {
+		usage(`No workspace found with slug "${workspaceSlug}".`);
+		return;
+	}
+
+	if (!workspace.members.some((member) => member.userId === user.id)) {
 		usage(
-			`No user found with id ${userId}. Note this is the internal users.id, not the Clerk id.`,
+			`${user.firstName} ${user.lastName} is not a member of "${workspace.name}" (${workspaceSlug}). Seeded projects would not be visible to them.`,
 		);
 		return;
 	}
@@ -398,25 +355,47 @@ async function main() {
 	};
 
 	const result = await db.transaction(async (tx) => {
-		const workspace = await createWorkspace(
-			user.id,
-			{ name: WORKSPACE_NAME, color: WORKSPACE_COLORS[0] },
-			tx,
-		);
-
-		const insertedWorkspaceLabels = await tx
-			.insert(workspaceLabels)
-			.values(
-				WORKSPACE_LABELS.map((label) => ({
-					...label,
-					workspaceId: workspace.id,
-				})),
-			)
-			.returning();
+		const existingWorkspaceLabels = await tx
+			.select()
+			.from(workspaceLabels)
+			.where(eq(workspaceLabels.workspaceId, workspace.id));
 
 		const workspaceLabelIdByName = new Map(
-			insertedWorkspaceLabels.map((label) => [label.name, label.id]),
+			existingWorkspaceLabels.map((label) => [label.name, label.id]),
 		);
+
+		const reusedLabelNames: string[] = [];
+		const neededLabelNames = new Set(
+			PROJECTS.flatMap((spec) => spec.workspaceLabels),
+		);
+
+		const missingLabels = WORKSPACE_LABELS.filter((label) => {
+			if (!neededLabelNames.has(label.name)) return false;
+
+			if (workspaceLabelIdByName.has(label.name)) {
+				reusedLabelNames.push(label.name);
+				return false;
+			}
+
+			return true;
+		});
+
+		if (missingLabels.length > 0) {
+			const insertedWorkspaceLabels = await tx
+				.insert(workspaceLabels)
+				.values(
+					missingLabels.map((label) => ({
+						...label,
+						workspaceId: workspace.id,
+					})),
+				)
+				.onConflictDoNothing()
+				.returning();
+
+			for (const label of insertedWorkspaceLabels) {
+				workspaceLabelIdByName.set(label.name, label.id);
+			}
+		}
 
 		const summaries = [];
 		const seedNow = new Date();
@@ -474,8 +453,7 @@ async function main() {
 					throw new Error(`Missing default list "${task.list}"`);
 				}
 
-				const nextPosition =
-					(positionByList.get(listId) ?? 0) + TASK_POSITION_STEP;
+				const nextPosition = (positionByList.get(listId) ?? 0) + POSITION_STEP;
 				positionByList.set(listId, nextPosition);
 
 				return {
@@ -509,6 +487,41 @@ async function main() {
 			if (assignments.length > 0) {
 				await tx.insert(taskLabelAssignments).values(assignments);
 			}
+
+			const commentValues = spec.tasks.flatMap((task, index) => {
+				if (!task.comments?.length) return [];
+
+				const insertedTask = insertedTasks[index];
+
+				return task.comments.map((content, commentIndex) => {
+					const postedAt = new Date(
+						seedNow.getTime() - (48 - commentIndex * 3) * HOUR_MS,
+					);
+
+					return {
+						taskId: insertedTask.id,
+						authorId: user.id,
+						content,
+						createdAt: insertedTask.completedAt
+							? new Date(
+									Math.min(
+										postedAt.getTime(),
+										insertedTask.completedAt.getTime() - HOUR_MS,
+									),
+								)
+							: postedAt,
+					};
+				});
+			});
+
+			const insertedComments =
+				commentValues.length > 0
+					? await tx.insert(comments).values(commentValues).returning()
+					: [];
+
+			const taskTitleById = new Map(
+				insertedTasks.map((task) => [task.id, task.title]),
+			);
 
 			const activityValues: (typeof activityLogs.$inferInsert)[] = [
 				{
@@ -553,6 +566,19 @@ async function main() {
 				}
 			}
 
+			for (const comment of insertedComments) {
+				activityValues.push({
+					workspaceId: workspace.id,
+					actorId: user.id,
+					projectId: project.id,
+					action: "created",
+					entity: "comment",
+					entityId: comment.id,
+					metadata: { taskTitle: taskTitleById.get(comment.taskId) },
+					createdAt: comment.createdAt,
+				});
+			}
+
 			await tx.insert(activityLogs).values(activityValues);
 
 			summaries.push({
@@ -560,11 +586,16 @@ async function main() {
 				slug: project.slug,
 				tasks: insertedTasks.length,
 				labels: insertedTaskLabels.length,
+				comments: insertedComments.length,
 				activity: activityValues.length,
 			});
 		}
 
-		return { workspace, summaries, workspaceLabels: insertedWorkspaceLabels };
+		const createdLabelNames = [...neededLabelNames].filter(
+			(name) => !reusedLabelNames.includes(name),
+		);
+
+		return { summaries, reusedLabelNames, createdLabelNames };
 	});
 
 	const allTasks = PROJECTS.flatMap((project) => project.tasks);
@@ -591,29 +622,28 @@ async function main() {
 	}).length;
 
 	console.log(`
-Seeded workspace for ${user.firstName} ${user.lastName} <${user.email}>
+Seeded projects for ${user.firstName} ${user.lastName} <${user.email}>
 
-  Workspace : ${result.workspace.name}
-  Slug      : ${result.workspace.slug}
-  Dashboard : /w/${result.workspace.slug}/dashboard
-  Labels    : ${result.workspaceLabels.map((label) => label.name).join(", ")}
+  Workspace : ${workspace.name}
+  Slug      : ${workspace.slug}
+  Dashboard : /w/${workspace.slug}/dashboard
+  Labels    : reused ${result.reusedLabelNames.join(", ") || "none"} | created ${result.createdLabelNames.join(", ") || "none"}
 `);
 
 	for (const summary of result.summaries) {
 		console.log(
-			`  - ${summary.name} (${summary.slug}) — ${summary.tasks} tasks, ${summary.labels} task labels, ${summary.activity} activity events`,
+			`  - ${summary.name} (${summary.slug}) — ${summary.tasks} tasks, ${summary.labels} task labels, ${summary.comments} comments, ${summary.activity} activity events`,
 		);
 	}
 
 	console.log(`
-This workspace contributes the following to the overview cards:
+These projects contribute the following to the overview cards:
 
   Active Projects     ${result.summaries.length}  (+${result.summaries.length} new this week)
-  Team Members        1
   Completed Yesterday ${completedYesterday}  (${completedYesterday - completedDayBefore >= 0 ? "+" : ""}${completedYesterday - completedDayBefore} from previous day)
   Due This Week       ${dueThisWeek}  (${overdue} overdue)
 
-Existing workspaces were not modified.
+The workspace's existing projects and labels were not modified.
 `);
 
 	process.exit(0);
