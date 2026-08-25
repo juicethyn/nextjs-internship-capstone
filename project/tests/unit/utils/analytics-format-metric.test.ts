@@ -4,7 +4,7 @@ import {
 	formatDelta,
 	formatMetricValue,
 	formatPercent,
-} from "./format-metric";
+} from "@/features/analytics/lib/format-metric";
 
 describe("formatMetricValue", () => {
 	it("pins the value to the requested precision", () => {

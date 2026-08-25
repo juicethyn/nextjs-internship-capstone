@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { distributePercentages } from "./percentages";
+import { distributePercentages } from "@/features/dashboard/lib/percentages";
 
 const sum = (values: number[]) => values.reduce((a, b) => a + b, 0);
 

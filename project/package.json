@@ -9,6 +9,8 @@
 		"lint": "next lint",
 		"check": "biome check --write",
 		"tsc": "tsc --noEmit",
+		"test": "vitest run",
+		"test:watch": "vitest",
 		"db:generate": "drizzle-kit generate",
 		"db:migrate": "drizzle-kit migrate"
 	},

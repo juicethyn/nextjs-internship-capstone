@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { activityPhrase, activityTitle } from "./activity-text";
+import {
+	activityPhrase,
+	activityTitle,
+} from "@/features/dashboard/lib/activity-text";
 
 describe("activityPhrase", () => {
 	it("maps known entity/action pairs", () => {

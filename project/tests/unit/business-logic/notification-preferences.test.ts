@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { notificationTypes } from "../../../lib/db/types";
-import { isNotificationAllowed, NOTIFICATION_CATEGORY } from "./preferences";
+import {
+	isNotificationAllowed,
+	NOTIFICATION_CATEGORY,
+} from "@/features/notifications/lib/preferences";
+import { notificationTypes } from "@/lib/db/types";
 
 describe("isNotificationAllowed", () => {
 	it("allows everything when preferences are unknown", () => {

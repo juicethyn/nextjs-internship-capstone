@@ -3,7 +3,7 @@ import {
 	getAnalyticsRanges,
 	getPeriodDays,
 	getPeriodLabel,
-} from "./date-range";
+} from "@/features/analytics/lib/date-range";
 
 const iso = (date: Date) => date.toISOString();
 

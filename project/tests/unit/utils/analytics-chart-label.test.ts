@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { getLabelMaxChars, truncateLabel } from "./chart-label";
+import {
+	getLabelMaxChars,
+	truncateLabel,
+} from "@/features/analytics/lib/chart-label";
 
 describe("getLabelMaxChars", () => {
 	it("gives more room when there are fewer bars", () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getOverviewRanges } from "./date-range";
+import { getOverviewRanges } from "@/features/dashboard/lib/date-range";
 
 const iso = (date: Date) => date.toISOString();
 

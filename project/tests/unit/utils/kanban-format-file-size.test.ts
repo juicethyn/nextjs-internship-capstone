@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatFileSize } from "./format-file-size";
+import { formatFileSize } from "@/features/projects/kanban/lib/format-file-size";
 
 describe("formatFileSize", () => {
 	it("shows raw bytes below a kilobyte", () => {

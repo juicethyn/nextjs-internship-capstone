@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { RANK_COLORS, UNRANKED_COLOR } from "../constants";
-import { getBarPercent, getRankColor } from "./rank";
+import { RANK_COLORS, UNRANKED_COLOR } from "@/features/analytics/constants";
+import { getBarPercent, getRankColor } from "@/features/analytics/lib/rank";
 
 describe("getRankColor", () => {
 	it("gives each of the top five ranks its own colour", () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { ProjectListItem } from "./project-filters";
-import { sortProjectItems } from "./project-filters";
+import type { ProjectListItem } from "@/features/projects/lib/project-filters";
+import { sortProjectItems } from "@/features/projects/lib/project-filters";
 
 type ItemInput = {
 	name: string;
